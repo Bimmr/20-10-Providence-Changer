@@ -1,0 +1,25 @@
+{
+
+  "name": "Providence Changer",
+  "version": "1.0.11",
+
+  "description": "Providence Changes",
+
+  "content_scripts": [
+    {
+        "matches":["https://twentyoverten.com/manage"],
+        "all_frames": true,
+        "js": [
+            "/js/jquery-3.3.1.min.js",
+            "/js/onLoad.js"
+        ]
+    }
+],
+"web_accessible_resources": [
+    "js/injected.js"
+  ],
+
+  "short_name": "Providence Changer",
+
+  "manifest_version": 2
+}
