@@ -3,7 +3,7 @@ function injectScript(file, node) {
     var s = document.createElement('script');
     s.setAttribute('type', 'text/javascript');
     s.setAttribute('src', file);
-    s.setAttribute("id", "injectedChromeExtension")
+    s.setAttribute("id", "injectedChromeExtension");
     th.appendChild(s);
 }
 injectScript( chrome.extension.getURL('/js/injected.js'), 'body');
