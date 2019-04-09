@@ -1,22 +1,33 @@
 {
 
   "name": "Providence Changer",
-  "version": "1.0.11",
+  "version": "1.2.1",
 
   "description": "Providence Changes",
 
   "content_scripts": [
     {
-        "matches":["https://twentyoverten.com/manage"],
-        "all_frames": true,
+        "matches":["https://twentyoverten.com/manage*"],
+        "all_frames": false,
         "js": [
             "/js/jquery-3.3.1.min.js",
-            "/js/onLoad.js"
+            "/providence/onLoad.js"
+        ]
+    },
+    {
+        "matches":[
+          "https://twentyoverten.com/edit",
+          "https://twentyoverten.com/publish"
+        ],
+        "js": [
+            "/js/jquery-3.3.1.min.js",
+            "/edit/onLoad.js"
         ]
     }
 ],
 "web_accessible_resources": [
-    "js/injected.js"
+    "/providence/injected.js",
+    "/edit/injected.js"
   ],
 
   "short_name": "Providence Changer",
