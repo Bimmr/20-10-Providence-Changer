@@ -1,13 +1,19 @@
 {
 
   "name": "Providence Changer",
-  "version": "1.2.1",
+  "version": "1.2.8",
 
   "description": "Providence Changes",
 
   "content_scripts": [
     {
-        "matches":["https://twentyoverten.com/manage*"],
+        "matches":[
+          "https://twentyoverten.com/manage",
+          "https://twentyoverten.com/manage/advisor*",
+          "https://twentyoverten.com/manage/revisions*",
+          "https://twentyoverten.com/manage/review*",
+          "https://twentyoverten.com/manage/content*"
+        ],
         "all_frames": false,
         "js": [
             "/js/jquery-3.3.1.min.js",

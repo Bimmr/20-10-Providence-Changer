@@ -2,12 +2,14 @@ let advisorInfo = [];
 
 $(function() {
 
+  //Float the page navigation
+  $("head").append('<style id="floatingPages">.dataTables_paginate{position: sticky;bottom: 0; padding: 10px;left: 0;right: 0;background-color: #2d2d2dad;} #advisorsList_wrapper .dataTables_paginate{bottom: -2rem;}</style>');
+
   //Get the URL Parts
   let urlParts = window.location.href.split("/");
 
   //If currently reviewing
-  if (window.location.href.indexOf("advisor") >= 0) {
-
+  if (urlParts.length >  4 && urlParts[4] === "advisor") {
     //Add p on side for Advisor Tags
     $($(".details-wrapper").find("header")).append('<p class="secondary center advisor-tags"></p>');
     let advisorId = urlParts[urlParts.length - 1];
@@ -28,6 +30,8 @@ $(function() {
 
     //Add tags
     $(".advisor-tags").html(tags.substr(4, tags.length));
+    if(advisor && advisor.email)
+      $(".advisor-quick-links").append('<a href="/manage/revisions?email='+encodeURIComponent(advisor.email)+'" class="btn pill bordered secondary">View Revisions</a>');
 
 
 $(".open-archives").on("click", function(){
@@ -52,12 +56,56 @@ $(".open-archives").on("click", function(){
         $.get(url).done(data => {
           let $data = $(data);
           let notes = $data.find(".is-compliance-notes").html();
+          if(!notes)
+            notes = '<span class="small">Approved By: '+$($data.find('.print-timestamp-title + span')[2]).html()+'</span>';
           resolve(notes);
         });
       });
     }
   }, 2000);
-})
+});
+  }
+  else if (urlParts.length >  4 && urlParts[4].indexOf("revisions")==0) {
+
+    var email = null;
+
+    var urlParams = new URLSearchParams(window.location.search);
+    email = urlParams.get('email');
+
+    if(email)
+    {
+      var prefix = "digitaladvisorprogram+";
+      if(email.indexOf(prefix) == 0)
+        email = email.substr(prefix.length, email.length);
+      setTimeout(()=>{
+        $("#revisions-list").DataTable().search(email).draw();
+      }, 2000);
+    }
+  }
+  else if (urlParts.length >  4 && urlParts[4].indexOf("review")==0) {
+    let advisorId = urlParts[urlParts.length - 2];
+    let reviewId = urlParts[urlParts.length - 1];
+    displayReviewer('https://twentyoverten.com/manage/revisions/' + advisorId+ '/' + reviewId);
+
+
+    async function displayReviewer(url){
+      let review = await getReviewer(url);
+      if(review && review[0]){
+        $(".review-title").append('<p style="margin:5px 25px 0;text-align: right;font-size: 12px;color: rgba(220,220,222,0.8);">'+review[2]+' By: '+review[1]+' - '+review[0]+'</p>');
+      }
+    }
+    function getReviewer(url) {
+      return new Promise(function(resolve) {
+        $.get(url).done(data => {
+          let $data = $(data);
+          let review = [];
+          review.push($($data.find('.print-timestamp-title + span')[0]).html());
+          review.push($($data.find('.print-timestamp-title + span')[1]).html());
+          review.push($($data.find('.print-timestamp-title + span')[2]).html());
+          resolve(review);
+        });
+      });
+    }
   }
   //If not reviewing
   else {
@@ -66,13 +114,14 @@ $(".open-archives").on("click", function(){
     sort();
 
     //Auto open all advisors
-    $("#showAllAdvisors")[0].click();
+    if($("#showAllAdvisors").length > 0)
+      $("#showAllAdvisors")[0].click();
 
     //Add search
     $(".providence-overview--list").prepend(
       '<div class="search-bar" style=" display: flex; flex-flow: row wrap; margin-bottom: .5rem">' +
       '<div class="text-control" aria-required="true" style=" margin: 0; flex-basis: 80%; padding-right: 15px"> ' +
-      '<input type="text" id="search-advisor" name="search-advisor" class="form-control" title="Advisor"> <label for="search-advisor">Advisor</label> ' +
+      '<input type="text" id="search-advisor" name="search-advisor" class="form-control" title="Search"> <label for="search-advisor">Search</label> ' +
       '<div style="position: absolute; top: 12px; right: 25px; width: 20px; height: 20px; border-radius: 50%; background: #6b6b6b; z-index: 100; line-height: 20px; text-align: center; opacity: .9;" data-content="[! = Not] &nbsp; &nbsp; [, = And] &nbsp; &nbsp; [| = Or]" class="tot_tip top">?</div>' +
       '</div>' +
       '<div class="btn-control" aria-required="true" style=" margin: 0;flex-basis:20%"> ' +
@@ -82,15 +131,15 @@ $(".open-archives").on("click", function(){
       '</div>');
 
     //When enter is pressed when typing in search
-    $('#search-advisor').on('keyup', e => {
+    $('#search-advisor').on('keyup', delay(e => {
       let searchTerm = $('#search-advisor').val();
-      if ((searchTerm.length > 2 && getNodes(searchTerm).length < 50) || e.which === 13)
+      if ((searchTerm.length > 2 && searchTerm.indexOf("*") != 0 && getNodes(searchTerm).length < 50) || e.which === 13)
         $("#search-advisor-btn")[0].click();
       if (searchTerm.length <= 2 && e.which == 8) {
         let table = $(".search-bar table");
         table.empty();
       }
-    });
+    }, 500));
 
     //When search button is clicked
     $("#search-advisor-btn").on('click', () => {
@@ -123,11 +172,6 @@ $(".open-archives").on("click", function(){
           let row = $(table.find("tr")[i]);
           row.prepend('<td>' + (i + 1) + '.</td>');
 
-          //Format row
-          // let assigned = row.find(".selected").text();
-          // let cell = row.find(".select-wrapper").parent();
-          // cell.css("text-align", "center");
-          // cell.html('<span>' + assigned + '</span>');
         });
         table.find("td").css("border", "none");
 
@@ -161,6 +205,7 @@ $(".open-archives").on("click", function(){
       }
     });
   }
+
   //When the chat opens
   $(".open-chat").on("click", function() {
 
@@ -168,7 +213,7 @@ $(".open-archives").on("click", function(){
     setTimeout(() => {
 
       //When the chat gets opened, display saved message
-      if (localStorage.getItem('savedChatMsg') && localStorage.getItem('savedChatMsg') != 'null') {
+      if (localStorage.getItem('savedChatMsg') && localStorage.getItem('savedChatMsg') != 'null' && localStorage.getItem('savedChatMsg') != 'undefined') {
         $($("#chatMessage").find(".fr-wrapper")).removeClass("show-placeholder");
         $($("#chatMessage").find(".fr-element")).html(localStorage.getItem('savedChatMsg'));
       }
@@ -187,6 +232,9 @@ $(".open-archives").on("click", function(){
   });
 });
 
+function approveAll(){
+  $(".approve-item").click();
+}
 //Get the node results
 function getNodes(searchString) {
 
@@ -200,6 +248,9 @@ function getNodes(searchString) {
         let match = item.data().display_name.toLowerCase().indexOf(search.toLowerCase()) >= 0 ||
           item.data().email.toLowerCase().indexOf(search.toLowerCase()) >= 0 ||
           item.data()._id.toLowerCase().indexOf(search.toLowerCase()) >= 0 ||
+          ("published".indexOf(search.toLowerCase())>= 0 && item.data().published_date != "NA") ||
+          ("submitted".indexOf(search.toLowerCase())>= 0 && item.data().submitted_date != "NA") ||
+          ("not published".indexOf(search.toLowerCase())>= 0 && notPublished(item.data())) ||
           hasTag(search.toLowerCase(), item.data()) ||
           hasStatus(search.toLowerCase(), item.data()) ||
           getOfficerName(item.data().officer_id).toLowerCase().indexOf(search.toLowerCase()) >= 0;
@@ -254,13 +305,23 @@ function getNodes(searchString) {
   rows.forEach(e => {
     let node = e.node().cloneNode(true);
 
-    node.deleteCell(3);
+    // node.deleteCell(3);
     nodes.push(node);
   });
 
   return nodes;
 }
-
+//delay and wait when typing
+function delay(callback, ms) {
+  var timer = 0;
+  return function() {
+    var context = this, args = arguments;
+    clearTimeout(timer);
+    timer = setTimeout(function () {
+      callback.apply(context, args);
+    }, ms || 0);
+  };
+}
 
 //Update list of advisor info, allows being able to see full list when not showing in table
 function updateAdvisorInfo() {
@@ -317,6 +378,15 @@ function hasStatus(status, advisor) {
 }
 
 
+function notPublished(advisor){
+  if(hasStatus("approved", advisor)){
+    let dateA = Date.parse(advisor.site.published_at),
+      dateB =  Date.parse(advisor.site.submitted_at);
+      return dateA < dateB;
+  }
+  return false;
+}
+
 //Apply sort to slider cards
 function sort() {
 
@@ -368,13 +438,22 @@ function sort() {
       let timeA = getTime(a.find(".submitted").text()),
         timeB = getTime(b.find(".submitted").text());
 
-      //Check if either card is a migration card
+      //Check if either card is a migration site
       let isMigratingA = hasTag("Migrating", infoA),
         isMigratingB = hasTag("Migrating", infoB);
 
-      //Check if either card is a brand new card
+      //Check if either card is a brand new site
       let isBrandNewA = hasTag("Brand New", infoA),
         isBrandNewB = hasTag("Brand New", infoB);
+
+      //Check if the site isn't on the program
+      let isNotOnProgramA = hasTag("Not On Program", infoA),
+        isNotOnProgramB = hasTag("Not On Program", infoB);
+
+        if (isNotOnProgramA && !isNotOnProgramB)
+          return 1;
+        else if (isNotOnProgramA && !isNotOnProgramB)
+          return -1;
 
       // Check if the advisor is assigned to current officer
       let isAssignedToA = infoA ? window.loggedInUser === infoA.officer_id : false,
@@ -462,11 +541,12 @@ function updateSlider() {
 
       //Check if the site is migrating or new
       let isMigrating = hasTag("Migrating", info),
-        isNew = hasTag("Brand New", info);
+        isNew = hasTag("Brand New", info),
+        isNotOnProgram = hasTag("Not On Program", info);
 
       //Add the assigned and migration tag; overwrite if already there, append if not
       if ($(this).find(".assigned").length >= 1)
-        $(this).find(".assigned").html(assigned + '<br>' + (isMigrating ? '<span style="font-size: 12px">Migration</span>' : "") + (isNew ? '<span style="font-size: 12px">Brand New</span>' : ""));
+        $(this).find(".assigned").html(assigned + '<br>' + (isMigrating ? '<span style="font-size: 12px; color: #06874E">Migration</span>' : "") + (isNew ? '<span style="font-size: 12px; color: #00A758">Brand New</span>' : "")+ (isNotOnProgram ? '<span style="font-size: 12px; color: red">Not On Program</span>' : ""));
       else {
         $(this).find(".card-content").append('<p class="assigned" style="font-size: 14px;color: rgba(220,220,222,0.8);padding: 15px;margin-top: 15px;background-color: #333; border-radius: 10px;' + (info ? window.loggedInUser === info.officer_id ? "color: #fff" : "" : "") + '">' + assigned + '<br>' + (isMigrating ? '<span style="font-size: 12px">Migration</span>' : "") + (isNew ? '<span style="font-size: 12px">Brand New</span>' : "") + '</p>');
       }
@@ -518,7 +598,7 @@ function updateList(container) {
     let list = $($(this).find("ul"));
 
     //Only add if not already added
-    if (list.children().length < 4) {
+    if (list.children().length < 5) {
 
       //Get ID
       let id = list.children(":first").find("a")[0].href;
@@ -528,7 +608,16 @@ function updateList(container) {
 
       //Add link to view website without needing to login/view profile
       let info = getAdvisorInfoByID(id);
-      list.append('<li><a href="https://' + info.site.settings.subdomain + '.twentyoverten.com" class="" target="_blank" data-advisor_id="' + id + '">View Website</a></li>');
+      if(info && info.email)
+        list.append('<li><a href="/manage/revisions?email=' + encodeURIComponent(info.email) + '" target="_blank" class="" data-advisor_id="' + id + '">View Revisions</a></li>');
+      if(info && info.site)
+        list.append('<li><a href="https://' + info.site.settings.subdomain + '.twentyoverten.com" class="" target="_blank" data-advisor_id="' + id + '">View Website</a></li>');
+
+      //Add a "Not Published" status if the site is approved/editing but not published
+      if(notPublished(info)){
+        let state = list.parent().parent().parent().parent().find(".has-state");
+        state.append('<p style="font-size: .75em;color: #1fe9ae;text-align: center;margin: 5px 0 0 0; font-family: \'Anonymous Pro\', Courier, monospace;">Not Published</p>');
+      }
     }
   });
 }
