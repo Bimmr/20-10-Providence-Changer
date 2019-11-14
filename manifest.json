@@ -1,7 +1,7 @@
 {
 
   "name": "Providence Changer",
-  "version": "1.2.8",
+  "version": "1.3.5",
 
   "description": "Providence Changes",
 
@@ -9,6 +9,7 @@
     {
         "matches":[
           "https://twentyoverten.com/manage",
+          "https://twentyoverten.com/manage#",
           "https://twentyoverten.com/manage/advisor*",
           "https://twentyoverten.com/manage/revisions*",
           "https://twentyoverten.com/manage/review*",

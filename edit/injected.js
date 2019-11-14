@@ -39,11 +39,15 @@ $(function() {
     $("#pagesWrapper").find('.title[data-url="' + frameURL + '"]').parent().addClass("active-page-tab");
   }
 
-//$(".browser-bar--right").append('<div class="tot_dropdown"> <a href="#" class="popout-preview">Edit Items</a> <div class="tot_droplist is-far-right"> <ul> <li><a href="#" class="edit-pages-pages" data-size="desktop">Edit Pages</a></li> <li><a href="#" class="edit-pages-members" data-size="tablet">Edit Members</a></li> <li><a href="#" class="edit-pages-posts" data-size="mobile">Edit Posts</a></li> <li><a href="#" class="edit-pages-all">Edit All</a></li> </ul> </div> </div>');
-//$(".edit-pages-pages").on("click", editPages);
-//$(".edit-pages-members").on("click", editMembers);
-//$(".edit-pages-posts").on("click", editPosts);
-//$(".edit-pages-all").on("click", ()=> editPages(()=>editMembers(()=>editPosts())));
+  function editAll(){
+    editPages(()=>editMembers(()=>editPosts()));
+  }
+// $(".browser-bar--right").append('<div class="tot_dropdown" style="margin-left:.5em;"> <a href="#" class="popout-preview">Mark As Edited</a> <div class="tot_droplist is-far-right"> <ul> <li><a href="#" class="edit-pages-pages" data-size="desktop">Edit Pages</a></li> <li><a href="#" class="edit-pages-members" data-size="tablet">Edit Members</a></li> <li><a href="#" class="edit-pages-posts" data-size="mobile">Edit Posts</a></li> <li><a href="#" class="edit-pages-all">Edit All</a></li> </ul> </div> </div>');
+//
+// $(".edit-pages-pages").on("click", editPages);
+// $(".edit-pages-members").on("click", editMembers);
+// $(".edit-pages-posts").on("click", editPosts);
+// $(".edit-pages-all").on("click", ()=> editPages(()=>editMembers(()=>editPosts())));
 
   //When the chat opens
   $(".open-chat, #open-chat").on("click", () => {
