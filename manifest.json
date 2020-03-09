@@ -1,10 +1,12 @@
 {
 
   "name": "Providence Changer",
-  "version": "1.3.5",
+  "version": "1.3.8",
 
   "description": "Providence Changes",
-
+  "icons": {
+    "128": "icon/SiteForwardFAv.png"
+  },
   "content_scripts": [
     {
         "matches":[

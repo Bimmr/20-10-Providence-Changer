@@ -1,3 +1,6 @@
+var isEditing = false;
+window.devHelper = true;
+
 $(function() {
   $("body").append(
     "<style>" +
@@ -42,13 +45,22 @@ $(function() {
   function editAll(){
     editPages(()=>editMembers(()=>editPosts()));
   }
-// $(".browser-bar--right").append('<div class="tot_dropdown" style="margin-left:.5em;"> <a href="#" class="popout-preview">Mark As Edited</a> <div class="tot_droplist is-far-right"> <ul> <li><a href="#" class="edit-pages-pages" data-size="desktop">Edit Pages</a></li> <li><a href="#" class="edit-pages-members" data-size="tablet">Edit Members</a></li> <li><a href="#" class="edit-pages-posts" data-size="mobile">Edit Posts</a></li> <li><a href="#" class="edit-pages-all">Edit All</a></li> </ul> </div> </div>');
-//
-// $(".edit-pages-pages").on("click", editPages);
-// $(".edit-pages-members").on("click", editMembers);
-// $(".edit-pages-posts").on("click", editPosts);
-// $(".edit-pages-all").on("click", ()=> editPages(()=>editMembers(()=>editPosts())));
 
+
+  if(localStorage.getItem('IsSiteForward') == "true"){
+    $(document).on('keypress mousedown', function(){
+      if(isEditing)
+        stopEditing();
+    });
+    async function stopEditing(){ isEditing = false; console.log("Stopping Auto Edit"); }
+
+    $(".browser-bar--right").append('<div class="tot_dropdown" style="margin-left:.5em;"> <a href="#" class="popout-preview">Mark As Edited</a> <div class="tot_droplist is-far-right"> <ul> <li><a href="#" class="edit-pages-pages" data-size="desktop">Edit Pages</a></li> <li><a href="#" class="edit-pages-members" data-size="tablet">Edit Members</a></li> <li><a href="#" class="edit-pages-posts" data-size="mobile">Edit Posts</a></li> <li><a href="#" class="edit-pages-all">Edit All</a></li> </ul> </div> </div>');
+
+    $(".edit-pages-pages").on("click", editPages);
+    $(".edit-pages-members").on("click", editMembers);
+    $(".edit-pages-posts").on("click", editPosts);
+    $(".edit-pages-all").on("click", ()=> editPages(()=>editMembers(()=>editPosts())));
+  }
   //When the chat opens
   $(".open-chat, #open-chat").on("click", () => {
     //Wait for the chat to initialize
@@ -107,7 +119,6 @@ function updateRejections(key) {
   var rejections = [];
 
   $(".rejection-notice").each(function(notice) {
-    console.log($(this).data("id"));
     let rejected = {
       id: $(this).data("id"),
       rejections: []
@@ -148,7 +159,7 @@ function getItemById(c, id) {
   return v
 }
 function editPages(callback){
-
+    isEditing = true;
     var $overlay = $("#page-settings-overlay");
     var pagesArray = $(".page-settings").map((i, e) => $(e).data("id")).get();
     var pageIndex = -1;
@@ -158,7 +169,7 @@ function editPages(callback){
     function touchPages(callback) {
       pageIndex += 1;
       var page = pagesArray[pageIndex];
-      if (page)
+      if (page && isEditing)
         touchPage(page, () => touchPages(callback));
       else if (callback)
         callback();
@@ -186,6 +197,7 @@ function editPages(callback){
 }
 function editMembers(callback){
 
+    isEditing = true;
     var $overlay = $("#page-settings-overlay");
       var membersArray = $(".manage-members").map((i, e) => $(e).data("id")).get();
     var memberIndex = -1;
@@ -195,7 +207,7 @@ function editMembers(callback){
     function touchMembers(callback) {
       memberIndex += 1;
       var page = membersArray[memberIndex];
-      if (page)
+      if (page && isEditing)
         touchMember(page, () => touchMembers(callback));
       else if (callback)
         callback();
@@ -215,7 +227,7 @@ function editMembers(callback){
             function touchAllMembers(callback2) {
               i += 1;
               var member = singleMembersArray[i];
-              if (member)
+              if (member && isEditing)
                 touchSingleMember(member, () => touchAllMembers(callback2));
               else
                 callback2();
@@ -257,6 +269,7 @@ function editMembers(callback){
     }
 }
 function editPosts(callback){
+    isEditing = true;
 
     var $overlay = $("#page-settings-overlay");
     var postsArray = $(".manage-posts").map((i, e) => $(e).data("id")).get();
@@ -267,7 +280,7 @@ function editPosts(callback){
     function touchPosts(callback) {
       postIndex += 1;
       var page = postsArray[postIndex];
-      if (page)
+      if (page && isEditing)
         touchPost(page, () => touchPosts(callback));
       else if (callback)
         callback();
@@ -287,7 +300,7 @@ function editPosts(callback){
               i += 1;
 
               var post = singlePostArray[i];
-              if (post)
+              if (post && isEditing)
                 touchSinglePost(post, () => touchAllPosts(callback2));
               else
                 callback2();

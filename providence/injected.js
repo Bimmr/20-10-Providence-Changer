@@ -12,6 +12,13 @@ $(function () {
 
   //If currently reviewing
   if ((urlParts.length > 4 && urlParts[4] === "advisor") || (urlParts.length > 4 && urlParts[4] === "advisor#")) {
+
+    // $(window).on('beforeunload', function() {
+    //   if($(".review-submission.showing .publish-advisor").hasClass('loading'))
+    //     return 'Please wait for the publishing to finish';
+    // });
+
+
     //Add p on side for Advisor Tags
     $($(".details-wrapper").find("header")).append('<p class="secondary center advisor-tags"></p>');
     let advisorId = urlParts[urlParts.length - 1];
@@ -21,6 +28,9 @@ $(function () {
     //Load advisor list from storage
     var list = JSON.parse(localStorage.getItem('advisorList'));
     advisorInfo = list;
+
+    if(window.loggedInUser == '5b71d892138837295d1d88d5' || window.loggedInUser == '5b44a4121ee2f32880ef9485')
+      localStorage.setItem('IsSiteForward', true);
 
     //Get advisor
     let advisor = getAdvisorInfoByID(advisorId);
@@ -38,6 +48,8 @@ $(function () {
       $(".advisor-quick-links").append('<a href="/manage/revisions?email=' + encodeURIComponent(advisor.email) + '" class="btn pill bordered secondary">View Revisions</a>');
 
 
+    if(localStorage.getItem('IsSiteForward') == "true")
+      $(".changes-header .btn-group").append('<a href="#" class="btn pill primary" onclick="approveAll()">Approve All</a>');
 
     //When archives are opened
     $(".open-archives").on("click", function () {
@@ -88,12 +100,17 @@ $(function () {
     });
 
     // For all approved/rejected items get the review information
-    $(".review-item.approved-status, .review-item.rejected-status").each(async function (i, e) {
-      let reviewId = $(e).find(".review-actions").find(".approve-item").data("id");
+    $(".review-item").each(async function (i, e) {
+      let $e = $(e);
+      let reviewId = $e.find(".review-actions").find(".approve-item").data("id");
 
       //If a review id was found, get the review
-      if (reviewId)
-        displayReviewer('https://twentyoverten.com/manage/revisions/' + advisorId + '/' + reviewId, $(e));
+      if (reviewId){
+        displayReviewer('https://twentyoverten.com/manage/revisions/' + advisorId + '/' + reviewId, $e, function(){
+          if(!$e.hasClass("approved-status") && !$e.hasClass("rejected-status"))
+            $e.find(".review-item-preview").find(".approvedByNote").text("");
+        });
+      }
     });
 
     //For each review item check if it's a link
@@ -131,63 +148,127 @@ $(function () {
       }, 2000);
     }
 
-    // When the revisions table is drown, get each revision
-    $('#revisions-list').on("draw.dt", () => {
-      $("#revisions-list").find("tr").each(function (i, e) {
-        if ($(e).find(".actions a").length > 0) {
 
-          //Find the information to create the revision's data link
-          let link = $(e).find(".actions a")[0].href.split("/")
-          let reviewId = link.pop();
+$(".providence--page-title").after('<a class="btn primary fancy" id="reportorize-btn" style="    position: fixed; z-index:100; bottom: 20px;  right: 20px;">Reportorize It</a>');
+$("#reportorize-btn").on("click", function(){
+  $("#revisions-list_filter").hide();
+	if(this.text == "Copy Table"){
 
-          //Remove any trailing parts of the URL
-          if (reviewId[reviewId.length - 1] == '#')
-            reviewId = reviewId.substr(0, reviewId.length - 1);
+		selectElementContents($(".table")[0]);
+    document.execCommand('copy');
+		function selectElementContents(el) {
+	      let body = document.body,
+	         range, sel;
+	      if (document.createRange && window.getSelection) {
+	         range = document.createRange();
+	         sel = window.getSelection();
+	         sel.removeAllRanges();
+	         range.selectNode(el);
+	         sel.addRange(range);
 
-          let advisorId = link.pop();
+	      } else if (body.createTextRange) {
+	         range = body.createTextRange();
+	         range.moveToElementText(el);
+	         range.select();
+	      }
+	   }
+	}
+	else if(this.text == "Loading..."){}
+	else{
+		let $tableHeader = $(".dataTable").find("thead");
+		$($tableHeader.find("th")[0]).after('<th>Email</th>');
+		$($tableHeader.find("th")[1]).after('<th>Domain</th>');
+		$($tableHeader.find("th")[3]).after('<th style="min-width:250px">Page Title</th>');
+		$($tableHeader.find("th")[4]).after('<th style="min-width:500px">Note</th>');
+		$($tableHeader.find("th")[5]).after('<th style="min-width:500px">Rejections</th>');
+		$($tableHeader.find("th")[10]).remove();
 
-          //Display the revision notes
-          displayNotes('https://twentyoverten.com/manage/revisions/' + advisorId + '/' + reviewId, $(e).find(".show-email"));
+		$(".dataTable").find("tbody").find("tr").each(function(i){
+			let $row = $(this);
+			let $columns = $row.find("td");
+			let data = $(".dataTable").DataTable().row(i).data();
+			let advisorId = data.advisor._id,
+				reviewId = data._id;
 
+			let email = $row.find(".advisor-tags")
+			if(email.length < 1)
+				email = $('<p></p>');
+				console.log(email);
 
-          async function displayNotes(url, container) {
+			let pageTitle = $row.find(".advisor-tags");
+			if(pageTitle.length < 2)
+				pageTitle = $('<p></p>');
+			else
+				pageTitle = $(pageTitle[1]);
 
-            //Get the notes
-            let review = await getNotes(url);
+			let notes = $row.find(".show-email p");
+			if(notes.length < 1)
+				notes = $('<p></p>');
+			$($columns[1]).after('<td>'+pageTitle[0].outerHTML+'</td>')
+			$($columns[0]).after('<td>'+data.site.settings.domains[0]+'</td>').after('<td>'+email[0].outerHTML+'</td>');
 
-            //If the notes were found, add them to the given container
-            if (review && review[0]) {
-              let reviewText = '<p style="margin-top:10px;margin-bottom:0;font-size: 12px;color: rgba(220,220,222,0.8);">> ' + review[0] + '</p>';
+			displayComments('https://twentyoverten.com/manage/revisions/' + advisorId + '/' + reviewId, function(comments){
+				$($columns[2])
+				.before('<td style="white-space:normal"><p style="font-size: 11px; margin: 0">'+comments[0]+'</p></td>')
+				.before('<td style="white-space:normal"><p style="font-size: 11px; margin: 0">'+comments[1]+'</p></td>');
 
-              container.append(reviewText);
-            }
-          }
-          async function getNotes(url) {
-            return new Promise(function (resolve) {
+			});
+			email.remove();
+			pageTitle.remove();
+			notes.remove();
+			$columns.last().remove();
+		});
 
-              //Get the revision notes from the URL provided
-              $.get(url).done(data => {
-                let $data = $(data);
-                let review = [];
-                let $msg = $data.find('.is-compliance-notes')[0];
-                let msgText = "";
-                if ($msg && $msg.children.length > 0) {
-                  for (let e of $msg.children) {
-                    if (e.innerHTML)
-                      msgText += e.innerHTML + "<br>";
-                  };
-                }
+		async function displayComments(url, cb){
+			var comments = await getComments(url);
+			cb(comments);
 
-                review.push(msgText);
+			async function getComments(url){
+				return new Promise(function (resolve) {
+					$.get(url).done(data => {
+						let $data = $(data);
+						let comment = [];
+						let $note = $data.find('.is-compliance-notes');
+						let $rejection = $data.find('.is-rejection-notes');
+						let notes = "",
+							rejections = "";
+						if ($note[0] && $note[0].children.length > 0) {
+						  for (let e of $note[0].children) {
+							if (e.innerHTML)
+							  notes += e.innerHTML + "<br>";
+						  };
+						}
 
-                resolve(review);
-              });
-            });
-          }
-        }
-      });
-    });
-  } else if (urlParts.length > 4 && urlParts[4].indexOf("review") == 0) {
+						comment.push(notes.length > 0 ? notes : "-");
+
+						if ($rejection[0] && $rejection[0].children.length > 0) {
+						  for (let e of $rejection[0].children) {
+							if (e.innerHTML)
+							  rejections += e.innerHTML + "<br>";
+						  };
+						}
+						comment.push(rejections.length > 0 ? rejections : "-");
+
+						resolve(comment);
+					});
+				});
+			}
+		}
+		$(".advisor-profile").remove();
+		$(".wrapper").css("width", "100%").css("max-width", "unset").css("margin", "5px");
+		$($(".dataTable").find("thead").find("th")[3]).css("min-width", "150px");
+    var delay = $(".dataTable").DataTable().rows()[0].length * 20;
+		var btn = this;
+    btn.text = "Loading...";
+    setTimeout(function(){
+      btn.text = "Copy Table";
+    }, delay);
+	}
+});
+$("#revisions-list_length").find("option").last().after('<option value="500">500</option><option value="1000">1000</option><option value="999999">All</option>');
+
+  }
+  else if (urlParts.length > 4 && urlParts[4].indexOf("review") == 0) {
     let advisorId = urlParts[urlParts.length - 2];
     let reviewId = urlParts[urlParts.length - 1];
 
@@ -200,6 +281,22 @@ $(function () {
       $(".review-tools").append('<a href="' + window.location.href.replace('review', 'revisions') + '" class="btn pill secondary btn-sm" target="_blank">View Revision</a>');
       displayReviewer('https://twentyoverten.com/manage/revisions/' + advisorId + '/' + reviewId, $(".review-title"));
     }
+
+
+    // //Is blog post
+    // if($(".title .meta").length > 0){
+    //   var title = $(".title")[0].childNodes[1].nodeValue;
+    //
+    //   $.get('https://twentyoverten.com/manage/content/custom', function(){
+    //      $(".dataTable").DataTable().rows(function(idx,data,node){
+    //        if(data.title == title){
+    //          var id = findID;
+    //          $.get('https://twentyoverten.com/api/content/compliance/'+id, function(){
+    //
+    //          });
+    //        }
+    //   });
+    // });
 
 
     $($(".details-wrapper").find("header")).append('<p class="secondary center advisor-tags"></p>');
@@ -248,7 +345,7 @@ $(function () {
     //When enter is pressed when typing in search
     $('#search-advisor').on('keyup', delay(e => {
       let searchTerm = $('#search-advisor').val();
-      if ((searchTerm.length > 2 && searchTerm.indexOf("*") != 0 && getNodes(searchTerm).length < 50) || e.which === 13)
+      if ((searchTerm.length > 2 && (searchTerm.indexOf("*") != 0 || searchTerm.indexOf("#") != 0) && getNodes(searchTerm).length < 50) || e.which === 13)
         $("#search-advisor-btn")[0].click();
       if (searchTerm.length <= 2 && e.which == 8) {
         let table = $(".search-bar table");
@@ -262,7 +359,8 @@ $(function () {
       let searchTerm = $('#search-advisor').val();
 
       let showAll = searchTerm.indexOf("*") === 0;
-      if (showAll)
+      let onlyNumber = searchTerm.indexOf("#") === 0;
+      if (showAll || onlyNumber)
         searchTerm = searchTerm.substr(1, searchTerm.length);
 
       //Empty current search results
@@ -276,7 +374,10 @@ $(function () {
       if (nodes.length === 0) {
         table.append('<tr><td>No results found</td></tr>');
       }
-
+      //Display only the number of results
+      else if(onlyNumber){
+        table.append('<tr><td>Results: (' + nodes.length + ')</td></tr>');
+      }
       //Display nodes if under 100 results
       else if (showAll || nodes.length <= 100) {
 
@@ -321,7 +422,7 @@ $(function () {
   //When the chat opens
   $(".open-chat").on("click", function () {
 
-    //Wait for the chat to initialize
+    //Wait for the chat to initialize (2s)
     setTimeout(() => {
 
       //When the chat gets opened, display saved message
@@ -340,8 +441,12 @@ $(function () {
         localStorage.setItem('savedChatMsg', null);
         $("#loadLastMessage").hide();
       });
+
+      //Get currently opened chat's advisor id, and add the icon
       var advisorId = $(".recent-chats").find("li.active a").first().attr("data-advisor_id");
       $(".chat-wrapper .tot_tip").after('<a target="_blank" href="/manage/advisor/' + advisorId + '" class="tot_tip bottom view-profile-chat" data-content="View Profile" style="position: absolute;top: 0;right: 60px;height: 20px;width: 20px;margin: 25px 20px;z-index: 1;color: #909090;font-size: 1.1em;"><i class="fas fa-user"></i></a>');
+
+      // IF the chat is changed, grab the new advisor id and update the icon's link
       $(".recent-chats, .all-chats").find("li").off().on("click", function (e) {
         var advisorClickedId = $(this).find("a").first().attr("data-advisor_id");
         $(".view-profile-chat")[0].href = '/manage/advisor/' + advisorClickedId;
@@ -369,7 +474,8 @@ function getNodes(searchString) {
           ("published".indexOf(search.toLowerCase()) >= 0 && item.data().published_date != "NA") ||
           ("submitted".indexOf(search.toLowerCase()) >= 0 && item.data().submitted_date != "NA") ||
           ("not published".indexOf(search.toLowerCase()) >= 0 && notPublished(item.data())) ||
-          matchesCreatedYear(search.toLowerCase(), item.data()) ||
+          (search.indexOf("created_at:".toLowerCase()) >= 0 && matchesDate(search.toLowerCase().substring(search.indexOf(":")+1), "created_at", item.data())) ||
+          (search.indexOf("updated_at:".toLowerCase()) >= 0 && matchesDate(search.toLowerCase().substring(search.indexOf(":")+1), "updated_at", item.data())) ||
           hasTag(search.toLowerCase(), item.data()) ||
           hasStatus(search.toLowerCase(), item.data()) ||
           getOfficerName(item.data().officer_id).toLowerCase().indexOf(search.toLowerCase()) >= 0;
@@ -443,9 +549,19 @@ function delay(callback, ms) {
   };
 }
 
-function matchesCreatedYear(year, advisor) {
-  let created = new Date(Date.parse(advisor.site.created_at));
-  return created.getFullYear() == year;
+function matchesDate(date, key, advisor) {
+  let isList = date.indexOf('/') > 0;
+  date = isList ? date.split("/") : date;
+  let day = date.length == 3 && isList ? date[0] : null,
+      month = date.length == 3 && isList  ? date[1]: date.length == 2 && isList  ? date[0] : null,
+      year = date.length == 3 && isList ? date[2] : date.length == 2  && isList ? date[1] : date;
+
+  if(day) day = parseInt(day) - 1;
+  if(month) month = parseInt(month) -1;
+
+  let created = new Date(Date.parse(advisor.site[key]));
+  let match = (year == created.getFullYear()) && (month ? created.getMonth() == month : true) && (day ? created.getDate() == day : true);
+  return match;
 }
 
 //Update list of advisor info, allows being able to see full list when not showing in table
@@ -534,16 +650,17 @@ function getLiveDomain(id) {
 }
 
 
-async function displayReviewer(url, container) {
+async function displayReviewer(url, container, cb) {
   let review = await getReviewer(url);
   if (review && review[0]) {
     let reviewText = '<div class="review-item-preview" style="display:flex"><div style="width:50%;display:inline-block">';
-    reviewText += '<p style="margin:5px 40px 0;text-align: left;font-size: 12px;color: rgba(220,220,222,0.8);">' + review[2] + ' By: ' + review[1] + ' - ' + review[0] + '</p>';
+    reviewText += '<p class="approvedByNote" style="margin:5px 40px 0;text-align: left;font-size: 12px;color: rgba(220,220,222,0.8);">' + review[2] + ' By: ' + review[1] + ' - ' + review[0] + '</p>';
     reviewText += '</div>';
     reviewText += '<div style="width:50%;display:inline-block">';
-    reviewText += '<p style="margin:5px 25px 0;text-align: right;font-size: 12px;color: rgba(220,220,222,0.8);">' + review[3] + '</p>';
+    reviewText += '<p class="approvalNote" style="margin:5px 25px 0;text-align: right;font-size: 12px;color: rgba(220,220,222,0.8);">' + review[3] + '</p>';
     reviewText += '</div></div>';
     container.append(reviewText);
+    if(cb) cb();
   }
   async function getReviewer(url) {
     return new Promise(function (resolve) {
@@ -709,7 +826,7 @@ function getOfficerName(id) {
 function updateSlideCardCount() {
 
   var reviewers = [
-    ["Total In Review", 0, 0]
+    ["Total In Review", 0, 0, 0]
   ];
   $(".advisor-card").each((i, e) => {
     var reviewName = $(e).find(".assigned")[0].innerHTML.split('<br>')[0];
@@ -721,21 +838,30 @@ function updateSlideCardCount() {
       }
     });
     if (found == 0) {
-      reviewers.push([reviewName, 1, 0]);
+      reviewers.push([reviewName, 1, 0, 0]);
       found = reviewers.length - 1;
     }
     reviewers[0][1] = reviewers[0][1] + 1;
 
     if ($(e).find(".changes").length > 0) {
       var changes = $(e).find(".changes").first().text();
+      var approved = changes.substr(0, changes.indexOf(" - "));
+      var rejects = changes.substr(changes.lastIndexOf(" - ")+3);
       changes = changes.substr(changes.indexOf(" - ") + 3, changes.lastIndexOf(" - "));
+
+            console.log('Approved:'+approved);
+            console.log('Rejects:'+rejects);
       changes = parseInt(changes);
+      approved = parseInt(approved);
+      rejects = parseInt(rejects);
       reviewers[0][2] = reviewers[0][2] + changes;
+      reviewers[0][3] = reviewers[0][3] + approved + rejects + changes;
       reviewers[found][2] = reviewers[found][2] + changes;
+      reviewers[found][3] = reviewers[found][3] + approved + rejects + changes;
     }
   });
   var reviewersText = '<table style="width: 100%; text-align:left">';
-  reviewersText += '<thead><th>Reviewer</th><th>Sites </th><th> Items</th></thead>';
+  reviewersText += '<thead style="border-bottom: 1px dotted rgba(88, 88, 88, 0.8);"><th>Reviewer</th><th>Sites </th><th> Items</th></thead>';
   reviewers.forEach((e, i) => {
     reviewersText += '<tr>';
     reviewersText += '<td><a href="#" class="filter-cards">' + e[0] + '</a></td><td>' + e[1] + '</td><td> ' + e[2] + '</td>';
@@ -880,6 +1006,7 @@ function updateList(container) {
       let id = list.children(":first").find("a")[0].href;
       id = id.split("/")[id.split("/").length - 1];
 
+      list.find('a').first().prop("target", "_blank");
       list.append('<li><a href="#messages" class="open-chat-extension" data-advisor_id="' + id + '">Open Chat</a></li>');
 
       //Add link to view website without needing to login/view profile
@@ -896,6 +1023,13 @@ function updateList(container) {
         let state = list.parent().parent().parent().parent().find(".has-state");
         state.append('<p style="font-size: .75em;color: #1fe9ae;text-align: center;margin: 5px 0 0 0; font-family: \'Anonymous Pro\', Courier, monospace;">Not Published</p>');
       }
+      // //Add a note saying when it was reviwed
+      // if (hasStatus("review completed", info)) {
+      //   let state = list.parent().parent().parent().parent().find(".has-state");
+      //   let reviewDate = new Date(Date.parse(info.site.updated_at));
+      //   reviewDate = reviewDate.toString().substring(0, reviewDate.toString().indexOf(':')-3);
+      //   state.append('<p style="font-size: .75em;color: #1fe9ae;text-align: center;margin: 5px 0 0 0; font-family: \'Anonymous Pro\', Courier, monospace;">Reviewed: '+ reviewDate+'</p>');
+      // }
     }
   });
 }
