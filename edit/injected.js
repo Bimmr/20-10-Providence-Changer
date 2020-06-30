@@ -61,6 +61,7 @@ $(function() {
     $(".edit-pages-posts").on("click", editPosts);
     $(".edit-pages-all").on("click", ()=> editPages(()=>editMembers(()=>editPosts())));
   }
+
   //When the chat opens
   $(".open-chat, #open-chat").on("click", () => {
     //Wait for the chat to initialize
@@ -240,13 +241,15 @@ function editMembers(callback){
                 member.click();
                 waitForClass(false, $(".edit-post-pane"), "velocity-animating", function() {
                   waitForStyle(true, $(".edit-member-pane"), "display", "block", function() {
-                    $(".edit-member-pane").find(".save").click();
-                    waitForClass(false, $(".edit-post-pane"), "velocity-animating", function() {
-                      waitForStyle(true, $(".edit-member-pane"), "display", "none", function() {
-                        if (callback)
-                          callback();
+                    setTimeout(function(){
+                      $(".edit-member-pane").find(".save").click();
+                      waitForClass(false, $(".edit-post-pane"), "velocity-animating", function() {
+                        waitForStyle(true, $(".edit-member-pane"), "display", "none", function() {
+                          if (callback)
+                            callback();
+                        });
                       });
-                    });
+                    }, 2000);
                   });
                 });
               }
@@ -313,13 +316,15 @@ function editPosts(callback){
                 post.click();
                 waitForClass(false, $(".edit-post-pane"), "velocity-animating", function() {
                   waitForStyle(true, $(".edit-post-pane"), "display", "block", function() {
-                    $(".edit-post-pane").find(".save").click();
-                    waitForClass(false, $(".edit-post-pane"), "velocity-animating", function() {
-                      waitForStyle(true, $(".edit-post-pane"), "display", "none", function() {
-                        if (callback)
-                          callback();
+                    setTimeout(function(){
+                      $(".edit-post-pane").find(".save").click();
+                      waitForClass(false, $(".edit-post-pane"), "velocity-animating", function() {
+                        waitForStyle(true, $(".edit-post-pane"), "display", "none", function() {
+                          if (callback)
+                            callback();
+                        });
                       });
-                    });
+                    }, 2000);
                   });
                 });
               }
