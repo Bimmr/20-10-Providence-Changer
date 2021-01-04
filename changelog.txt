@@ -1,0 +1,54 @@
+1.4.8.2
+- Utils.JS will now load in dashboard
+- Added back button inside Custom Content
+- Fixed issue with searching card before editing card
+- Added styling changes for re-branded providence
+- Changed display styling for rejection & notes in review item
+- Added "revisions needed" in search to look for "review completed" status
+1.4.8.1
+- Fixed line wrapping in reportorize
+- Hide Filters if no sites in filter
+- Hide Content Review sites if none in review
+1.4.8
+- Moved Content Review sites to 2nd from top
+- No longer counts Content Review sites in review totals
+- Sort Content Review sites to the bottom of the list
+1.4.7.2
+- Added Dealer OBA to important tags
+- Added Siteforward review completed to . list
+1.4.7.1
+- Added better spacing to review filters
+- Renamed Other to Normal Reviews
+1.4.7
+- Added more filters to pending review
+- Removed sorting reviews by tags
+1.4.6.3
+- Hides Others if no users
+- Search table width: 100%
+- Reviewing links now says if external
+1.4.6.2
+- Added Other to user groups
+- Added Paul to MLS Compliance group
+1.4.6.1
+- Added more detail to Internal links
+1.4.6
+- Important tags only shown with informative cards
+- Removed debug lines
+- Fixed cardInfom -> cardInform spelling in cards
+- Fixed View Link showing internal/external
+1.4.5.1
+- Important tags now get broken by all | not just the first
+1.4.5
+- Revisions table uses siteforwardprogram as a possible prefix
+- Shows Construction Site tag
+1.4.4
+- Fixed advisor list not updating to work with new display_name values
+1.4.3
+- Fixed help message on content search bar
+- Fixed z-index of help message icon
+- Advisor info list will load on any providence page
+- Shows approved/rejected in content assist search
+- Updated Revisions "Reportorize It" button
+  - Faster notes & Rejections
+  - Can change pages
+  - Shows more information

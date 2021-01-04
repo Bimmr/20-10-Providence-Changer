@@ -1,5 +1,4 @@
 var isEditing = false;
-window.devHelper = true;
 
 $(function() {
   $("body").append(
@@ -45,7 +44,6 @@ $(function() {
   function editAll(){
     editPages(()=>editMembers(()=>editPosts()));
   }
-
 
   if(localStorage.getItem('IsSiteForward') == "true"){
     $(document).on('keypress mousedown', function(){
@@ -345,22 +343,4 @@ function editPosts(callback){
         });
       }
     }
-}
-
-function waitForClass(b, e, c, callback) {
-  var timer = setInterval(function() {
-    if (b ? e.hasClass(c) : !e.hasClass(c)) {
-      clearInterval(timer);
-      callback();
-    }
-  }, 100);
-}
-
-function waitForStyle(b, e, s, v, callback) {
-  var timer = setInterval(function() {
-    if (b ? e.css(s) == v : e.css(s) != v) {
-      clearInterval(timer);
-      callback();
-    }
-  }, 100);
 }

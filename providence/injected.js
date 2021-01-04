@@ -1,30 +1,55 @@
+let baseUrl = //"https://twentyoverten.com/"
+              "https://staging-app.twentyoverten.com/"
+
 let advisorInfo = [];
+let tableData;
+
 
 $(function() {
 
-   if (localStorage.getItem("cardInfom") == null)
+   if (localStorage.getItem("cardInform") == null)
       localStorage.setItem("cardInform", true);
+
+  //Load advisor list from storage
+  if (localStorage.getItem("advisorList") != null)
+    advisorInfo = JSON.parse(localStorage.getItem('advisorList'));
 
    $("head").append('<style>' +
 
-      //Float the page navigation
+      // Float the page navigation
       '.dataTables_paginate,.table-length{position: sticky;bottom: 0; padding: 10px;left: 0;right: 0;}' +
-      '.dataTables_paginate{width: 750px;margin: 0 auto;} ' +
-      '.table-length{height:72px;background-color: #2d2d2dad;} ' +
+      '.dataTables_paginate{width: 750px;margin: 0 auto; z-index:3} ' +
+      '.table-length{height:72px;background-color: rgba(3,24,46,0.85); z-index: 2} ' +
       '.dataTables_info{color:#dcdcde} ' +
+      'body.providence .dataTables_paginate{padding: 10px}'+
+      'body.providence .dataTables_info, body.providence .dataTables_length{color:#fff}'+
+      'body.providence .dataTables_info select, body.providence .dataTables_length select{color: #03182e}'+
       '#advisorsList_wrapper .dataTables_paginate,  #advisorsList_wrapper .table-length{bottom: -2rem;}' +
 
+      // Table details
+      'body.providence .table .show-email{font-size: 0.9em}'+
+      'body.providence .table span.advisor-tags{font-size: 0.75em}'+
+
       //Pending Review Count
-      '.filter-cards{color: rgba(220,220,222,0.8);}' +
-      '.filter-cards:hover{color: #fafafa;} ' +
-      '.filter-cards.active{color: #fff;}' +
+      '.review-filter{font-size: .65em;border-top: 1px solid rgba(98,98,98,0.5); color: rgba(140,140,140,0.8); padding-top: .5rem; font-family: "CircularXXWeb-Book",Helvetica,Arial,sans-serif;}'+
+      '.review-filter th, .review-filter .active{color: #626262;}'+
+      '.review-filter .seperator{border-top: 1px dashed rgba(88,88,88,0.53);}'+
+      '.review-filter .active .filter-cards{color: #08aeea;}' +
+      '.filter-cards{color: rgba(140,140,140,0.8);}' +
+      '.filter-cards:hover{color: #08aeea;} ' +
 
-      //Fix long filter list
-      '.filter-dropdown--options.is-open{overflow-y: scroll; height: 75vh}' +
+      // Cards
+      '.card-extras{font-size: 14px;padding: 15px;margin-top: 15px;background-color: #fafafa; border-radius: 10px;}'+
+      '.card-extras p{color:#2d2d2d}'+
+      '.card-changes{font-size: 12px;color: rgba(140,140,140,0.8);}'+
+      '.card-extras p.cardImportantTags{font-size: 12px; color: #08aeea;}'+
+      '.card-tags, .card-tier{color: #08aeea}'+
+      '.card-tags{font-size: .7em;}'+
+      '.card-tier{font-size: .6em;}'+
 
-      //Add inform styles
+      // Add inform styles
       '.advisor-card .card-action{padding: 1.5rem; display: flex;} ' +
-      '.providence-pending--list:not(.inform) .card-tags,.providence-pending--list:not(.inform) .card-tier{display:none}' +
+      '.providence-pending--list:not(.inform) .card-tags,.providence-pending--list:not(.inform) .card-tier, .providence-pending--list:not(.inform) .cardImportantTags {display:none}' +
       '.providence-pending--list.inform .card-tier{position: absolute;top: 5px;right: 10px;} ' +
       '.providence-pending--list .card-title{padding:1.5em;padding-bottom:0} ' +
       '.providence-pending--list.inform .card-title{display: flex;align-items:center; border-top: none; padding-bottom: 1em;border-bottom: 1px solid #2d2d2d} ' +
@@ -32,9 +57,38 @@ $(function() {
       '.providence-pending--list.inform .card-title h4{flex-basis: 75%;text-align: left;padding-left:10px;margin: 0;} ' +
       '.providence-pending--list .card-content{padding-top: 1rem;} ' +
       '.providence-pending--list.inform .card-status{display: flex; align-items: center;justify-content: space-evenly;}' +
+      '.providence-pending--list .card-action .btn{padding:0.5em 0.25em;}'+
 
-      //Format rejection box
+      // Format rejection box
       '.rejection-completed{position: absolute; top: 3.75rem; right:3rem;}' +
+
+      //Format review notes'
+      '.review-item-note-rejection{color:#c2001e;}'+
+      '.review-item-note{color:#007750;}'+
+      '.review-item.approved-status .review-item__status{background-color: #E8F8F3; border-radius: 14px 0 0 14px;}'+
+      '.review-item.rejected-status .review-item__status{background-color: #F8E5E5; border-radius: 14px 0 0 14px;}'+
+
+      //Filter warning
+      '.filter-warning{background-color: #522626; width: 100%; text-align: center; display: block; position: fixed; color: #fff;}'+
+
+      //Team filters
+      '.providence-overview--list:not(.loadedAll) .team-filter-row{display: none}'+
+      '.team-filter-row {margin-bottom: 10px;}'+
+      '.team-filter {padding: 5px 10px; color: #626262;transition: all 0.15s linear;}'+
+      '.team-filter.active { border-bottom: 1px solid #08aeea;}'+
+      '.team-filter.active,.team-filter:hover{color: #2d2d2d}'+
+
+      // Search bar
+      '.search-bar{display: flex; flex-flow: row wrap; margin-bottom: .5rem}' +
+      '.search-help{position: absolute;top: 12px;right: 25px;width: 20px;height: 20px;border-radius: 50%;background: #cccccc;z-index: 1;line-height: 20px;text-align: center;opacity: .9;}' +
+
+      'body.providence #advisor-details .advisor-quick-links > a{margin: 5px 15px;}'+
+
+      //Only on old style
+      '.providence.night-mode .review-item-preview{margin: 5px 40px 0}'+
+      '.providence.night-mode .filter-dropdown--options.is-open{overflow-y: scroll; height: 75vh}' +
+      '.providence.night-mode .team-filter.active ,.providence.night-mode .team-filter:hover{ color: #fff}'+
+
       '</style>');
 
    //Chat changes
@@ -69,9 +123,7 @@ $(function() {
             var advisorClickedId = $(this).find("a").first().attr("data-advisor_id");
             $(".view-profile-chat")[0].href = '/manage/advisor/' + advisorClickedId;
             setTimeout(() => {
-
                manageChatRejections();
-
             }, 1000);
          });
 
@@ -169,10 +221,6 @@ $(function() {
       if (advisorId[advisorId.length - 1] == '#')
          advisorId = advisorId.substr(0, advisorId.length - 1);
 
-      //Load advisor list from storage
-      var list = JSON.parse(localStorage.getItem('advisorList'));
-      advisorInfo = list;
-
       if (isSiteForward(window.loggedInUser))
          localStorage.setItem('IsSiteForward', true);
 
@@ -189,11 +237,11 @@ $(function() {
       //Add tags
       $(".advisor-tags").html(tags.substr(4, tags.length));
       if (advisor && advisor.email)
-         $(".advisor-quick-links").append('<a href="/manage/revisions?email=' + encodeURIComponent(advisor.email) + '" class="btn pill bordered secondary">View Revisions</a>');
+         $(".advisor-quick-links").append('<a href="/manage/revisions?email=' + encodeURIComponent(advisor.email) + '" class="btn pill bordered secondary btn--action-default" style="max-width: unset">View Revisions</a>');
 
 
       if (localStorage.getItem('IsSiteForward') == "true") {
-         $(".changes-header .btn-group").append('<a href="#" class="btn pill primary" onclick="approveAll()">Approve All</a><a href="#" class="btn pill bordered" onclick="addNoteToAll()">Add Note to All</a>');
+         $(".changes-header .btn-group").append('<a href="#" class="btn pill btn--action-approve" onclick="approveAll()">Approve All</a><a href="#" class="btn pill btn btn--action-review" onclick="addNoteToAll()">Add Note to All</a>');
       }
 
       //When archives are opened
@@ -247,11 +295,11 @@ $(function() {
       // For all approved/rejected items get the review information
       $(".review-item").each(async function(i, e) {
          let $e = $(e);
-         let reviewId = $e.find(".review-actions").find(".approve-item").data("id");
+         let reviewId = $e.find(".review-actions").find(".revision-note").data("id");
 
          //If a review id was found, get the review
          if (reviewId) {
-            displayReviewer('https://twentyoverten.com/manage/revisions/' + advisorId + '/' + reviewId, $e, function() {
+            displayReviewer(baseUrl+'manage/revisions/' + advisorId + '/' + reviewId, $e, function() {
                if (!$e.hasClass("approved-status") && !$e.hasClass("rejected-status"))
                   $e.find(".review-item-preview").find(".approvedByNote").text("");
             });
@@ -260,14 +308,23 @@ $(function() {
 
       //For each review item check if it's a link
       $(".review-item").each(function(i, e) {
-         if ($(e).find(".review-actions a")[0].innerHTML == "Review Link") {
+         if ($(e).find(".review-actions a")[0].innerHTML == "View Link" || $(e).find(".review-actions a")[0].innerHTML == "Review Link") {
             let link = $(e).find(".review-url").text();
+            let review = $(e).find(".review-actions a")[0];
 
             //Indicate if the link is External or Internal
             if (link.indexOf("http") >= 0)
-               $(e).find(".review-actions a")[0].innerHTML = "Visit External Link";
-            else
-               $(e).find(".review-actions a")[0].innerHTML = "Visit Internal Link";
+               review.innerHTML = "Visit External Link";
+            else if (link.indexOf("#") >= 0){
+                review.innerHTML = "Visit Section Link";
+                review.href = review.href.replace('twentyoverten.com/manage/advisor/', '');
+            }
+            else{
+              review.innerHTML = "Navigation Link";
+              review.removeAttribute("href");
+              review.style="cursor: not-allowed";
+              review.title = "Just a navigation link, has no content.";
+             }
          }
       });
    }
@@ -282,9 +339,11 @@ $(function() {
 
       //If an email was provided, force a search of the revisions table
       if (email) {
-         var prefix = "digitaladvisorprogram+";
-         if (email.indexOf(prefix) == 0)
-            email = email.substr(prefix.length, email.length);
+         var prefixs = ["siteforwardprogram+", "digitaladvisorprogram+"];
+         prefixs.forEach(prefix => {
+           if (email.indexOf(prefix) == 0)
+              email = email.substr(prefix.length, email.length);
+         });
 
          // Wait 2 seconds after the page loads to ensure the revisions load
          setTimeout(() => {
@@ -295,8 +354,15 @@ $(function() {
       }
 
       $(".providence--page-title").after('<a class="btn primary fancy" id="reportorize-btn" style="    position: fixed; z-index:100; bottom: 20px;  right: 20px;">Reportorize It</a>');
+
+      //When DataTable gets drawn
+      $('#revisions-list').on("page.dt", function(){
+          $("#reportorize-btn")[0].text = "Reportorize It";
+      });
+
       $("#reportorize-btn").on("click", function() {
-         $("#revisions-list_filter, .table-length, .dataTables_paginate").hide();
+         $("#revisions-list_filter").hide();
+         $(".reports-toolbar").hide();
          if (this.text == "Copy Table") {
 
             selectElementContents($(".table")[0]);
@@ -318,97 +384,61 @@ $(function() {
                   range.select();
                }
             }
-         } else if (this.text == "Loading...") {} else {
+         } else if (this.text == "Loading...") {}
+          else {
             let $tableHeader = $(".dataTable").find("thead");
-            $($tableHeader.find("th")[0]).after('<th>Email</th>');
-            $($tableHeader.find("th")[1]).after('<th>Domain</th>');
-            $($tableHeader.find("th")[3]).after('<th style="min-width:250px">Page Title</th>');
-            $($tableHeader.find("th")[4]).after('<th style="min-width:500px">Note</th>');
-            $($tableHeader.find("th")[5]).after('<th style="min-width:500px">Rejections</th>');
-            $($tableHeader.find("th")[10]).remove();
+            if($tableHeader.find("th:contains(Email)").length == 0){
+              $($tableHeader.find("th")[0]).after('<th>Email</th>');
+              $($tableHeader.find("th")[1]).after('<th>Tags</th>');
+              $($tableHeader.find("th")[2]).after('<th>Domain</th>');
+              $($tableHeader.find("th")[4]).after('<th style="min-width:250px">Page Title</th>');
+              $($tableHeader.find("th")[5]).after('<th style="min-width:500px">Note</th>');
+              $($tableHeader.find("th")[6]).after('<th style="min-width:500px">Rejections</th>');
+              $($tableHeader.find("th")[11]).remove();
+            }
 
             $(".dataTable").find("tbody").find("tr").each(function(i) {
                let $row = $(this);
                let $columns = $row.find("td");
                let data = $(".dataTable").DataTable().row(i).data();
-               let advisorId = data.advisor._id,
-                  reviewId = data._id;
 
-               let email = $row.find(".advisor-tags")
-               if (email.length < 1)
-                  email = $('<p></p>');
+               let advisorId  = data.advisor._id,
+                   reviewId   = data._id,
+                   email      = data.advisor.email,
+                   domain     = data.site.settings.domains[0],
+                   pageTitle  = data.title,
+                   notes      = data.internal_notes ? data.internal_notes.replace(/<\/[^>]*>?/gm, ' -|- ').replace(/<[^>]*>?/gm, '') : '',
+                   rejections = data.notes ? data.notes.replace(/<\/[^>]*>?/gm, ' -|- ').replace(/<[^>]*>?/gm, '') : '';
 
-               let pageTitle = $row.find(".advisor-tags");
-               if (pageTitle.length < 2)
-                  pageTitle = $('<p></p>');
-               else
-                  pageTitle = $(pageTitle[1]);
+               let allTags = "";
+               data.advisor.settings.broker_tags.forEach( i=> allTags += i.name + ", ");
+               allTags = allTags.substr(0, allTags.length - 2);
 
-               let notes = $row.find(".show-email p");
-               if (notes.length < 1)
-                  notes = $('<p></p>');
-               $($columns[1]).after('<td>' + pageTitle[0].outerHTML + '</td>')
-               $($columns[0]).after('<td>' + data.site.settings.domains[0] + '</td>').after('<td>' + email[0].outerHTML + '</td>');
+               $($row.find("td")[0]).after('<td>' + email + '</td>');
+               $($row.find("td")[1]).after('<td>' + allTags + '</td>');
+               $($row.find("td")[2]).after('<td>' + domain + '</td>');
+               $($row.find("td")[4]).after('<td>' + pageTitle + '</td>');
+               $($row.find("td")[5]).after('<td style="max-width: 500px;word-break: break-word;white-space: normal">' + notes + '</td>');
+               $($row.find("td")[6]).after('<td style="max-width: 500px;word-break: break-word;white-space: normal">' + rejections + '</td>');
+               $row.find(".advisor-tags").remove();
+               $row.find("td")[11].remove();
 
-               displayComments('https://twentyoverten.com/manage/revisions/' + advisorId + '/' + reviewId, function(comments) {
-                  $($columns[2])
-                     .before('<td style="white-space:normal"><p style="font-size: 11px; margin: 0">' + comments[0] + '</p></td>')
-                     .before('<td style="white-space:normal"><p style="font-size: 11px; margin: 0">' + comments[1] + '</p></td>');
-
-               });
-               email.remove();
-               pageTitle.remove();
-               notes.remove();
-               $columns.last().remove();
             });
 
-            async function displayComments(url, cb) {
-               var comments = await getComments(url);
-               cb(comments);
-
-               async function getComments(url) {
-                  return new Promise(function(resolve) {
-                     $.get(url).done(data => {
-                        let $data = $(data);
-                        let comment = [];
-                        let $note = $data.find('.is-compliance-notes');
-                        let $rejection = $data.find('.is-rejection-notes');
-                        let notes = "",
-                           rejections = "";
-                        if ($note[0] && $note[0].children.length > 0) {
-                           for (let e of $note[0].children) {
-                              if (e.innerHTML)
-                                 notes += e.innerHTML + "<br>";
-                           };
-                        }
-
-                        comment.push(notes.length > 0 ? notes : "-");
-
-                        if ($rejection[0] && $rejection[0].children.length > 0) {
-                           for (let e of $rejection[0].children) {
-                              if (e.innerHTML)
-                                 rejections += e.innerHTML + "<br>";
-                           };
-                        }
-                        comment.push(rejections.length > 0 ? rejections : "-");
-
-                        resolve(comment);
-                     });
-                  });
-               }
-            }
             $(".advisor-profile").remove();
             $(".wrapper").css("width", "100%").css("max-width", "unset").css("margin", "5px");
+
+            $(".dataTable").css("font-size", ".75em");
             $($(".dataTable").find("thead").find("th")[3]).css("min-width", "150px");
-            var delay = $(".dataTable").DataTable().rows()[0].length * 20;
+
             var btn = this;
             btn.text = "Loading...";
             setTimeout(function() {
                btn.text = "Copy Table";
-            }, delay);
+            }, 1000);
          }
       });
-      $("#revisions-list_length").find("option").last().after('<option value="500">500</option><option value="1000">1000</option><option value="999999">All</option>');
+      $("#revisions-list_length").find("option").last().after('<option value="500">500</option><option value="1000">1000</option><option value="2000">2000</option><option value="999999">All</option>');
 
    }
 
@@ -423,8 +453,10 @@ $(function() {
 
       //Add "View Revision" button and revision notes to the review tools navigation
       if ($(".review-tools").find('a[href="#approve"].active').length > 0 || $(".review-tools").find('a[href="#reject"].active').length > 0) {
-         $(".review-tools").append('<a href="' + window.location.href.replace('review', 'revisions') + '" class="btn pill secondary btn-sm" target="_blank">View Revision</a>');
-         displayReviewer('https://twentyoverten.com/manage/revisions/' + advisorId + '/' + reviewId, $(".review-title"));
+         $(".review-tools").append('<a href="' + window.location.href.replace('review', 'revisions') + '" class="btn pill secondary btn-sm btn--action-review" target="_blank">View Revision</a>');
+
+        // Doesn't fit nicely
+        // displayReviewer(baseUrl+'manage/revisions/' + advisorId + '/' + reviewId, $(".review-title"));
       }
 
 
@@ -432,11 +464,11 @@ $(function() {
       // if($(".title .meta").length > 0){
       //   var title = $(".title")[0].childNodes[1].nodeValue;
       //
-      //   $.get('https://twentyoverten.com/manage/content/custom', function(){
+      //   $.get(baseUrl+'manage/content/custom', function(){
       //      $(".dataTable").DataTable().rows(function(idx,data,node){
       //        if(data.title == title){
       //          var id = findID;
-      //          $.get('https://twentyoverten.com/api/content/compliance/'+id, function(){
+      //          $.get(baseUrl+'api/content/compliance/'+id, function(){
       //
       //          });
       //        }
@@ -445,9 +477,6 @@ $(function() {
 
 
       $($(".details-wrapper").find("header")).append('<p class="secondary center advisor-tags"></p>');
-      //Load advisor list from storage
-      var list = JSON.parse(localStorage.getItem('advisorList'));
-      advisorInfo = list;
 
       //Get advisor
       let advisor = getAdvisorInfoByID(advisorId);
@@ -468,16 +497,17 @@ $(function() {
    //Content Assist page
    else if (urlParts.length > 4 && urlParts[4].indexOf("content") == 0) {
       $("#content-list_wrapper, #custom-content-list_wrapper").prepend(
-         '<div class="search-bar" style=" display: flex; flex-flow: row wrap; margin-bottom: .5rem">' +
+         '<div class="search-bar">' +
          '<div class="text-control" aria-required="true" style=" margin: 10px 0 0 0; flex-basis: 80%; padding-right: 15px"> ' +
          '<input type="text" id="search-content" name="search-content" class="form-control" title="Search"> <label for="search-content">Search ( Make sure to set entries to all )</label> ' +
-         '<div style="position: absolute; top: 12px; right: 25px; width: 20px; height: 20px; border-radius: 50%; background: #6b6b6b; z-index: 100; line-height: 20px; text-align: center; opacity: .9;" data-content="Search by Name, Email, Tags or Status &nbsp; &nbsp; - &nbsp; &nbsp; [! = Not] &nbsp; &nbsp; [, = And] &nbsp; &nbsp; [| = Or]" class="tot_tip top">?</div>' +
+         '<div data-content="Search by Name or Categories &nbsp; &nbsp; - &nbsp; &nbsp; [! = Not] &nbsp; &nbsp; [, = And] &nbsp; &nbsp; [| = Or]" class="tot_tip top  search-help">?</div>' +
          '</div>' +
          '<div class="btn-control" aria-required="true" style=" margin: 0;flex-basis:20%"> ' +
          '<input type="button" style="height:100%;width:100%" class="btn primary fancy" value="Search" id="search-content-btn" data-cover="Search for Content">' +
          '</div>' +
-         '<table class="table" style="margin: .5rem 0;"></table>' +
+         '<table class="table" style="margin: .5rem 0;  width: 100%"></table>' +
          '</div>');
+      $(".add-custom-content").wrap('<div style="display: flex; flex-flow: column">').parent().prepend('<a href="../content" class="btn btn--action-default-outlined add-custom-content" style="margin-bottom: 10px;">Back to Content Assist</a>');
       $("#custom-content-list_length, #content-list_length").find("option").last().after('<option value="200">200</option><option value="500">500</option><option value="999999">All</option>');
 
 
@@ -609,8 +639,14 @@ $(function() {
          let nodes = [];
          rows.forEach(e => {
             let node = e.node().cloneNode(true);
+            let select = $(node).find("select");
+            let status = $(node).find("option:selected").text();
+            select.parent().removeClass("is-select");
+            select.parent().css("text-align", "center");
+            select.after(status == "Default" ? "---" : status);
+            select.remove();
 
-            node.deleteCell(4);
+            //node.deleteCell(4);
             nodes.push(node);
          });
          return nodes;
@@ -620,12 +656,9 @@ $(function() {
    //Home Page
    else {
 
-      //Sort on page load
-      sort();
-
       //Auto open all advisors
       if ($("#showAllAdvisors").length > 0)
-         $("#showAllAdvisors").click();
+        $("#showAllAdvisors").click();
 
       if (!$(".cardInformToggle").length) {
          $("#header .tot_dropdown .tot_droplist ul").first().prepend('<li class="cardInformToggle"><a href="#">Toggle Informative Cards</a></li>');
@@ -642,8 +675,7 @@ $(function() {
       if (localStorage.getItem("cardInform") == 'true') {
          $(".providence-pending--list").addClass("inform");
       }
-
-
+      //
       // $("#showMyAdvisors").after('<a href="#" id="showMyTeam">My Team</a>');
       // $(".providence-overview--nav a").on('click', function(){
       //   $("#advisorsList_wrapper, .search-bar, .providence-overview--filter").show();
@@ -651,10 +683,30 @@ $(function() {
       //   $(this).addClass("active");
       // })
       // $("#showMyTeam").on('click', function(){
-      //     $("#advisorsList_wrapper, .search-bar, .providence-overview--filter").hide();
-      //     $("#showAllAdvisors").click();
+      //     // $("#advisorsList_wrapper, .search-bar, .providence-overview--filter").hide();
+      //     if($("#showMyAdvisors").hasClass("active")){
+      //       $("#showAllAdvisors").click();
+      //     }
+      //
+      //     $(".providence-overview--nav .active").removeClass("active");
       //     $(this).addClass("active");
+      //
+      //     let teamCheckFunction;
+      //     if(isSiteForward(window.loggedInUser))
+      //       teamCheckFunction = isSiteForward;
+      //     if(isMLSCompliance(window.loggedInUser))
+      //       teamCheckFunction = isMLSCompliance;
+      //     if(isInsuranceCompliance(window.loggedInUser))
+      //       teamCheckFunction = isInsuranceCompliance;
+      //     $
+      //     let table = $(".dataTable").DataTable();
+      //     let data = table.rows().data().filter(function(e){return isSiteForward(e.officer_id)});
+      //     table.clear();
+      //     table.rows.add(data);
+      //     table.draw();
+      //
       // });
+
       $(".providence-overview--nav a").on('click', function() {
          if ($("#search-advisor").length && $("#search-advisor-btn").length) {
             $('#search-advisor').val("");
@@ -665,16 +717,27 @@ $(function() {
 
       //Add search
       $(".providence-overview--list").prepend(
-         '<div class="search-bar" style=" display: flex; flex-flow: row wrap; margin-bottom: .5rem">' +
+         '<div class="search-bar">' +
          '<div class="text-control" aria-required="true" style=" margin: 10px 0 0 0; flex-basis: 80%; padding-right: 15px"> ' +
          '<input type="text" id="search-advisor" name="search-advisor" class="form-control" title="Search"> <label for="search-advisor">Search</label> ' +
-         '<div style="position: absolute; top: 12px; right: 25px; width: 20px; height: 20px; border-radius: 50%; background: #6b6b6b; z-index: 100; line-height: 20px; text-align: center; opacity: .9;" data-content="Search for &quot;?&quot; for assistance." class="tot_tip top">?</div>' +
+         '<div data-content="Search for &quot;?&quot; for assistance." class="tot_tip top search-help">?</div>' +
          '</div>' +
          '<div class="btn-control" aria-required="true" style=" margin: 0;flex-basis:20%"> ' +
          '<input type="button" style="height:100%;width:100%" class="btn primary fancy" value="Search" id="search-advisor-btn" data-cover="Search for Advisor">' +
          '</div>' +
-         '<table class="table" style="margin: .5rem 0;"></table>' +
+         '<table class="table" style="margin: .5rem 0; width: 100%"></table>' +
          '</div>');
+
+         // //Add team filters
+         // $(".providence-overview--list").prepend(
+         //   '<div class="team-filter-row">'+
+         //     '<a href="#" class="team-filter active" id="team-filter-all">All</a>'+
+         //     '<a href="#" class="team-filter" id="team-filter-sf">SiteForward</a>'+
+         //     '<a href="#" class="team-filter" id="team-filter-mls">MLS Compliance</a>'+
+         //     '<a href="#" class="team-filter" id="team-filter-msi">MSI Compliance</a>'+
+         //     '<a href="#" class="team-filter" id="team-filter-hold">On Hold</a>'+
+         //   '</div>'
+         // );
 
       $("#advisorsList_length").find("option").last().after('<option value="200">200</option><option value="500">500</option><option value="999999">All</option>');
 
@@ -689,6 +752,19 @@ $(function() {
             $("#advisorsList_wrapper").show();
          }
       }, 500));
+      //
+      // $(".providence-overview--nav a").on('click', function(){
+      //   $(".providence-overview--list").removeClass("loadedAll");
+      //   $(".team-filter").removeClass("active");
+      //   $(".team-filter")[0].classList.add("active");
+      // })
+      // $(".team-filter").on('click', function(){
+      //
+      //   $(".team-filter.active").removeClass("active");
+      //   $(this).addClass("active");
+      //   $(".dataTable").DataTable().draw();
+      //
+      // });
 
       //When search button is clicked
       $("#search-advisor-btn").on('click', () => {
@@ -747,18 +823,24 @@ $(function() {
 
       //When DataTable gets drawn
       $('#advisorsList').on("draw.dt", delay(e => {
+        if(
+          //$(".team-filter.active").text().indexOf("All") >= 0 &&
+           $("#showAllAdvisors").hasClass("active")){
          updateAdvisorInfo();
-         updateSlider();
-         sort();
-         updateList();
-         updateCustomEvents();
-         updateOfficerList();
+         $(".providence-overview--list").addClass("loadedAll");
+         // tableData = $(".dataTable").DataTable().data();
+       }
 
+       updateSlider();
+       sort();
+       updateList();
+       updateCustomEvents();
+       updateOfficerList();
          if ($(".filter-warning").length)
             $(".filter-warning").remove();
 
          if ($(".filter-dropdown--options input:checked").length && !$(".filter-warning").length)
-            $("header").prepend('<div class="filter-warning" style="background-color: #522626;width: 100%;text-align: center;display: block; position: fixed; border-radius:0 0 50% 50%;">Caution: You have a filter enabled</div>');
+            $("header").prepend('<div class="filter-warning">Caution: You have a filter enabled</div>');
 
 
       }, 750));
@@ -786,6 +868,7 @@ $(function() {
                      (search.indexOf("submitted_at:".toLowerCase()) >= 0 && matchesDate(search.toLowerCase().substring(search.indexOf(":") + 1), "submitted_at", item.data())) ||
                      hasTag(search.toLowerCase(), item.data()) ||
                      hasStatus(search.toLowerCase(), item.data()) ||
+                     ("revisions needed".indexOf(search.toLowerCase) >=0 && hasStatus("review completed", item.data())) ||
                      getOfficerName(item.data().officer_id).toLowerCase().indexOf(search.toLowerCase()) >= 0;
 
                   if (invert && !match)
@@ -797,8 +880,7 @@ $(function() {
                }
 
                function isRandysList(item) {
-                  return (isCompliance(item.officer_id) && hasStatus("editing", item)) ||
-                     (isCompliance(item.officer_id) && hasStatus("review completed", item)) ||
+                  return ((isSiteForward(item.officer_id) && hasStatus("review completed", item)) || isCompliance(item.officer_id) && (hasStatus("editing", item) || hasStatus("review completed", item))) ||
                      (isOnHold(item.officer_id) && hasStatus("editing", item));
                }
 
@@ -900,12 +982,52 @@ $(function() {
                a = $(a);
                b = $(b);
 
-               //Get current times for both cards in minutes
-               let timeA = getTime(a.find(".submitted").text()),
-                  timeB = getTime(b.find(".submitted").text());
+               //Get advisor name from cards
+              let nameA = a.data("name"),
+                nameB = b.data("name");
+
+               //Load advisor info from DataTable
+              let infoA = getAdvisorInfo(nameA),
+                infoB = getAdvisorInfo(nameB);
+
+             //Get current times for both cards in minutes
+             let timeA = getTime(a.find(".submitted").text()),
+                timeB = getTime(b.find(".submitted").text());
+
+              // //Check if either card is a construction page
+              let isConstructionA = hasTag("Construction Page", infoA),
+                isConstructionB = hasTag("Construction Page", infoB);
+
+              let isFullReviewA = hasTag("FULL SITE REVIEW", infoA),
+                isFullReviewB = hasTag("FULL SITE REVIEW", infoB);
+
+               let isContentReviewA = hasTag("CONTENT REVIEW", infoA),
+                 isContentReviewB = hasTag("CONTENT REVIEW", infoB);
+              //
+              // console.log(isContentReviewA);
+
+              //Construction Pages come first
+              if (isConstructionA && !isFullReviewA && !isFullReviewB && !isConstructionB)
+                return -1;
+              else if (isConstructionB && !isFullReviewA && !isFullReviewB && !isConstructionA)
+                return 1;
+
+              //
+              // //Full Review Pages come last
+              // if (isFullReviewA && !isFullReviewB)
+              //   return 1;
+              // else if (isFullReviewB && !isFullReviewA)
+              //   return -1;
+              //
+               if (isContentReviewA && !isContentReviewB)
+                 return 1;
+               else if (isContentReviewB && !isContentReviewA)
+                 return -1;
 
                //Compare time
                return (timeA < timeB) ? 1 : (timeA > timeB) ? -1 : 0;
+               // return 0;
+
             })
 
             //Add each element back in the new order
@@ -918,12 +1040,15 @@ $(function() {
       //Add OptGroups to officer select
       function updateOfficerList() {
          $(".form-item--control.assigned_officer").each(function(fi, fe) {
+
             if (!$(fe).hasClass("optGroupsAdded")) {
+
                let officers = {
+                  'Miscellaneous': [],
                   'SiteForward': [],
                   'MLS Sales Communication': [],
                   'Market Conduct Compliance': [],
-                  'Miscellaneous': []
+                  'Other': []
                };
                $(fe).find("option").each(function(i, e) {
 
@@ -937,19 +1062,21 @@ $(function() {
                      officers['Market Conduct Compliance'].push($(this));
                   } else if (isMiscellaneous(id)) {
                      officers['Miscellaneous'].push($(this));
+                  } else {
+                     officers['Other'].push($(this));
                   }
                });
                for (let [key, value] of Object.entries(officers)) {
-                  let group = '<optgroup style="padding-top: 4px;" label="' + key + '">';
-                  value.forEach(function(item) {
-                     group += item[0].outerHTML;
-                     item.remove();
-                  });
-                  $(this).append(group);
+                 if(key != "Other" || (key == "Other" && officers["Other"].length > 0)){
+                   let group = '<optgroup style="padding-top: 4px;" label="' + key + '">';
+                    value.forEach(function(item) {
+                       group += item[0].outerHTML;
+                       item.remove();
+                    });
+                    $(this).append(group);
+                 }
                }
                $(fe).addClass("optGroupsAdded");
-               if (!$(fe).find("option:selected").length)
-                  $(fe).find('option[value$="all"]').attr('selected', 'true');
             }
          });
       }
@@ -1002,28 +1129,41 @@ function addNoteToAll() {
 function matchesDate(date, key, advisor) {
    let isList = date.indexOf('/') > 0;
    date = isList ? date.split("/") : date;
-   let day = date.length == 3 && isList ? date[0] : null,
-      month = date.length == 3 && isList ? date[1] : date.length == 2 && isList ? date[0] : null,
-      year = date.length == 3 && isList ? date[2] : date.length == 2 && isList ? date[1] : date;
+
+   let year = isList ? date[0] : date,
+       month = null,
+       day = null;
+
+   if(isList){
+      if(date.length >= 2)
+        month = date[1];
+     if(date.length == 3)
+       day = date[2];
+   }
 
    if (day) day = parseInt(day) - 1;
    if (month) month = parseInt(month) - 1;
 
    let created = new Date(Date.parse(advisor.site[key]));
-   let match = (year == created.getFullYear()) && (month ? created.getMonth() == month : true) && (day ? created.getDate() == day : true);
+
+   let yMatch = year ? year == created.getFullYear() : true;
+   let mMatch = month ? created.getMonth() == month : true;
+   let dMatch = day ? created.getDate() == day : true;
+   let match = yMatch && mMatch && dMatch;
    return match;
 }
 
 //Update list of advisor info, allows being able to see full list when not showing in table
 function updateAdvisorInfo() {
+  advisorInfo = [];
    $('#advisorsList').DataTable().rows().data().each((e, i) => {
-      if (!advisorInfo.some(function(e2) {
-            return e._id === e2._id;
-         })) {
+      // if (!advisorInfo.some(function(e2) {
+      //       return e.display_name === e2.display_name;
+      //    })) {
          advisorInfo.push(e);
-      } else {
-         advisorInfo[i - 1] = e;
-      }
+      // } else {
+      //    advisorInfo[i - 1] = e;
+      // }
    });
    localStorage.setItem("advisorList", JSON.stringify(advisorInfo));
 }
@@ -1056,7 +1196,7 @@ function hasStatus(status, advisor) {
    if (advisor && advisor.display_state) {
       let advisorStatus = advisor.display_state.toLowerCase();
       if (advisor.site.status === 'taken_down') {
-         advisorStatus = "taken Down";
+         advisorStatus = "taken down";
       } else if (advisor.site.broker_reviewed && advisor.display_state === 'pending_review') {
          advisorStatus = "review completed";
       } else if (advisor.display_state === 'pending_review') {
@@ -1088,9 +1228,9 @@ async function addLiveURLToDroplist(list, advisor) {
       list.append('<li><a href="' + url + '" class="liveWebsiteURL" target="_blank" data-advisor_id="' + id + '">View Live Website</a></li>');
 }
 
-function getLiveDomain(id) {
+  function getLiveDomain(id) {
    return new Promise(function(resolve) {
-      $.get("https://twentyoverten.com/manage/advisor/" + id).done(data => {
+      $.get(baseUrl+"manage/advisor/" + id).done(data => {
          let $data = $(data);
          let a = $data.find('a[data-content="View Live Site"]');
          let link = a && a.length > 0 ? a[0].href : null;
@@ -1103,11 +1243,11 @@ function getLiveDomain(id) {
 async function displayReviewer(url, container, cb) {
    let review = await getReviewer(url);
    if (review && review[0]) {
-      let reviewText = '<div class="review-item-preview" style="display:flex"><div style="width:50%;display:inline-block">';
-      reviewText += '<p class="approvedByNote" style="margin:5px 40px 0;text-align: left;font-size: 12px;color: rgba(220,220,222,0.8);">' + review[2] + ' By: ' + review[1] + ' - ' + review[0] + '</p>';
+      let reviewText = '<div class="review-item-preview"><div >';
+      reviewText += '<p class="approvedByNote" style="font-size: 12px;'+(review[2] == "Rejected" ? 'color: #c2001e;' : 'color: #007750;')+'">' + review[2] + ' By: ' + review[1] + ' - ' + review[0] + '</p>';
       reviewText += '</div>';
-      reviewText += '<div style="width:50%;display:inline-block">';
-      reviewText += '<p class="approvalNote" style="margin:5px 25px 0;text-align: right;font-size: 12px;color: rgba(220,220,222,0.8);">' + review[3] + '</p>';
+      reviewText += '<div>';
+      reviewText += '<p class="note" style="font-size: 12px;">' + review[3] + '</p>';
       reviewText += '</div></div>';
       container.append(reviewText);
       if (cb) cb();
@@ -1127,15 +1267,20 @@ async function displayReviewer(url, container, cb) {
             //Get Compliance Notes
             $msg = $data.find('.is-compliance-notes')[0];
             if ($msg) {
+              msgText += '<span class="review-item-note">';
                msgText += '<strong>Notes:</strong><br>';
                getChildren($msg);
+               msgText += '</span">';
             }
 
             //Get Rejection Notes
             $msg = $data.find('.is-rejection-notes')[0];
             if ($msg) {
-               msgText += (msgText.length > 0 ? '<br>' : '') + '<strong>Rejections:</strong><br>';
-               getChildren($msg);
+              msgText += (msgText.length > 0 ? '<br>' : '');
+              msgText += '<span class="review-item-note-rejection">';
+              msgText += '<strong>Rejections:</strong><br>';
+              getChildren($msg);
+              msgText += '</span">';
             }
 
             function getChildren(node) {
@@ -1176,12 +1321,36 @@ function getOfficerName(id) {
 
 function updateSlideCardCount() {
 
+  //{Name, Items, Pending Changes, Total Changes}
    var reviewers = [
-      ["Total In Review", 0, 0, 0]
+      ["All In Review", 0, 0, 0],
+      ["Content Review", 0, 0, 0]
    ];
+   var tags = [
+   ["Normal Reviews", 0,'-'],
+   ["Brand New", 0,'-'],
+   ["Redesign", 0,'-'],
+ ];
+
    $(".advisor-card").each((i, e) => {
       var reviewName = $(e).data("officer");
+      var isBrandNew = $(e).data("importanttags").indexOf("Brand New") >= 0;
+      var isRedesign = $(e).data("importanttags").indexOf("Brand New") == -1 && $(e).data("importanttags").indexOf("Full Review") >= 0;
+      var isContentReview = $(e).data("importanttags").indexOf("Content Review") >= 0;
+      var isOther = !isBrandNew && !isRedesign && !isContentReview;
       var found = 0;
+
+      if(isBrandNew)
+        tags[1][1] = tags[1][1]+1;
+      else if(isRedesign)
+        tags[2][1] = tags[2][1]+1;
+      else if(isContentReview){
+        // found = 1;
+        reviewers[1][1] = reviewers[1][1] + 1;
+      }
+      else
+        tags[0][1] = tags[0][1]+1;
+
       reviewers.forEach((e, i) => {
          if (e[0] == reviewName) {
             e[1] = e[1] + 1;
@@ -1195,42 +1364,67 @@ function updateSlideCardCount() {
       reviewers[0][1] = reviewers[0][1] + 1;
 
       if ($(e).find(".card-changes").length > 0) {
-         var changes = $(e).data("pending");
-         var approvals = $(e).data("approvals");
-         var rejections = $(e).data("rejections");
+       var changes = $(e).data("pending");
+       var approvals = $(e).data("approvals");
+       var rejections = $(e).data("rejections");
 
-         changes = parseInt(changes);
-         approvals = parseInt(approvals);
-         rejections = parseInt(rejections);
-         reviewers[0][2] = reviewers[0][2] + changes;
-         reviewers[0][3] = reviewers[0][3] + approvals + rejections + changes;
-         reviewers[found][2] = reviewers[found][2] + changes;
-         reviewers[found][3] = reviewers[found][3] + approvals + rejections + changes;
+       changes = parseInt(changes);
+       approvals = parseInt(approvals);
+       rejections = parseInt(rejections);
+       reviewers[0][2] = reviewers[0][2] + changes;
+       reviewers[0][3] = reviewers[0][3] + approvals + rejections + changes;
+       reviewers[found][2] = reviewers[found][2] + changes;
+       reviewers[found][3] = reviewers[found][3] + approvals + rejections + changes;
+       if(isContentReview){
+         reviewers[1][2] = reviewers[1][2] + changes;
+         reviewers[1][3] = reviewers[1][3] + approvals + rejections + changes;
+       }
       }
    });
    var reviewersText = '<table style="width: 100%; text-align:left">';
-   reviewersText += '<thead style="border-bottom: 1px dotted rgba(88, 88, 88, 0.8);"><th>Reviewer</th><th>Sites </th><th> Items</th></thead>';
-   reviewers.forEach((e, i) => {
-      reviewersText += '<tr>';
-      reviewersText += '<td><a href="#" class="filter-cards">' + e[0] + '</a></td><td>' + e[1] + '</td><td> ' + e[2] + '</td>';
+   reviewersText += '<thead style="border-bottom: 1px solid rgba(88, 88, 88, 1);"><th>Filter by Officer/Status</th><th style="text-align:right">Sites </th><th style="text-align:right"> Items</th></thead>';
+   reviewersText += '<tr><td colspan="3" style="padding-bottom: 5px"></td></tr>';
 
+   reviewers.forEach((e, i) => {
+     if(e[1] != 0){
+       if(i == 0){
+        reviewersText += '<tr class="active">';
+        reviewersText += '<td><a href="#" class="filter-cards">' + e[0] + '</a></td><td style="text-align:right">' + (reviewers[1][1] != 0 ? '<span style="color:#5e5e5e">(' + e[1] + ')</span>':'') + (e[1]-reviewers[1][1]) + '</td><td style="text-align:right"> ' + (reviewers[1][1] != 0 ? '<span style="color:#5e5e5e">(' +  e[2] + ')</span>':'') + (e[2]-reviewers[1][2]) + '</td>';
+       }else{
+        reviewersText += '<tr>';
+        reviewersText += '<td><a href="#" class="filter-cards">' + e[0] + '</a></td><td style="text-align:right">' + e[1] + '</td><td style="text-align:right"> ' + e[2] + '</td>';
+       }
       reviewersText += '</tr>';
+      if(i == 1 || (i == 0 && reviewers[1][1] == 0))
+        reviewersText += '<tr><td colspan="3" style="padding-bottom: 5px"></td></tr><tr class="seperator"><td colspan="3" style="padding-bottom: 5px"></td></tr>';
+      }
+   });
+
+    reviewersText += '<tr><td colspan="3" style="padding-bottom: 5px"></td></tr><tr class="seperator"><td colspan="3" style="padding-bottom: 5px"></td></tr>';
+    tags.forEach((e, i) => {
+      if(e[1] != 0){
+       reviewersText += '<tr>';
+       reviewersText += '<td><a href="#" class="filter-cards">' + e[0] + '</a></td><td style="text-align:right">' + e[1] + '</td><td style="text-align:right"> ' + e[2] + '</td>';
+     }
    });
    reviewersText += '</table>';
-   $(".providence-pending--title").html('Pending Review <div style="font-size: .65em;border-top: 1px solid rgba(98,98,98,0.5);color: rgba(220,220,222,0.8);padding-top: .5rem;">' + reviewersText + '</div>');
+   $(".providence-pending--title").html('Pending Review <div class="review-filter">' + reviewersText + '</div>');
 
    $(".filter-cards").off().on("click", function() {
       var filterName = this.innerHTML;
-      if (filterName == "Total In Review") {
+      $(".review-filter .active").removeClass("active");
+      $(this).parent().parent().addClass("active");
+
+      if (filterName.indexOf(reviewers[0][0]) == 0) {
          $(".advisor-card").show();
-         $(".filter-cards.active").removeClass("active");
-         $(this).addClass("active");
+         $(".review-filter .active").removeClass("active");
+         $(this).parent().parent().addClass("active");
       } else {
-         $(".filter-cards.active").removeClass("active");
-         $(this).addClass("active");
          $(".advisor-card").hide();
          $(".advisor-card").filter(function() {
-            return $(this).data("officer").indexOf(filterName) >= 0;
+            return $(this).data("officer").indexOf(filterName) >= 0
+            || (filterName == "Redesign" ? $(this).data("importanttags").indexOf('Full Review') >= 0 && $(this).data("importanttags").indexOf("Brand New") == -1 : $(this).data("importanttags").indexOf(filterName) >= 0)
+            || (filterName == "Normal Reviews" && $(this).data("importanttags").indexOf('Full Review') == -1 && $(this).data("importanttags").indexOf('Brand New') == -1 && $(this).data("importanttags").indexOf('Content Review') == -1);
          }).show();
       }
    })
@@ -1263,7 +1457,7 @@ function updateSlider() {
       //Get the HTML page and query for review items
       function getRevisions(id) {
          return new Promise(function(resolve) {
-            $.get("https://twentyoverten.com/manage/advisor/" + id).done(data => {
+            $.get(baseUrl+"manage/advisor/" + id).done(data => {
                let $data = $(data);
                let approved = $data.find(".review-item.approved-status").length,
                   rejected = $data.find(".review-item.rejected-status").length,
@@ -1274,8 +1468,19 @@ function updateSlider() {
          });
       }
    }
+   $(".advisor-card").each(function(i,card) {
 
-   $(".advisor-card").each(function(i) {
+     //Edit card
+     if (!$(this).find('.card-status').length) {
+        $(this).find('.card-content').prepend('<div class="card-status"></div>');
+        $(this).find(".submitted").appendTo($(this).find('.card-status'));
+        $(this).find(".card-changes").appendTo($(this).find('.card-status'));
+     }
+     if (!$(this).find('.card-title').length) {
+        $(this).prepend('<div class="card-title" ></div>');
+        $(this).find(".advisor-profile").appendTo($(this).find('.card-title'));
+        $(this).find("h4").appendTo($(this).find('.card-title'));
+     }
 
       //Find the card's name and row in table
       let name = $(this).find(".card-title h4").text();
@@ -1287,10 +1492,10 @@ function updateSlider() {
          $(this).find(".card-content").append('<div class="card-tier"></p>');
 
       if (!$(this).find(".card-changes").length)
-         $(this).find(".submitted").after('<div class="card-changes"><span style="font-size: 12px;color: rgba(220,220,222,0.8);"><span class="cardApprovals" style="color:green"></span> - <span class="cardPending"></span> - <span class="cardRejections" style="color:red"></span></div>')
+         $(this).find(".submitted").after('<div class="card-changes"><span><span class="cardApprovals" style="color:green"></span> - <span class="cardPending"></span> - <span class="cardRejections" style="color:red"></span></div>')
 
       if (!$(this).find(".card-extras").length)
-         $(this).find(".card-content").append('<div class="card-extras" style="font-size: 14px;padding: 15px;margin-top: 15px;background-color: #333; border-radius: 10px"><p class="cardOfficer" style="margin: 0"></p><p class="cardImportantTags" style="line-height: 1; margin: 0"></p></div>');
+         $(this).find(".card-content").append('<div class="card-extras"><p class="cardOfficer" style="margin: 0"></p><p class="cardImportantTags" style="line-height: 1; margin: 0"></p></div>');
 
 
       //Find who's assigned to the current card
@@ -1300,10 +1505,16 @@ function updateSlider() {
       let isMigrating = hasTag("Migrating", info),
          isNew = hasTag("Brand New", info),
          isNotOnProgram = hasTag("Not On Program", info),
+         isConstruction = hasTag("Construction Page", info),
+         isContentReview = hasTag("Content Review", info),
+         isDealerOBA = hasTag("Dealer OBA", info),
          isFullReview = hasTag("Full Site Review", info);
       let iTagString = (isMigrating ? "Migrating As Is | " : "") +
          (isNew ? "Brand New | " : "") +
          (isFullReview ? "- Full Review - | " : "") +
+         (isContentReview ? "- Content Review - | " : "") +
+         (isConstruction ? "- Construction Page - | " : "") +
+         (isDealerOBA ? " Dealer OBA | " : "") +
          (isNotOnProgram ? "NOT ON PROGRAM | " : "");
       if (iTagString.length > 0)
          iTagString = iTagString.substr(0, iTagString.length - 3);
@@ -1314,7 +1525,14 @@ function updateSlider() {
          info.settings.broker_tags.forEach(function(i) {
             if (i.name.toLowerCase().indexOf("tier") >= 0) {
                tier = "Tier: " + i.name.substr(5);
-            } else if (i.name.toLowerCase().indexOf("migrating") == -1 && i.name.toLowerCase().indexOf("brand new") == -1 && i.name.toLowerCase().indexOf("not on program") == -1 && i.name.toLowerCase().indexOf("full site review") == -1)
+            } else if (i.name.toLowerCase().indexOf("construction") == -1
+            && i.name.toLowerCase().indexOf("migrating") == -1
+            && i.name.toLowerCase().indexOf("brand new") == -1
+            && i.name.toLowerCase().indexOf("not on program") == -1
+            && i.name.toLowerCase().indexOf("full site review") == -1
+            && i.name.toLowerCase().indexOf("content review") == -1
+            && i.name.toLowerCase().indexOf("dealer oba") == -1
+          )
                tags += i.name + ", ";
          });
 
@@ -1330,33 +1548,23 @@ function updateSlider() {
          $(this).attr("data-name", name);
          $(this).attr("data-officer", assigned);
          $(this).attr("data-importantTags", iTagString);
+         $(this).attr("data-tags", tags);
          $(this).attr("data-id", info._id);
 
-         $(this).find(".cardOfficer").html('<span style="color: ' + (info && window.loggedInUser === info.officer_id ? '#fff' : 'rgba(220,220,222,0.8)') + '">' + assigned + '</span>');
-         $(this).find(".cardImportantTags").html('<span style="font-size: 12px; color: #00A758">' + iTagString.replace("|", "<br>") + '</span>');
-         $(this).find(".card-tags").html('<span style="font-size: .7em;color: rgba(220,220,222,0.8);">' + tags + '</span>');
-         $(this).find(".card-tier").html('<span style="font-size: .6em;color: yellow">' + tier + '</span>');
+         $(this).find(".cardOfficer").html('<span>' + assigned + '</span>');
+         $(this).find(".cardImportantTags").html('<span>' + iTagString.replace(/\|/g, "<br>") + '</span>');
+         $(this).find(".card-tags").html('<span>' + tags + '</span>');
+         $(this).find(".card-tier").html('<span>' + tier + '</span>');
 
          //Add the Open chat button to the card
          if (!$(this).find(".open-chat-extension").length) {
-            $(this).find(".card-action").append('<a href="#messages" style="margin-left: 5px;flex-grow:1" class="btn pill primary open-chat-extension" data-advisor_id="' + info._id + '" data-cover="Open Chat">Open Chat</a>');
+            $(this).find(".card-action").append('<a href="#messages" style="margin-left: 5px;flex-grow:1" class="btn pill primary btn--action-review open-chat-extension" data-advisor_id="' + info._id + '" data-cover="Open Chat">Open Chat</a>');
          }
 
          updateRevisions($(this), info._id, function() {
             delay(updateSlideCardCount(), 1000)
          });
 
-      }
-      //Edit card
-      if (!$(this).find('.card-status').length) {
-         $(this).find('.card-content').prepend('<div class="card-status"></div>');
-         $(this).find(".submitted").appendTo($(this).find('.card-status'));
-         $(this).find(".card-changes").appendTo($(this).find('.card-status'));
-      }
-      if (!$(this).find('.card-title').length) {
-         $(this).prepend('<div class="card-title" ></div>');
-         $(this).find(".advisor-profile").appendTo($(this).find('.card-title'));
-         $(this).find("h4").appendTo($(this).find('.card-title'));
       }
    });
 }

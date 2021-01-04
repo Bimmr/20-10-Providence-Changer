@@ -6,4 +6,5 @@ function injectScript(file, node) {
     s.setAttribute("id", "injectedChromeExtension");
     th.appendChild(s);
 }
+  injectScript( chrome.extension.getURL('/js/utils.js'), 'body');
   injectScript( chrome.extension.getURL('/edit/injected.js'), 'body');

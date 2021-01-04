@@ -1,7 +1,7 @@
 {
 
   "name": "Providence Changer",
-  "version": "1.4.2",
+  "version": "1.4.8.2",
 
   "description": "Providence Changes",
   "icons": {
@@ -15,7 +15,14 @@
           "https://twentyoverten.com/manage/advisor*",
           "https://twentyoverten.com/manage/revisions*",
           "https://twentyoverten.com/manage/review*",
-          "https://twentyoverten.com/manage/content*"
+          "https://twentyoverten.com/manage/content*",
+
+          "https://staging-app.twentyoverten.com/manage",
+          "https://staging-app.twentyoverten.com/manage#",
+          "https://staging-app.twentyoverten.com/manage/advisor*",
+          "https://staging-app.twentyoverten.com/manage/revisions*",
+          "https://staging-app.twentyoverten.com/manage/review*",
+          "https://staging-app.twentyoverten.com/manage/content*"
         ],
         "all_frames": false,
         "js": [
@@ -27,7 +34,10 @@
     {
         "matches":[
           "https://twentyoverten.com/edit",
-          "https://twentyoverten.com/publish"
+          "https://twentyoverten.com/publish",
+
+          "https://staging-app.twentyoverten.com/edit",
+          "https://staging-app.twentyoverten.com/publish"
         ],
         "js": [
             "/js/jquery-3.3.1.min.js",
