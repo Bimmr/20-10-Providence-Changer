@@ -1,5 +1,5 @@
-let baseUrl = //"https://twentyoverten.com/"
-              "https://staging-app.twentyoverten.com/"
+let baseUrl = "https://twentyoverten.com/"
+              //"https://staging-app.twentyoverten.com/"
 
 let advisorInfo = [];
 let tableData;
