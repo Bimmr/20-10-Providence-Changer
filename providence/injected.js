@@ -14,6 +14,9 @@ $(function() {
   if (localStorage.getItem("advisorList") != null)
     advisorInfo = JSON.parse(localStorage.getItem('advisorList'));
 
+  if (isSiteForward(window.loggedInUser))
+     localStorage.setItem('IsSiteForward', true);
+
    $("head").append('<style>' +
 
       // Float the page navigation
@@ -220,9 +223,6 @@ $(function() {
       let advisorId = urlParts[urlParts.length - 1];
       if (advisorId[advisorId.length - 1] == '#')
          advisorId = advisorId.substr(0, advisorId.length - 1);
-
-      if (isSiteForward(window.loggedInUser))
-         localStorage.setItem('IsSiteForward', true);
 
       //Get advisor
       let advisor = getAdvisorInfoByID(advisorId);
