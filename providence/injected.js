@@ -1,4 +1,4 @@
-let baseUrl = "https://twentyoverten.com/"
+let baseUrl = "https://app.twentyoverten.com/"
               //"https://staging-app.twentyoverten.com/"
 
 let advisorInfo = [];
@@ -1320,6 +1320,7 @@ function getOfficerName(id) {
 }
 
 function updateSlideCardCount() {
+  console.log("Updating slider card count");
 
   //{Name, Items, Pending Changes, Total Changes}
    var reviewers = [
@@ -1352,7 +1353,7 @@ function updateSlideCardCount() {
         tags[0][1] = tags[0][1]+1;
 
       reviewers.forEach((e, i) => {
-         if (e[0] == reviewName) {
+         if (e[0].indexOf(reviewName) >= 0) {
             e[1] = e[1] + 1;
             found = i;
          }
@@ -1561,10 +1562,7 @@ function updateSlider() {
             $(this).find(".card-action").append('<a href="#messages" style="margin-left: 5px;flex-grow:1" class="btn pill primary btn--action-review open-chat-extension" data-advisor_id="' + info._id + '" data-cover="Open Chat">Open Chat</a>');
          }
 
-         updateRevisions($(this), info._id, function() {
-            delay(updateSlideCardCount(), 1000)
-         });
-
+         updateRevisions($(this), info._id, delay( e => updateSlideCardCount()), 1000);
       }
    });
 }

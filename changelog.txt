@@ -1,4 +1,5 @@
 1.4.8.2
+- Works on https://app.twentyoverten.com
 - Utils.JS will now load in dashboard
 - Added back button inside Custom Content
 - Fixed issue with searching card before editing card
