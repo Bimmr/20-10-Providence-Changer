@@ -7,9 +7,6 @@ let tableData;
 
 $(function() {
 
-   if (localStorage.getItem("cardInform") == null)
-      localStorage.setItem("cardInform", true);
-
   //Load advisor list from storage
   if (localStorage.getItem("advisorList") != null)
     advisorInfo = JSON.parse(localStorage.getItem('advisorList'));
@@ -22,7 +19,7 @@ $(function() {
       // Float the page navigation
       '.dataTables_paginate,.table-length{position: sticky;bottom: 0; padding: 10px;left: 0;right: 0;}' +
       '.dataTables_paginate{width: 750px;margin: 0 auto; z-index:3} ' +
-      '.table-length{height:72px;background-color: rgba(3,24,46,0.85); z-index: 2} ' +
+      '.table-length{height:72px;background-color: rgba(3,24,46,0.9); z-index: 2} ' +
       '.dataTables_info{color:#dcdcde} ' +
       'body.providence .dataTables_paginate{padding: 10px}'+
       'body.providence .dataTables_info, body.providence .dataTables_length{color:#fff}'+
@@ -38,28 +35,30 @@ $(function() {
       '.review-filter th, .review-filter .active{color: #626262;}'+
       '.review-filter .seperator{border-top: 1px dashed rgba(88,88,88,0.53);}'+
       '.review-filter .active .filter-cards{color: #08aeea;}' +
-      '.filter-cards{color: rgba(140,140,140,0.8);}' +
+      '.filter-cards{color: #737373;}' +
       '.filter-cards:hover{color: #08aeea;} ' +
 
       // Cards
       '.card-extras{font-size: 14px;padding: 15px;margin-top: 15px;background-color: #fafafa; border-radius: 10px;}'+
       '.card-extras p{color:#2d2d2d}'+
-      '.card-changes{font-size: 12px;color: rgba(140,140,140,0.8);}'+
+      '.card-changes{font-size: 12px;color: #737373;}'+
       '.card-extras p.cardImportantTags{font-size: 12px; color: #08aeea;}'+
       '.card-tags, .card-tier{color: #08aeea}'+
       '.card-tags{font-size: .7em;}'+
       '.card-tier{font-size: .6em;}'+
+      '.cardApprovals{ color: #007750}'+
+      '.cardRejections{ color: #C20000}'+
+
 
       // Add inform styles
       '.advisor-card .card-action{padding: 1.5rem; display: flex;} ' +
-      '.providence-pending--list:not(.inform) .card-tags,.providence-pending--list:not(.inform) .card-tier, .providence-pending--list:not(.inform) .cardImportantTags {display:none}' +
-      '.providence-pending--list.inform .card-tier{position: absolute;top: 5px;right: 10px;} ' +
+      '.providence-pending--list .card-tier{position: absolute;top: 5px;right: 10px;} ' +
       '.providence-pending--list .card-title{padding:1.5em;padding-bottom:0} ' +
-      '.providence-pending--list.inform .card-title{display: flex;align-items:center; border-top: none; padding-bottom: 1em;border-bottom: 1px solid #2d2d2d} ' +
-      '.providence-pending--list.inform .card-title .advisor-profile{flex-basis: 25%; margin: 0;} ' +
-      '.providence-pending--list.inform .card-title h4{flex-basis: 75%;text-align: left;padding-left:10px;margin: 0;} ' +
+      '.providence-pending--list .card-title{display: flex;align-items:center; border-top: none; padding-bottom: 1em;border-bottom: 1px solid #2d2d2d} ' +
+      '.providence-pending--list .card-title .advisor-profile{flex-basis: 25%; margin: 0;} ' +
+      '.providence-pending--list .card-title h4{flex-basis: 75%;text-align: left;padding-left:10px;margin: 0; font-size: 1em;} ' +
       '.providence-pending--list .card-content{padding-top: 1rem;} ' +
-      '.providence-pending--list.inform .card-status{display: flex; align-items: center;justify-content: space-evenly;}' +
+      '.providence-pending--list .card-status{display: flex; align-items: center;justify-content: space-evenly;}' +
       '.providence-pending--list .card-action .btn{padding:0.5em 0.25em;}'+
 
       // Format rejection box
@@ -70,6 +69,7 @@ $(function() {
       '.review-item-note{color:#007750;}'+
       '.review-item.approved-status .review-item__status{background-color: #E8F8F3; border-radius: 14px 0 0 14px;}'+
       '.review-item.rejected-status .review-item__status{background-color: #F8E5E5; border-radius: 14px 0 0 14px;}'+
+      'body.providence .review-submission .approved-count.pending-count span.active {color: #717171}'+
 
       //Filter warning
       '.filter-warning{background-color: #522626; width: 100%; text-align: center; display: block; position: fixed; color: #fff;}'+
@@ -83,16 +83,74 @@ $(function() {
 
       // Search bar
       '.search-bar{display: flex; flex-flow: row wrap; margin-bottom: .5rem}' +
+      '.search-bar .form-control{border: 2px solid rgba(98,98,98,0.5); border-radius: 6px;}'+
       '.search-help{position: absolute;top: 12px;right: 25px;width: 20px;height: 20px;border-radius: 50%;background: #cccccc;z-index: 1;line-height: 20px;text-align: center;opacity: .9;}' +
+      '.search-bar .form-control:valid+label{color: #626262;transform: translate3d(3px, -28px, 0) scale3d(0.7, 0.7, 1);}'+
+      'body.providence .search-bar table.table{border-radius: 14px;}'+
+      'body.providence #providence-wrapper .search-bar table.table thead th{font-family: "CircularXXWeb-Medium",Helvetica,Arial,sans-serif;background: #03182e;padding: 2rem 27px 2rem 15px;vertical-align: middle;border: none; border-left: 2px solid #2d2d2d; border-bottom: 2px solid #2d2d2d;}'+
+      'body.providence #providence-wrapper .search-bar table.table thead th:first-child{border-left: none;border-radius: 8px 0 0 0;}'+
+      'body.providence #providence-wrapper .search-bar table.table thead th:last-child{border-radius: 0 8px 0 0;}'+
 
+      //Providence list quick links
       'body.providence #advisor-details .advisor-quick-links > a{margin: 5px 15px;}'+
 
-      //Only on old style
-      '.providence.night-mode .review-item-preview{margin: 5px 40px 0}'+
-      '.providence.night-mode .filter-dropdown--options.is-open{overflow-y: scroll; height: 75vh}' +
-      '.providence.night-mode .team-filter.active ,.providence.night-mode .team-filter:hover{ color: #fff}'+
+      //Night Themed
+      'body.providence.nightMode h1{color: #efefef}'+
+      'body.providence.nightMode .settings-wrapper h1, body.providence.nightMode .archives-wrapper .archives-header h1{color: #2d2d2d}'+
+
+      'body.providence.nightMode .search-help{background-color: #4c4c4c}'+
+
+      'body.providence.nightMode #providence-wrapper{background-color: #2d2d2d; color: #efefef}'+
+      'body.providence.nightMode .providence-pending--title, body.providence.nightMode .providence-pending, body.providence.nightMode .providence-overview--toolbar, body.providence.nightMode .advisor-card .card-action {border-color: #424242;}'+
+      'body.providence.nightMode #advisors-list th, body.providence.nightMode #advisorsList th, body.providence.nightMode #content-list th, body.providence.nightMode #content-list-admin th, body.providence.nightMode #revisions-list th, body.providence.nightMode #custom-content-list th, body.providence.nightMode #officerReports th {background: #03182e;}'+
+      'body.providence.nightMode .providence-overview--nav a.active, body.providence.nightMode .providence-overview--nav a:hover {color: #efefef;}'+
+      'body.providence.nightMode .review-filter th, .review-filter .active {color: #afafaf;}'+
+
+      'body.providence.nightMode .table{background-color: #212121;}'+
+      'body.providence.nightMode .table tbody tr{background-color: #212121}'+
+      'body.providence.nightMode #advisors-list tbody>tr:hover, body.providence.nightMode #advisorsList tbody>tr:hover, body.providence.nightMode #content-list tbody>tr:hover, body.providence.nightMode #content-list-admin tbody>tr:hover, body.providence.nightMode #revisions-list tbody>tr:hover, body.providence.nightMode #custom-content-list tbody>tr:hover, body.providence.nightMode #officerReports tbody>tr:hover {background-color: #333333;}'+
+      'body.providence.nightMode .table span.advisor-tags, body.providence.nightMode .table td.has-date {color: #ddd;}'+
+      'body.providence.nightMode .table td, body.providence #advisors-list th, body.providence.nightMode #advisorsList th, body.providence.nightMode #content-list th, body.providence.nightMode #content-list-admin th, body.providence.nightMode #revisions-list th, body.providence.nightMode #custom-content-list th, body.providence #officerReports th { border-color: #2d2d2d!important;}'+
+      'body.providence.nightMode th.sorting_desc, body.providence.nightMode th.sorting_asc { color: #08aeea !important;}'+
+      'body.providence.nightMode .table td.has-assignment .is-select .form-item--control {background-color: #2d2d2d; color: #efefef;}'+
+      'body.providence.nightMode .table .chip--editing {color: #888 !important;background-color: #444 !important;}'+
+
+      'body.providence.nightMode .advisor-card{background-color: #212121; box-shadow: none}'+
+      'body.providence.nightMode .advisor-card h4, body.providence.nightMode .advisor-card span.submitted, body.providence.nightMode .advisor-card .card-extras p:not(.cardImportantTags) {color: #efefef}'+
+      'body.providence.nightMode .advisor-card .card-extras {background-color: #2d2d2d}'+
+      'body.providence.nightMode tr:not(.active) .filter-cards, body.providence.nightMode tr:not(::hover) .filter-cards, body.providence.nightMode .review-filter th { color: rgb(140 140 140 / 80%);}'+
+      'body.providence.nightMode .providence-overview--filter .filter-dropdown--title {background-color: #03172f}'+
+
+      'body.providence.nightMode #advisor-details, body.providence.nightMode #killswitch, body.providence.nightMode .providence--page-title {background-color: #212121;box-shadow: none;}'+
+      'body.providence.nightMode .dataTables_filter input, body.providence.nightMode .form-control, body.providence.nightMode .reports-toolbar .form .form-item.is-darker .form-item--control{background-color: #212121; color: #efefef;}'+
+
+      'body.providence.nightMode .changes-header{background-color: #212121;}'+
+      'body.providence.nightMode .changes-header{background-color: #414141;box-shadow: none}'+
+
+      'body.providence.nightMode .review-item .title-wrapper .title, body.providence.nightMode .changes-list h3 {color: #efefef !important}'+
+      'body.providence.nightMode .review-item {background-color: #414141; border-color: #494949;}'+
+      'body.providence.nightMode .review-item:not(::hover) { box-shadow: none;}'+
+      'body.providence.nightMode .review-item .title-wrapper a.review-url, body.providence.nightMode .review-item .title-wrapper span.description {color: #bdbdbd}'+
+      'body.providence.nightMode .review-submission {background-color: #2d2d2d}'+
+      'body.providence.nightMode .review-submission .rejected-count, body.providence.nightMode .review-submission .pending-count, body.providence.nightMode .review-submission .approved-count{color: #aaa}'+
+      'body.providence.nightMode .review-title, body.providence.nightMode .review-title .go-back{ background-color: #2d2d2d; border-color: #4c4c4c;}'+
+      'body.providence.nightMode .review-title .go-back a{color: #efefef;}'+
+      'body.providence.nightMode .review-title .go-back span::after {border-color: #efefef;}'+
+      'body.providence.nightMode .review-item__status {border-color: #4c4c4c;}'+
+      'body.providence.nightMode .review-item-note-rejection span, body.providence.nightMode .review-item-note span{color: #888888}'+
+      'body.providence.nightMode .toggle-group p {color: #888;}'+
 
       '</style>');
+
+
+   if (localStorage.getItem("nightMode") == "true")
+     $(".providence").addClass("nightMode");
+
+    $("#header .tot_dropdown .tot_droplist ul").first().prepend('<li class="nightModeToggle"><a href="#">Toggle Night Mode</a></li>');
+     $(".nightModeToggle").on('click', function(){
+      $(".providence").toggleClass("nightMode");
+      localStorage.setItem('nightMode', $(".providence").hasClass("nightMode"));
+    });
 
    //Chat changes
    $(".open-chat").on("click", function() {
@@ -136,7 +194,6 @@ $(function() {
          }, 1000);
       }, 2000);
    });
-
    function manageChatRejections() {
       var advisorId = $(".recent-chats").find("li.active a").first().attr("data-advisor_id");
       let rejections = updateRejections('rejections-' + advisorId);
@@ -212,6 +269,7 @@ $(function() {
          return v
       }
    }
+
    //Get the URL Parts
    let urlParts = window.location.href.split("/");
 
@@ -237,12 +295,34 @@ $(function() {
       //Add tags
       $(".advisor-tags").html(tags.substr(4, tags.length));
       if (advisor && advisor.email)
-         $(".advisor-quick-links").append('<a href="/manage/revisions?email=' + encodeURIComponent(advisor.email) + '" class="btn pill bordered secondary btn--action-default" style="max-width: unset">View Revisions</a>');
+         $(".advisor-quick-links").append('<a href="/manage/revisions?email=' + encodeURIComponent(advisor.email) + '" class="btn pill secondary btn--action-default" style="max-width: unset">View Revisions</a>');
 
 
       if (localStorage.getItem('IsSiteForward') == "true") {
-         $(".changes-header .btn-group").append('<a href="#" class="btn pill btn--action-approve" onclick="approveAll()">Approve All</a><a href="#" class="btn pill btn btn--action-review" onclick="addNoteToAll()">Add Note to All</a>');
+         $(".changes-header .btn-group").append('<a href="#" class="btn pill btn--action-approve" onclick="approveAll()">Approve All</a><a href="#" class="btn pill btn--action-review" onclick="addNoteToAll()">Add Note to All</a>');
       }
+
+      //Add pending review count
+      $(".approved-count").after('<div class="approved-count pending-count"><span class="active">'+$(".review-item:not(.approved-status):not(.rejected-status)").length+'</span> Pending Changes</div>');
+
+      //Update pending review count on approve/reject click
+      $('.btn--action-approve,.btn--action-reject').on('click', function(){
+        $(".pending-count span").html($(".review-item:not(.approved-status):not(.rejected-status)").length);
+      })
+
+      $('.btn--action-default.revision-note, .btn--action-reject').on('click', function(){
+         setTimeout(delay( e => {
+
+          //Add notes when save is clicked
+          $('.settings-wrapper .btn.primary.btn-lg.save').on("click", function(){
+
+            //Wait 2 seconds
+            setTimeout(delay( e => {
+              updateAllReviewItemNotes();
+            }), 2000);
+          });
+        }), 2000);
+      });
 
       //When archives are opened
       $(".open-archives").on("click", function() {
@@ -292,19 +372,24 @@ $(function() {
          }, 2000);
       });
 
-      // For all approved/rejected items get the review information
-      $(".review-item").each(async function(i, e) {
-         let $e = $(e);
-         let reviewId = $e.find(".review-actions").find(".revision-note").data("id");
 
-         //If a review id was found, get the review
-         if (reviewId) {
-            displayReviewer(baseUrl+'manage/revisions/' + advisorId + '/' + reviewId, $e, function() {
-               if (!$e.hasClass("approved-status") && !$e.hasClass("rejected-status"))
-                  $e.find(".review-item-preview").find(".approvedByNote").text("");
-            });
-         }
-      });
+      updateAllReviewItemNotes();
+
+      function updateAllReviewItemNotes(){
+        // For all approved/rejected items get the review information
+        $(".review-item").each(async function(i, e) {
+           let $e = $(e);
+           let reviewId = $e.find(".review-actions").find(".revision-note").data("id");
+
+           //If a review id was found, get the review
+           if (reviewId) {
+              displayReviewer(baseUrl+'manage/revisions/' + advisorId + '/' + reviewId, $e, function() {
+                 if (!$e.hasClass("approved-status") && !$e.hasClass("rejected-status"))
+                    $e.find(".review-item-preview").find(".approvedByNote").text("");
+                });
+             }
+        });
+      }
 
       //For each review item check if it's a link
       $(".review-item").each(function(i, e) {
@@ -322,7 +407,9 @@ $(function() {
             else{
               review.innerHTML = "Navigation Link";
               review.removeAttribute("href");
-              review.style="cursor: not-allowed";
+              review.style="cursor: no-drop";
+              review.classList.add("approve-item");
+              review.classList.add("active");
               review.title = "Just a navigation link, has no content.";
              }
          }
@@ -353,7 +440,7 @@ $(function() {
          }, 2000);
       }
 
-      $(".providence--page-title").after('<a class="btn primary fancy" id="reportorize-btn" style="    position: fixed; z-index:100; bottom: 20px;  right: 20px;">Reportorize It</a>');
+      $(".providence--page-title").after('<a class="btn primary btn--action-review" id="reportorize-btn" style="    position: fixed; z-index:100; bottom: 20px;  right: 20px;">Reportorize It</a>');
 
       //When DataTable gets drawn
       $('#revisions-list').on("page.dt", function(){
@@ -453,7 +540,7 @@ $(function() {
 
       //Add "View Revision" button and revision notes to the review tools navigation
       if ($(".review-tools").find('a[href="#approve"].active').length > 0 || $(".review-tools").find('a[href="#reject"].active').length > 0) {
-         $(".review-tools").append('<a href="' + window.location.href.replace('review', 'revisions') + '" class="btn pill secondary btn-sm btn--action-review" target="_blank">View Revision</a>');
+         $(".review-tools").append('<a href="' + window.location.href.replace('review', 'revisions') + '" class="btn pill secondary btn-sm primary btn--action-review" target="_blank">View Revision</a>');
 
         // Doesn't fit nicely
         // displayReviewer(baseUrl+'manage/revisions/' + advisorId + '/' + reviewId, $(".review-title"));
@@ -491,7 +578,8 @@ $(function() {
       //Add tags
       $(".advisor-tags").html(tags.substr(4, tags.length));
       if (advisor && advisor.email)
-         $(".advisor-quick-links").append('<a href="/manage/revisions?email=' + encodeURIComponent(advisor.email) + '" class="btn pill bordered secondary">View Revisions</a>');
+      $(".advisor-quick-links").append('<a href="/manage/revisions?email=' + encodeURIComponent(advisor.email) + '" class="btn pill secondary btn--action-default" style="max-width: unset">View Revisions</a>');
+
    }
 
    //Content Assist page
@@ -499,16 +587,26 @@ $(function() {
       $("#content-list_wrapper, #custom-content-list_wrapper").prepend(
          '<div class="search-bar">' +
          '<div class="text-control" aria-required="true" style=" margin: 10px 0 0 0; flex-basis: 80%; padding-right: 15px"> ' +
-         '<input type="text" id="search-content" name="search-content" class="form-control" title="Search"> <label for="search-content">Search ( Make sure to set entries to all )</label> ' +
+         '<input required type="text" id="search-content" name="search-content" class="form-control" title="Search"> <label for="search-content">Search ( Make sure to set entries to all )</label> ' +
          '<div data-content="Search by Name or Categories &nbsp; &nbsp; - &nbsp; &nbsp; [! = Not] &nbsp; &nbsp; [, = And] &nbsp; &nbsp; [| = Or]" class="tot_tip top  search-help">?</div>' +
          '</div>' +
          '<div class="btn-control" aria-required="true" style=" margin: 0;flex-basis:20%"> ' +
-         '<input type="button" style="height:100%;width:100%" class="btn primary fancy" value="Search" id="search-content-btn" data-cover="Search for Content">' +
+         '<input type="button" style="height:100%;width:100%" class="btn primary btn--action-review" value="Search" id="search-content-btn" data-cover="Search for Content">' +
          '</div>' +
          '<table class="table" style="margin: .5rem 0;  width: 100%"></table>' +
          '</div>');
       $(".add-custom-content").wrap('<div style="display: flex; flex-flow: column">').parent().prepend('<a href="../content" class="btn btn--action-default-outlined add-custom-content" style="margin-bottom: 10px;">Back to Content Assist</a>');
       $("#custom-content-list_length, #content-list_length").find("option").last().after('<option value="200">200</option><option value="500">500</option><option value="999999">All</option>');
+
+      /* $(".providence--advisor-list-nav").append('<a href="#" class=" providence--advisor-list-title"> <span class="chip chip--taken-down content-contentAssist">Content Assist</span> </a>');
+      $(".content-contentAssist").on('click', function(){
+        $('#search-content').val("Content Assist");
+        $("#search-content-btn")[0].click();
+      });
+      $(".content-leadPilot").on('click', function(){
+        $('#search-content').val("Lead Pilot");
+        $("#search-content-btn")[0].click();
+      });*/
 
 
       //When enter is pressed when typing in search
@@ -537,6 +635,8 @@ $(function() {
          //Empty current search results
          let table = $(".search-bar table");
          table.empty();
+         table.append('<thead> <tr role="row"><th class="" tabindex="0" aria-controls="advisorsList" rowspan="1" colspan="1">#</th><th class="" tabindex="0" aria-controls="advisorsList" rowspan="1" colspan="1" aria-label="">Thumbnail</th><th class="" tabindex="0" aria-controls="advisorsList" rowspan="1" colspan="1" aria-label="">Title</th><th class="" tabindex="0" aria-controls="advisorsList" rowspan="1" colspan="1" aria-label="">Date Added</th><th class="has-state sorting" tabindex="0" aria-controls="advisorsList" rowspan="1" colspan="1" aria-label="">Availability</th><th class="" tabindex="0" aria-controls="advisorsList" rowspan="1" colspan="1" aria-label="" aria-sort="descending">Status</th><th class="" rowspan="1" colspan="1" aria-label="Actions">Actions</th></tr> </thead>');
+
          $("#content-list, #custom-content-list").hide();
 
          //Get all nodes that match the search
@@ -544,11 +644,11 @@ $(function() {
 
          //Inform if no nodes are found
          if (nodes.length === 0) {
-            table.append('<tr><td>No results found</td></tr>');
+            table.append('<tr><td colspan="7">No results found</td></tr>');
          }
          //Display only the number of results
          else if (onlyNumber) {
-            table.append('<tr><td>Results: (' + nodes.length + ')</td></tr>');
+            table.append('<tr><td colspan="7">Results: (' + nodes.length + ')</td></tr>');
          }
          //Display nodes if under 100 results
          else if (showAll || nodes.length <= 100) {
@@ -556,8 +656,8 @@ $(function() {
             //Add nodes to table
             table.append(nodes);
             nodes.forEach(function(e, i) {
-               let row = $(table.find("tr")[i]);
-               row.prepend('<td>' + (i + 1) + '.</td>');
+              let row = $(table.find("tr")[i+1]);
+              row.prepend('<td>' + (i+1) + '.</td>');
             });
             table.find("td").css("border", "none");
 
@@ -579,9 +679,12 @@ $(function() {
             //Perform filter
             rows.forEach(function(rowItem) {
                function matches(item, search, invert) {
-                  let match = item.data().title.toLowerCase().indexOf(search.toLowerCase()) >= 0 ||
-                     item.data()._id.toLowerCase().indexOf(search.toLowerCase()) >= 0 ||
-                     (item.data().categories && hasCategory(search.toLowerCase(), item.data()));
+                  let match =
+                    (item.data().title.toLowerCase().indexOf(search.toLowerCase()) >= 0) ||
+                    (item.data()._id.toLowerCase().indexOf(search.toLowerCase()) >= 0) ||
+                    (item.data().categories && hasCategory(search.toLowerCase(), item.data())) ||
+                    (item.data().availability && item.data().availability.toLowerCase().indexOf(search.toLowerCase()) >= 0)
+                    ;
 
                   function hasCategory(tag, item) {
                      if (item && item.categories)
@@ -639,12 +742,12 @@ $(function() {
          let nodes = [];
          rows.forEach(e => {
             let node = e.node().cloneNode(true);
-            let select = $(node).find("select");
-            let status = $(node).find("option:selected").text();
-            select.parent().removeClass("is-select");
-            select.parent().css("text-align", "center");
-            select.after(status == "Default" ? "---" : status);
-            select.remove();
+            // let select = $(node).find("select");
+            // let status = $(node).find("option:selected").text();
+            // select.parent().removeClass("is-select");
+            // select.parent().css("text-align", "center");
+            // select.after(status == "Default" ? "---" : status);
+            // select.remove();
 
             //node.deleteCell(4);
             nodes.push(node);
@@ -660,21 +763,6 @@ $(function() {
       if ($("#showAllAdvisors").length > 0)
         $("#showAllAdvisors").click();
 
-      if (!$(".cardInformToggle").length) {
-         $("#header .tot_dropdown .tot_droplist ul").first().prepend('<li class="cardInformToggle"><a href="#">Toggle Informative Cards</a></li>');
-         $(".cardInformToggle").on('click', function() {
-            if ($(".providence-pending--list").hasClass("inform")) {
-               $(".providence-pending--list").removeClass("inform");
-               localStorage.setItem("cardInform", false);
-            } else {
-               $(".providence-pending--list").addClass("inform");
-               localStorage.setItem("cardInform", true);
-            }
-         });
-      }
-      if (localStorage.getItem("cardInform") == 'true') {
-         $(".providence-pending--list").addClass("inform");
-      }
       //
       // $("#showMyAdvisors").after('<a href="#" id="showMyTeam">My Team</a>');
       // $(".providence-overview--nav a").on('click', function(){
@@ -719,11 +807,11 @@ $(function() {
       $(".providence-overview--list").prepend(
          '<div class="search-bar">' +
          '<div class="text-control" aria-required="true" style=" margin: 10px 0 0 0; flex-basis: 80%; padding-right: 15px"> ' +
-         '<input type="text" id="search-advisor" name="search-advisor" class="form-control" title="Search"> <label for="search-advisor">Search</label> ' +
+         '<input required type="text" id="search-advisor" name="search-advisor" class="form-control" title="Search"> <label for="search-advisor">Search</label> ' +
          '<div data-content="Search for &quot;?&quot; for assistance." class="tot_tip top search-help">?</div>' +
          '</div>' +
          '<div class="btn-control" aria-required="true" style=" margin: 0;flex-basis:20%"> ' +
-         '<input type="button" style="height:100%;width:100%" class="btn primary fancy" value="Search" id="search-advisor-btn" data-cover="Search for Advisor">' +
+         '<input type="button" style="height:100%;width:100%" class="btn primary btn--action-review" value="Search" id="search-advisor-btn" data-cover="Search for Advisor">' +
          '</div>' +
          '<table class="table" style="margin: .5rem 0; width: 100%"></table>' +
          '</div>');
@@ -781,19 +869,21 @@ $(function() {
             let table = $(".search-bar table");
             $("#advisorsList_wrapper").hide();
             table.empty();
+            table.append('<thead> <tr role="row"><th class="" tabindex="0" aria-controls="advisorsList" rowspan="1" colspan="1">#</th><th class="" tabindex="0" aria-controls="advisorsList" rowspan="1" colspan="1" aria-label="">Name</th><th class="" tabindex="0" aria-controls="advisorsList" rowspan="1" colspan="1" aria-label="">Email</th><th class="has-state sorting" tabindex="0" aria-controls="advisorsList" rowspan="1" colspan="1" aria-label="">Status</th><th class="" tabindex="0" aria-controls="advisorsList" rowspan="1" colspan="1" aria-label="" aria-sort="descending">Last Submitted</th><th class="" rowspan="1" colspan="1" aria-label="Assigned">Assigned</th><th class="" rowspan="1" colspan="1" aria-label="Actions">Actions</th></tr> </thead>');
 
             //Get all nodes that match the search
             let nodes = getNodes(searchTerm);
 
             //Inform if no nodes are found
             if (searchTerm.toLowerCase() == "?") {
-               table.append('<tr><td><h1>Searching can be done by Name, Email, Tags, Status, or Officer.</h1> <table style="width: 100%"><tr><th>Expressions</th><th>Results</th><th>Example</th></tr> <tr><td>|</td><td>OR</td><td>Published|Submitted</td></tr> <tr><td>,</td><td>AND</td><td>Published|SiteForward</td></tr> <tr><td>!</td><td>NOT</td><td>!Published</td></tr></table><h1>There are some extra searching as well</h1><table style="width: 100%"><tr><th>Search</th><th>Results</th><th>Example</th></tr> <tr><td>published</td><td>Shows all published sites</td><td></td></tr> <tr><td>submitted</td><td>Shows all submitted sites</td><td></td></tr> <tr><td>created_at:&lt;year&gt;/[month]/[day]</td><td>Shows sites created at that time</td><td>created_at:2019/08</td></tr> <tr><td>updated_at:&lt;year&gt;/[month]/[day]</td><td>Shows sites updated at that time</td><td>created_at:2019/08/01</td></tr> <tr><td>published_at:&lt;year&gt;/[month]/[day]</td><td>Shows sites published at that time</td><td>created_at:2020</td></tr> <tr><td>submitted_at:&lt;year&gt;/[month]/[day]</td><td>Shows sites submitted at that time</td><td>created_at:2020/01</td></tr><tr><td>#<search></td><td>Shows the number of sites that match</td><td>#Published</td></tr><tr><td>*<search></td><td>Shows all sites that match regardless of number</td><td>*Published</td></tr></table></td></tr>');
+              table.empty();
+              table.append('<tr><td><h1>Searching can be done by Name, Email, Tags, Status, or Officer.</h1> <table style="width: 100%"><tr><th>Expressions</th><th>Results</th><th>Example</th></tr> <tr><td>|</td><td>OR</td><td>Published|Submitted</td></tr> <tr><td>,</td><td>AND</td><td>Published,SiteForward</td></tr> <tr><td>!</td><td>NOT</td><td>!Published</td></tr></table><h1>There are some extra searching as well</h1><table style="width: 100%"><tr><th>Search</th><th>Results</th><th>Example</th></tr> <tr><td>published</td><td>Shows all published sites</td><td></td></tr> <tr><td>submitted</td><td>Shows all submitted sites</td><td></td></tr> <tr><td>created_at:&lt;year&gt;/[month]/[day]</td><td>Shows sites created at that time</td><td>created_at:2019/08</td></tr> <tr><td>updated_at:&lt;year&gt;/[month]/[day]</td><td>Shows sites updated at that time</td><td>created_at:2019/08/01</td></tr> <tr><td>published_at:&lt;year&gt;/[month]/[day]</td><td>Shows sites published at that time</td><td>created_at:2020</td></tr> <tr><td>submitted_at:&lt;year&gt;/[month]/[day]</td><td>Shows sites submitted at that time</td><td>created_at:2020/01</td></tr><tr><td>#<search></td><td>Shows the number of sites that match</td><td>#Published</td></tr><tr><td>*<search></td><td>Shows all sites that match regardless of number</td><td>*Published</td></tr></table></td></tr>');
             } else if (nodes.length === 0) {
-               table.append('<tr><td>No results found</td></tr>');
+               table.append('<tr><td colspan="7">No results found</td></tr>');
             }
             //Display only the number of results
             else if (onlyNumber) {
-               table.append('<tr><td>Results: (' + nodes.length + ')</td></tr>');
+               table.append('<tr><td colspan="7">Results: (' + nodes.length + ')</td></tr>');
             }
             //Display nodes if under 100 results
             else if (showAll || nodes.length <= 100) {
@@ -801,8 +891,8 @@ $(function() {
                //Add nodes to table
                table.append(nodes);
                nodes.forEach(function(e, i) {
-                  let row = $(table.find("tr")[i]);
-                  row.prepend('<td>' + (i + 1) + '.</td>');
+                  let row = $(table.find("tr")[i+1]);
+                  row.prepend('<td>' + (i+1) + '.</td>');
                });
                table.find("td").css("border", "none");
 
@@ -814,7 +904,7 @@ $(function() {
 
             //If more than 100 results are found
             else {
-               table.append('<tr><td>To many results (' + nodes.length + ')</td></tr>');
+               table.append('<tr><td colspan="7">To many results (' + nodes.length + ')</td></tr>');
             }
          } else {
             $("#advisorsList_wrapper").show();
@@ -1249,6 +1339,7 @@ async function displayReviewer(url, container, cb) {
       reviewText += '<div>';
       reviewText += '<p class="note" style="font-size: 12px;">' + review[3] + '</p>';
       reviewText += '</div></div>';
+      container.find(".review-item-preview").remove();
       container.append(reviewText);
       if (cb) cb();
    }
@@ -1268,9 +1359,9 @@ async function displayReviewer(url, container, cb) {
             $msg = $data.find('.is-compliance-notes')[0];
             if ($msg) {
               msgText += '<span class="review-item-note">';
-               msgText += '<strong>Notes:</strong><br>';
+               msgText += '<strong>Notes:</strong><br><span>';
                getChildren($msg);
-               msgText += '</span">';
+               msgText += '</span></span>';
             }
 
             //Get Rejection Notes
@@ -1278,9 +1369,9 @@ async function displayReviewer(url, container, cb) {
             if ($msg) {
               msgText += (msgText.length > 0 ? '<br>' : '');
               msgText += '<span class="review-item-note-rejection">';
-              msgText += '<strong>Rejections:</strong><br>';
+              msgText += '<strong>Rejections:</strong><br><span>';
               getChildren($msg);
-              msgText += '</span">';
+              msgText += '</span></span>';
             }
 
             function getChildren(node) {
@@ -1409,7 +1500,7 @@ function updateSlideCardCount() {
      }
    });
    reviewersText += '</table>';
-   $(".providence-pending--title").html('Pending Review <div class="review-filter">' + reviewersText + '</div>');
+   $(".providence-pending--title").html('<h2>Pending Reviews</h2> <div class="review-filter">' + reviewersText + '</div>');
 
    $(".filter-cards").off().on("click", function() {
       var filterName = this.innerHTML;
@@ -1493,7 +1584,7 @@ function updateSlider() {
          $(this).find(".card-content").append('<div class="card-tier"></p>');
 
       if (!$(this).find(".card-changes").length)
-         $(this).find(".submitted").after('<div class="card-changes"><span><span class="cardApprovals" style="color:green"></span> - <span class="cardPending"></span> - <span class="cardRejections" style="color:red"></span></div>')
+         $(this).find(".submitted").after('<div class="card-changes"><span><span class="cardApprovals"></span> - <span class="cardPending"></span> - <span class="cardRejections"></span></div>')
 
       if (!$(this).find(".card-extras").length)
          $(this).find(".card-content").append('<div class="card-extras"><p class="cardOfficer" style="margin: 0"></p><p class="cardImportantTags" style="line-height: 1; margin: 0"></p></div>');

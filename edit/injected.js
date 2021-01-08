@@ -3,12 +3,20 @@ var isEditing = false;
 $(function() {
   $("body").append(
     "<style>" +
+    //Show active tab
     '.active-page-tab{background:rgba(31, 233, 174, 0.5);}' +
     '.active-page-tab ol {background:#F6F6F7;}' +
     '.active-page-tab ol li:first-of-type {background:rgba(31, 233, 174, 0.5);}' +
+
+    //Checkbox for rejections
     '.rejection-completed{position: absolute; top: 3.75rem; right:3rem;}' +
+
+    //Fix font weight of page title badges
+    'ol.pages li .title span.page-type, .dd-list li .title span.page-type{font-weight: 400;background: #999;}'+
+
     // "#app-wrapper > #header{z-index: 10 !important;}"+
     // "#app-wrapper > #page-settings-overlay{top: 60px !important;}"+
+
     "</style>");
 
   var sidebarLoaded = setInterval(function() {

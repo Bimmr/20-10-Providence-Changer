@@ -1,4 +1,6 @@
 # 20-10-Providence-Changer
+Update 20/10 Providence Dashboard with extra things
+
 Misc:
 - Remembers chat messages
 - Defaults to All Advisors tab
@@ -6,6 +8,7 @@ Misc:
 - Added "View Profile" icon to chat wrapper
 - Checkboxes for rejections in chat (Saves locally)
 - Added view profile to chat
+- Adds a Night Mode
 
 Main List:
 - Adds search bar that can search by tags, names, email, status, created year
@@ -31,20 +34,20 @@ Main List:
 
 Content List (Both Content Assist and Custom Content)
 - Added Search bar
+- Added back button to Content Assist
 
-Advisor Profile:
+Advisor Profile & Review:
 - Shows tags on sidebar
 - Quick Access to revisions on sidebar
 - View Archive shows notes & the person who approved as preview text
-
-Advisor Reviews:
-- Shows who made the approval/rejection and when
-- Shows any review notes and rejections (Cropped)
+- Added Pending Count
 - Indicates if the link is a Navigation, Internal ID Link, or External
-- Shows tags on sidebar
 - Adds quick buttons if user is on SiteForward team
     - Adds an Approve All button
     - Adds an Add Notes to All button
+- Shows tags on sidebar
+- Shows who made the approval/rejection and when
+- Shows any review notes and rejections (Cropped)
 
 Revisions:
 - Adds option to turn revisions table to a full compliance report that includes notes and rejections

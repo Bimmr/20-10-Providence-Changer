@@ -1,4 +1,18 @@
-1.4.8.2
+1.5.0
+- Page title stickers font size lowered
+- Page title stickers background changed to be lighter
+- Added Pending count to advisor profile page
+- Add notes and rejections after adding without needing page reload
+- Changed sticky table nav background color
+- Made Fancy button style match default button style
+- Made Card title font size 1em instead of 1.8em
+- Added Night Mode
+- Search table has header
+- Removed toggle for informative cards (stays on now)
+- Made some AODA Color corrections
+  - Filter list
+  - Card review pending count
+1.4.9
 - Works on https://app.twentyoverten.com
 - Utils.JS will now load in dashboard
 - Added back button inside Custom Content
