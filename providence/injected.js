@@ -18,9 +18,9 @@ $(function() {
 
       // Float the page navigation
       '.dataTables_paginate,.table-length{position: sticky;bottom: 0; padding: 10px;left: 0;right: 0;}' +
-      '.dataTables_paginate{width: 750px;margin: 0 auto; z-index:3} ' +
-      '.table-length{height:72px;background-color: rgba(3,24,46,0.9); z-index: 2} ' +
-      '.dataTables_info{color:#dcdcde} ' +
+      '.dataTables_paginate{width: 750px;margin: 0 auto; z-index:3}' +
+      '.table-length{height:72px;background-color: rgba(3,24,46,0.9); z-index: 2}' +
+      '.dataTables_info{color:#dcdcde}' +
       'body.providence .dataTables_paginate{padding: 10px}'+
       'body.providence .dataTables_info, body.providence .dataTables_length{color:#fff}'+
       'body.providence .dataTables_info select, body.providence .dataTables_length select{color: #03182e}'+
@@ -31,12 +31,13 @@ $(function() {
       'body.providence .table span.advisor-tags{font-size: 0.75em}'+
 
       //Pending Review Count
-      '.review-filter{font-size: .65em;border-top: 1px solid rgba(98,98,98,0.5); color: rgba(140,140,140,0.8); padding-top: .5rem; font-family: "CircularXXWeb-Book",Helvetica,Arial,sans-serif;}'+
+      '.review-filter{font-size: .6em;border-top: 1px solid rgba(98,98,98,0.5); color: rgba(140,140,140,0.8); padding-top: .5rem; font-family: "CircularXXWeb-Book",Helvetica,Arial,sans-serif;}'+
       '.review-filter th, .review-filter .active{color: #626262;}'+
       '.review-filter .seperator{border-top: 1px dashed rgba(88,88,88,0.53);}'+
       '.review-filter .active .filter-cards{color: #08aeea;}' +
       '.filter-cards{color: #737373;}' +
-      '.filter-cards:hover{color: #08aeea;} ' +
+      '.filter-cards:hover{color: #08aeea;}' +
+      '.providence-pending--title{padding: 1em;}'+
 
       // Cards
       '.card-extras{font-size: 14px;padding: 15px;margin-top: 15px;background-color: #fafafa; border-radius: 10px;}'+
@@ -91,6 +92,8 @@ $(function() {
       'body.providence #providence-wrapper .search-bar table.table thead th:first-child{border-left: none;border-radius: 8px 0 0 0;}'+
       'body.providence #providence-wrapper .search-bar table.table thead th:last-child{border-radius: 0 8px 0 0;}'+
 
+      'body.providence #providence-wrapper .search-bar table.table td{vertical-align:middle;}'+
+
       //Providence list quick links
       'body.providence #advisor-details .advisor-quick-links > a{margin: 5px 15px;}'+
 
@@ -101,6 +104,8 @@ $(function() {
       'body.providence.nightMode .search-help{background-color: #4c4c4c}'+
 
       'body.providence.nightMode #providence-wrapper{background-color: #2d2d2d; color: #efefef}'+
+      'body.providence.nightMode .review-title .title span.meta {color: #efefef; }'+
+      'body.providence.nightMode #killswitch, body.providence.nightMode .review-submission.showing{border-top: 2px solid #4c4c4c;}'+
       'body.providence.nightMode .providence-pending--title, body.providence.nightMode .providence-pending, body.providence.nightMode .providence-overview--toolbar, body.providence.nightMode .advisor-card .card-action {border-color: #424242;}'+
       'body.providence.nightMode #advisors-list th, body.providence.nightMode #advisorsList th, body.providence.nightMode #content-list th, body.providence.nightMode #content-list-admin th, body.providence.nightMode #revisions-list th, body.providence.nightMode #custom-content-list th, body.providence.nightMode #officerReports th {background: #03182e;}'+
       'body.providence.nightMode .providence-overview--nav a.active, body.providence.nightMode .providence-overview--nav a:hover {color: #efefef;}'+
