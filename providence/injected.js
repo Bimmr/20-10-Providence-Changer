@@ -134,7 +134,6 @@ $(function() {
 
       'body.providence.nightMode .review-item .title-wrapper .title, body.providence.nightMode .changes-list h3 {color: #efefef !important}'+
       'body.providence.nightMode .review-item {background-color: #414141; border-color: #494949;}'+
-      'body.providence.nightMode .review-item:not(::hover) { box-shadow: none;}'+
       'body.providence.nightMode .review-item .title-wrapper a.review-url, body.providence.nightMode .review-item .title-wrapper span.description {color: #bdbdbd}'+
       'body.providence.nightMode .review-submission {background-color: #2d2d2d}'+
       'body.providence.nightMode .review-submission .rejected-count, body.providence.nightMode .review-submission .pending-count, body.providence.nightMode .review-submission .approved-count{color: #aaa}'+
