@@ -17,18 +17,18 @@ $(function() {
    $("head").append('<style>' +
 
       // Float the page navigation
-      '.dataTables_paginate,.table-length{position: sticky;bottom: 0; padding: 10px;left: 0;right: 0;}' +
-      '.dataTables_paginate{width: 750px;margin: 0 auto; z-index:3}' +
-      '.table-length{height:72px;background-color: rgba(3,24,46,0.9); z-index: 2}' +
-      '.dataTables_info{color:#dcdcde}' +
-      'body.providence .dataTables_paginate{padding: 10px}'+
-      'body.providence .dataTables_info, body.providence .dataTables_length{color:#fff}'+
-      'body.providence .dataTables_info select, body.providence .dataTables_length select{color: #03182e}'+
-      '#advisorsList_wrapper .dataTables_paginate,  #advisorsList_wrapper .table-length{bottom: -2rem;}' +
+      '.dataTables_paginate,.table-length {position: sticky;bottom: 0; padding: 10px;left: 0;right: 0;}' +
+      '.dataTables_paginate {width: 750px;margin: 0 auto; z-index:3}' +
+      '.table-length {height:72px;background-color: rgba(3,24,46,0.9); z-index: 2}' +
+      '.dataTables_info {color:#dcdcde}' +
+      'body.providence .dataTables_paginate {padding: 10px}'+
+      'body.providence .dataTables_info, body.providence .dataTables_length {color:#fff}'+
+      'body.providence .dataTables_info select, body.providence .dataTables_length select {color: #03182e}'+
+      '#advisorsList_wrapper .dataTables_paginate,  #advisorsList_wrapper .table-length {bottom: -2rem;}' +
 
       // Table details
-      'body.providence .table .show-email{font-size: 0.9em}'+
-      'body.providence .table span.advisor-tags{font-size: 0.75em}'+
+      'body.providence .table .show-email {font-size: 0.9em}'+
+      'body.providence .table span.advisor-tags {font-size: 0.75em}'+
 
       //Pending Review Count
       '.review-filter{font-size: .6em;border-top: 1px solid rgba(98,98,98,0.5); color: rgba(140,140,140,0.8); padding-top: .5rem; font-family: "CircularXXWeb-Book",Helvetica,Arial,sans-serif;}'+
@@ -1701,7 +1701,7 @@ function updateList(container) {
          if (info && info.email)
             list.append('<li><a href="/manage/revisions?email=' + encodeURIComponent(info.email) + '" target="_blank" class="" data-advisor_id="' + id + '">View Revisions</a></li>');
          if (info && info.site)
-            list.append('<li><a href="https://' + info.site.settings.subdomain + '.twentyoverten.com" class="" target="_blank" data-advisor_id="' + id + '">View Preview Website</a></li>');
+            list.append('<li><a href="https://' + info.site.settings.subdomain + '.app.twentyoverten.com" class="" target="_blank" data-advisor_id="' + id + '">View Preview Website</a></li>');
          if (info)
             addLiveURLToDroplist(list, info);
 
