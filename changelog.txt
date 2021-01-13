@@ -1,3 +1,7 @@
+1.5.1
+- Added nightmode to website engine
+- Fixed "View Preview Website" link
+- After clicking Back in preview it will scroll down page to the item in list
 1.5.0.1
 - Fixed colour of title in review pane
 - Fixed colour of border in profile
