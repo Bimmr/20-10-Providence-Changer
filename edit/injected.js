@@ -1,6 +1,7 @@
 var isEditing = false;
 
 $(function() {
+
   $("body").append(
     "<style>" +
     //Show active tab
@@ -18,14 +19,15 @@ $(function() {
     // "#app-wrapper > #page-settings-overlay{top: 60px !important;}"+
     'body.app.nightMode h1, body.app.nightMode h2, body.app.nightMode  h3, body.app.nightMode  h4, body.app.nightMode .account-nav__my-account .display-name, body.app.nightMode .account-nav__chat .chat-name {color: #fff;}'+
     'body.app.nightMode #header{background-color:  #03172f; color: #fff;}'+
-    'body.app.nightMode #header{background-color:  #03172f; color: #fff;}'+
     'body.app.nightMode #header .logo{filter: grayscale(1) invert(1);}'+
     'body.app.nightMode #header .logo:before{display: none}'+
-    'body.app.nightMode .sidebar, body.app.nightMode .sidebar-nav{background-color: #2d2d2d}'+
-    'body.app.nightMode .dd-item button{background-color: #212121; color: #efefef}'+
-    'body.app.nightMode .dd-item button:hover{background-color: #333; }'+
+    'body.app.nightMode .sidebar, body.app.nightMode #app-wrapper{background-color: #2d2d2d}'+
+    'body.app.nightMode .pages-pane > .scroller{overflow-x:hidden}'+
+    'body.app.nightMode .dd-item button, ol.pages li .drag:hover+.title {background-color: #212121; color: #efefef}'+
+    'body.app.nightMode .dd-item button:hover {background-color: #333; }'+
+    'body.app.nightMode .active-page-tab ol { background: #2d2d2d;}'+
     'body.app.nightMode ol.pages li .page-tools{background-color: #212121;}'+
-    'body.app.nightMode .dd-list li .page-tools ol.pages li .title:hover+.page-tools, body.app.nightMode .dd-list li .title:hover+.page-tools{background-color: #333;}'+
+    'body.app.nightMode .dd-list li .page-tools ol.pages li .title:hover+.page-tools, body.app.nightMode .dd-list li .title:hover+.page-tools, body.app.nightMode .dd-list li .drag:hover+.title {background-color: #333;}'+
     'body.app.nightMode ol.pages li .page-tools a:hover, body.app.nightMode .dd-list li .page-tools a:hover {color: #aaa}'+
     'body.app.nightMode .fade-top.night, body.app.nightMode .fade-bottom.night {opacity: 1;}'+
     'body.app.nightMode .fade-top.day, body.app.nightMode .fade-bottom.day {opacity: 0;}'+
@@ -40,8 +42,10 @@ $(function() {
 
     'body.app.nightMode .noUi-tooltip{background: #2d2d2d;color: #efefef;}'+
     'body.app.nightMode .noUi-handle {background-color: #efefef;}'+
-    'body.app.nightMode .vex-content {backgorund-color: #2d2d2d;}'+
+    'body.app.nightMode .vex-content {background-color: #2d2d2d;}'+
     'body.app.nightMode .vex-content p{color: #efefef;}'+
+    'body.app.nightMode .friendship{background-color: #212121; border-color: #4c4c4c;}'+
+    'body.app.nightMode .friendship .friendship-title small {color: #a7a7a7cc}'+
 
     'body.app.nightMode article.post:hover::after, body.app.nightMode li.member:hover::after {border-color: #efefef;}'+
 
@@ -52,6 +56,8 @@ $(function() {
     'body.app.nightMode ul.domain_list li .title:hover {background-color: #333; }'+
     'body.app.nightMode ul.domain_list li .domain-tools:hover {background-color: #212121;}'+
     'body.app.nightMode ul.domain_list li .title:hover+.domain-tools {background-color: #333;}'+
+    'body.app.nightMode ul.domain_list li .domain-tools a:hover span.icon{color: #aaa;}'+
+    'body.app.nightMode .form--note {color: #efefef;}'+
 
     'body.app.nightMode .integration-actions {background: linear-gradient(to right, #2d2d20 0%, #2d2d2dbf 10%, #2d2d2d 20%, #212121 100%);}'+
     'body.app.nightMode .integration-details .integration-title, body.app.nightMode .integration-details p  { color: #efefef}'+
@@ -89,15 +95,27 @@ $(function() {
     'body.app.nightMode #payment-section{color: #efefef}'+
     'body.app.nightMode #archives-overlay {background-color: #212121}'+
 
+    'body.app.nightMode p a.inline{color: #aaa}'+
+    'body.app.nightMode .settings-content, body.app.nightMode p.secondary{color: #efefef}'+
+    'body.app.nightMode .chat-content .chat-messages .message {background-color: #4c4c4c;}'+
+    'body.app.nightMode .fr-box.fr-basic .fr-element{color: #efefef}'+
+    'body.app.nightMode .chat-content .chat-messages .message.broker, body.app.nightMode .chat-content .chat-messages .message.rejection-notice.broker .message-content .rejection-wrapper {background-color: #ddd}'+
+
+    'body.app.nightMode .basic h1, body.app.nightMode .basic h2, body.app.nightMode .basic h3, body.app.nightMode .basic h4, body.app.nightMode .basic h5, body.app.nightMode .basic h6 { color: #efefef !important;}'+
+    'body.app.nightMode .content-item .article-categories {color: rgba(255,255,255,0.8);}'+
+    'body.app.nightMode .content-wrapper .content-header h1 .ca-title {filter: brightness(3)}'+
+    'body.app.nightMode #content-library .content-wrapper .content-sidebar {background: #212121;}'+
+    'body.app.nightMode #content-library {background: #2d2d2d;}'+
+
     "</style>");
 
-   if (localStorage.getItem("nightMode") == "true")
+   if (localStorage.getItem("nightMode-p") == "true")
      $("body.app").addClass("nightMode");
 
     $("#header .tot_dropdown .tot_droplist ul").first().prepend('<li class="nightModeToggle"><a href="#">Toggle Night Mode</a></li>');
      $(".nightModeToggle").on('click', function(){
       $("body.app").toggleClass("nightMode");
-      localStorage.setItem('nightMode', $("body.app").hasClass("nightMode"));
+      localStorage.setItem('nightMode-p', $("body.app").hasClass("nightMode"));
     });
 
   var sidebarLoaded = setInterval(function() {
