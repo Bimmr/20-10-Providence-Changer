@@ -34,7 +34,7 @@ $(function() {
       '.review-filter{font-size: .6em;border-top: 1px solid rgba(98,98,98,0.5); color: rgba(140,140,140,0.8); padding-top: .5rem; font-family: "CircularXXWeb-Book",Helvetica,Arial,sans-serif;}'+
       '.review-filter th, .review-filter .active{color: #626262;}'+
       '.review-filter .seperator{border-top: 1px dashed rgba(88,88,88,0.53);}'+
-      '.review-filter .active .filter-cards{color: #08aeea;}' +
+      '.review-filter .active .filter-cards {color: #08aeea;}' +
       '.filter-cards{color: #737373;}' +
       '.filter-cards:hover{color: #08aeea;}' +
       '.providence-pending--title{padding: 1em;}'+
@@ -198,81 +198,6 @@ $(function() {
          }, 1000);
       }, 2000);
    });
-   function manageChatRejections() {
-      var advisorId = $(".recent-chats").find("li.active a").first().attr("data-advisor_id");
-      let rejections = updateRejections('rejections-' + advisorId);
-      rejections.forEach(e => {
-         $('.rejection-notice[data-id=' + e.id + ']').find(".rejected-item").each(function() {
-            let title = getOnlyText($(this).find(".rejected-title"));
-            let rejection = e.rejections.find(e2 => {
-               return title == e2.title;
-            });
-            let isCompleted = rejection.completed;
-            $(this).prepend('<input class="rejection-completed"' + (isCompleted ? 'checked=true' : '') + ' type="checkbox">');
-         });
-      });
-      $(".rejection-completed").off().on('change', function() {
-         let id = $(this).parent().parent().parent().parent().data("id"),
-            title = getOnlyText($(this).parent().find(".rejected-title"));
-         rejections.find(function(e) {
-            if (e.id == id)
-               return e.rejections.find(e2 => {
-                  if (e2.title == title) {
-                     e2.completed = !e2.completed;
-                     return true;
-                  }
-               });
-         });
-         localStorage.setItem('rejections-' + advisorId, JSON.stringify(rejections));
-      });
-
-      function updateRejections(key) {
-         let savedRejections = JSON.parse(localStorage.getItem(key));
-         if (!savedRejections)
-            savedRejections = [];
-         var rejections = [];
-
-         $(".rejection-notice").each(function(notice) {
-            let rejected = {
-               id: $(this).data("id"),
-               rejections: []
-            };
-
-            $(this).find(".rejected-item").each(function(item) {
-               let rejection = {
-                  title: getOnlyText($(this).find(".rejected-title")),
-                  message: $(this).find(".note-content p").text(),
-                  completed: false
-               };
-               rejected.rejections.push(rejection);
-            });
-            rejections.push(rejected);
-         });
-
-         rejections.forEach((e, i) => {
-            if (!savedRejections.some(e2 => {
-                  return e.id == e2.id;
-               })) {
-               savedRejections.push(e);
-            }
-         });
-         localStorage.setItem(key, JSON.stringify(savedRejections));
-         return savedRejections;
-      }
-
-      function getOnlyText(e) {
-         return e.clone() //clone the element
-            .children() //select all the children
-            .remove() //remove all the children
-            .end() //again go back to selected element
-            .text();
-      }
-
-      function getItemById(c, id) {
-         var v = $("." + c + "[data-id=" + id + "]");
-         return v
-      }
-   }
 
    //Get the URL Parts
    let urlParts = window.location.href.split("/");
@@ -301,6 +226,22 @@ $(function() {
       if (advisor && advisor.email)
          $(".advisor-quick-links").append('<a href="/manage/revisions?email=' + encodeURIComponent(advisor.email) + '" class="btn pill secondary btn--action-default" style="max-width: unset">View Revisions</a>');
 
+         setTimeout(function(){
+
+      if(localStorage.getItem("lastReviewed")){
+        let lastReviewed = JSON.parse(localStorage.getItem("lastReviewed"));
+        if(lastReviewed.id == advisorId){
+          // $(".changes-header").append('<a class="backToLastBtn btn btn--action-default-outlined" style="background-color: rgba(0,0,0,0);color: #888">Back to last item</a>');
+          // $(".backToLastBtn").on('click', function(){
+            localStorage.setItem("lastReviewed", null);
+            $([document.documentElement, document.body]).animate({
+              scrollTop: $(".title:contains("+lastReviewed.title+")").offset().top-120
+            }, 1000);
+          // });
+        }else
+          localStorage.setItem("lastReviewed", null);
+      }
+    },2000);
 
       if (localStorage.getItem('IsSiteForward') == "true") {
          $(".changes-header .btn-group").append('<a href="#" class="btn pill btn--action-approve" onclick="approveAll()">Approve All</a><a href="#" class="btn pill btn--action-review" onclick="addNoteToAll()">Add Note to All</a>');
@@ -377,7 +318,7 @@ $(function() {
       });
 
 
-      updateAllReviewItemNotes();
+     updateAllReviewItemNotes();
 
       function updateAllReviewItemNotes(){
         // For all approved/rejected items get the review information
@@ -549,6 +490,7 @@ $(function() {
         // Doesn't fit nicely
         // displayReviewer(baseUrl+'manage/revisions/' + advisorId + '/' + reviewId, $(".review-title"));
       }
+      localStorage.setItem("lastReviewed", JSON.stringify({id:advisorId, title: $(".title")[0].childNodes[1].nodeValue.trim()}));
 
 
       // //Is blog post
@@ -1177,6 +1119,82 @@ $(function() {
    }
 });
 
+function manageChatRejections() {
+   var advisorId = $(".recent-chats").find("li.active a").first().attr("data-advisor_id");
+   let rejections = updateRejections('rejections-' + advisorId);
+   rejections.forEach(e => {
+      $('.rejection-notice[data-id=' + e.id + ']').find(".rejected-item").each(function() {
+         let title = getOnlyText($(this).find(".rejected-title"));
+         let rejection = e.rejections.find(e2 => {
+            return title == e2.title;
+         });
+         let isCompleted = rejection.completed;
+         $(this).prepend('<input class="rejection-completed"' + (isCompleted ? 'checked=true' : '') + ' type="checkbox">');
+      });
+   });
+   $(".rejection-completed").off().on('change', function() {
+      let id = $(this).parent().parent().parent().parent().data("id"),
+         title = getOnlyText($(this).parent().find(".rejected-title"));
+      rejections.find(function(e) {
+         if (e.id == id)
+            return e.rejections.find(e2 => {
+               if (e2.title == title) {
+                  e2.completed = !e2.completed;
+                  return true;
+               }
+            });
+      });
+      localStorage.setItem('rejections-' + advisorId, JSON.stringify(rejections));
+   });
+
+   function updateRejections(key) {
+      let savedRejections = JSON.parse(localStorage.getItem(key));
+      if (!savedRejections)
+         savedRejections = [];
+      var rejections = [];
+
+      $(".rejection-notice").each(function(notice) {
+         let rejected = {
+            id: $(this).data("id"),
+            rejections: []
+         };
+
+         $(this).find(".rejected-item").each(function(item) {
+            let rejection = {
+               title: getOnlyText($(this).find(".rejected-title")),
+               message: $(this).find(".note-content p").text(),
+               completed: false
+            };
+            rejected.rejections.push(rejection);
+         });
+         rejections.push(rejected);
+      });
+
+      rejections.forEach((e, i) => {
+         if (!savedRejections.some(e2 => {
+               return e.id == e2.id;
+            })) {
+            savedRejections.push(e);
+         }
+      });
+      localStorage.setItem(key, JSON.stringify(savedRejections));
+      return savedRejections;
+   }
+
+   function getOnlyText(e) {
+      return e.clone() //clone the element
+         .children() //select all the children
+         .remove() //remove all the children
+         .end() //again go back to selected element
+         .text();
+   }
+
+   function getItemById(c, id) {
+      var v = $("." + c + "[data-id=" + id + "]");
+      return v
+   }
+}
+
 function approveAll() {
    $(".approve-item").click();
 }
@@ -1322,7 +1340,7 @@ async function addLiveURLToDroplist(list, advisor) {
       list.append('<li><a href="' + url + '" class="liveWebsiteURL" target="_blank" data-advisor_id="' + id + '">View Live Website</a></li>');
 }
 
-  function getLiveDomain(id) {
+function getLiveDomain(id) {
    return new Promise(function(resolve) {
       $.get(baseUrl+"manage/advisor/" + id).done(data => {
          let $data = $(data);
@@ -1332,7 +1350,6 @@ async function addLiveURLToDroplist(list, advisor) {
       });
    });
 }
-
 
 async function displayReviewer(url, container, cb) {
    let review = await getReviewer(url);
@@ -1399,8 +1416,6 @@ async function displayReviewer(url, container, cb) {
       });
    }
 }
-
-
 
 //Get the officer name from their ID
 function getOfficerName(id) {
