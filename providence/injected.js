@@ -251,11 +251,13 @@ $(function() {
       $(".approved-count").after('<div class="approved-count pending-count"><span class="active">'+$(".review-item:not(.approved-status):not(.rejected-status)").length+'</span> Pending Changes</div>');
 
       //Update pending review count on approve/reject click
-      $('.btn--action-approve,.btn--action-reject').on('click', function(){
+      $('.btn--action-approve, .btn--action-reject').on('click', function(){
         $(".pending-count span").html($(".review-item:not(.approved-status):not(.rejected-status)").length);
       })
 
       $('.btn--action-default.revision-note, .btn--action-reject').on('click', function(){
+        let scrollBackTo = $(this);
+
          setTimeout(delay( e => {
 
           //Add notes when save is clicked
@@ -264,6 +266,9 @@ $(function() {
             //Wait 2 seconds
             setTimeout(delay( e => {
               updateAllReviewItemNotes();
+              $([document.documentElement, document.body]).animate({
+                scrollTop: scrollBackTo.offset().top-120
+              }, 1000);
             }), 2000);
           });
         }), 2000);
@@ -862,24 +867,26 @@ $(function() {
         if(
           //$(".team-filter.active").text().indexOf("All") >= 0 &&
            $("#showAllAdvisors").hasClass("active")){
-         updateAdvisorInfo();
-         $(".providence-overview--list").addClass("loadedAll");
+
+             $(".providence-overview--list").addClass("loadedAll");
+
+              updateAdvisorInfo();
          // tableData = $(".dataTable").DataTable().data();
        }
 
-       updateSlider();
-       sort();
        updateList();
+       sort();
        updateCustomEvents();
        updateOfficerList();
-         if ($(".filter-warning").length)
-            $(".filter-warning").remove();
-
-         if ($(".filter-dropdown--options input:checked").length && !$(".filter-warning").length)
-            $("header").prepend('<div class="filter-warning">Caution: You have a filter enabled</div>');
-
-
+       updateSlider();
       }, 750));
+
+      //Filter warning
+      if ($(".filter-warning").length)
+         $(".filter-warning").remove();
+
+      if ($(".filter-dropdown--options input:checked").length && !$(".filter-warning").length)
+         $("header").prepend('<div class="filter-warning">Caution: You have a filter enabled</div>');
 
       //Get the node results
       function getNodes(searchString) {
@@ -1303,6 +1310,7 @@ function hasTag(tag, advisor) {
    return false;
 }
 
+// check if status matches the advisor's current status
 function hasStatus(status, advisor) {
    status = status.toLowerCase();
    if (advisor && advisor.display_state) {
@@ -1323,6 +1331,7 @@ function hasStatus(status, advisor) {
       return false;
 }
 
+// Check if advisor is published
 function notPublished(advisor) {
    if (hasStatus("approved", advisor)) {
       let dateA = Date.parse(advisor.site.published_at),
@@ -1332,14 +1341,7 @@ function notPublished(advisor) {
    return false;
 }
 
-async function addLiveURLToDroplist(list, advisor) {
-   let id = advisor._id;
-   let url = await getLiveDomain(id);
-
-   if (url)
-      list.append('<li><a href="' + url + '" class="liveWebsiteURL" target="_blank" data-advisor_id="' + id + '">View Live Website</a></li>');
-}
-
+//Get their live domain
 function getLiveDomain(id) {
    return new Promise(function(resolve) {
       $.get(baseUrl+"manage/advisor/" + id).done(data => {
@@ -1349,6 +1351,15 @@ function getLiveDomain(id) {
          resolve(link);
       });
    });
+}
+
+//Add their live domain to the list
+async function addLiveURLToDroplist(list, advisor) {
+   let id = advisor._id;
+   let url = await getLiveDomain(id);
+
+   if (url)
+      list.append('<li><a href="' + url + '" class="liveWebsiteURL" target="_blank" data-advisor_id="' + id + '">View Live Website</a></li>');
 }
 
 async function displayReviewer(url, container, cb) {

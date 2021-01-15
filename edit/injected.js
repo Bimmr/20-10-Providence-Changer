@@ -23,7 +23,7 @@ $(function() {
     'body.app.nightMode #header .logo:before{display: none}'+
     'body.app.nightMode .sidebar, body.app.nightMode #app-wrapper{background-color: #2d2d2d}'+
     'body.app.nightMode .pages-pane > .scroller{overflow-x:hidden}'+
-    'body.app.nightMode .dd-item button, ol.pages li .drag:hover+.title {background-color: #212121; color: #efefef}'+
+    'body.app.nightMode .dd-item button, body.app.nightMode ol.pages li .drag:hover+.title {background-color: #212121; color: #efefef}'+
     'body.app.nightMode .dd-item button:hover {background-color: #333; }'+
     'body.app.nightMode .active-page-tab ol { background: #2d2d2d;}'+
     'body.app.nightMode ol.pages li .page-tools{background-color: #212121;}'+
@@ -31,7 +31,7 @@ $(function() {
     'body.app.nightMode ol.pages li .page-tools a:hover, body.app.nightMode .dd-list li .page-tools a:hover {color: #aaa}'+
     'body.app.nightMode .fade-top.night, body.app.nightMode .fade-bottom.night {opacity: 1;}'+
     'body.app.nightMode .fade-top.day, body.app.nightMode .fade-bottom.day {opacity: 0;}'+
-    'body.app.nightMode ol.pages li .title span.page-type, .dd-list li .title span.page-type {background: #484848;}'+
+    'body.app.nightMode ol.pages li .title span.page-type, body.app.nightMode .dd-list li .title span.page-type {background: #484848;}'+
     'body.app.nightMode a.btn--outlined:not(:hover) {color:#aaa;border-color: #aaa}'+
     'body.app.nightMode .btn-text, body.app.nightMode .is-text {color: #888}'+
     'body.app.nightMode .btn-text:hover, body.app.nightMode .is-text:hover {color: #ccc;}'+

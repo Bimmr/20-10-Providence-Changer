@@ -1,3 +1,6 @@
+1.5.1.1
+- Will scroll down page to item in last that a rejection or note was added to
+- Fixed issue with a styling showing when not in nightmode
 1.5.1
 - Added nightmode to website engine
 - Fixed "View Preview Website" link
