@@ -97,6 +97,17 @@ $(function() {
       //Providence list quick links
       'body.providence #advisor-details .advisor-quick-links > a{margin: 5px 15px;}'+
 
+      //Revision table - Reportorize
+      'body.providence #revisions-list.reportorized td .advisor-profile{display: none}'+
+      'body.providence #revisions-list.reportorized td .advisor-profile+span{padding-left: 0; overflow-hidden}'+
+      'body.providence #revisions-list.reportorized td.revisions-page .revisions-page-title{font-size: .75em;}'+
+      'body.providence #revisions-list.reportorized td.revisions-page .revisions-page-title{font-size: .75em;}'+
+      'body.providence #revisions-list.reportorized td.revisions-email, body.providence #revisions-list.reportorized td.revisions-tags, body.providence #revisions-list.reportorized td.revisions-domains, body.providence #revisions-list.reportorized td.revisions-page{font-size: 1em}'+
+      'body.providence #revisions-list.reportorized td.revisions-notes{font-size: .85em}'+
+      'body.providence #revisions-list.reportorized td.revisions-page .revisions-page-title, body.providence #revisions-list.reportorized td.revisions-tags .revisions-tags-tag, body.providence #revisions-list.reportorized td.revisions-notes .revisions-notes-note{display: block}'+
+      'body.providence #revisions-list.reportorized td.revisions-notes, body.providence #revisions-list.reportorized td.revisions-page{max-width: 500px;word-break: break-word;white-space: normal;}'+
+
+
       //Night Themed
       'body.providence.nightMode h1{color: #efefef}'+
       'body.providence.nightMode .settings-wrapper h1, body.providence.nightMode .archives-wrapper .archives-header h1{color: #2d2d2d}'+
@@ -260,8 +271,8 @@ $(function() {
 
          setTimeout(delay( e => {
 
-          //Add notes when save is clicked
-          $('.settings-wrapper .btn.primary.btn-lg.save').on("click", function(){
+          //Add notes & scroll back down when save is clicked
+          $('.settings-wrapper .btn.primary.btn-lg.save, .settings-wrapper .btn.btn-text.cancel').on("click", function(){
 
             //Wait 2 seconds
             setTimeout(delay( e => {
@@ -269,7 +280,7 @@ $(function() {
               $([document.documentElement, document.body]).animate({
                 scrollTop: scrollBackTo.offset().top-120
               }, 1000);
-            }), 2000);
+            }), 1500);
           });
         }), 2000);
       });
@@ -443,28 +454,28 @@ $(function() {
                    reviewId   = data._id,
                    email      = data.advisor.email,
                    domain     = data.site.settings.domains[0],
-                   pageTitle  = data.title,
-                   notes      = data.internal_notes ? data.internal_notes.replace(/<\/[^>]*>?/gm, ' -|- ').replace(/<[^>]*>?/gm, '') : '',
-                   rejections = data.notes ? data.notes.replace(/<\/[^>]*>?/gm, ' -|- ').replace(/<[^>]*>?/gm, '') : '';
+                   pageTitle  = data.meta && data.meta.name ? data.meta.name + (data.title ? '<span class="revisions-page-title"> (' + data.title +')</span>': '' ) :  data.title ? data.title : '',
+                   notes      = data.internal_notes ? data.internal_notes.replace(/<\/[^>]*>?/gm, '</span>').replace(/<[^>]*>?/gm, '<span class="revisions-notes-note">') : '',
+                   rejections = data.notes ? data.notes.replace(/<\/[^>]*>?/gm, '</span>').replace(/<[^>]*>?/gm, '<span class="revisions-notes-note">') : '';
 
                let allTags = "";
-               data.advisor.settings.broker_tags.forEach( i=> allTags += i.name + ", ");
+               data.advisor.settings.broker_tags.forEach( i=> allTags += "<span class='revisions-tags-tag'>"+i.name + ", </span>");
                allTags = allTags.substr(0, allTags.length - 2);
 
-               $($row.find("td")[0]).after('<td>' + email + '</td>');
-               $($row.find("td")[1]).after('<td>' + allTags + '</td>');
-               $($row.find("td")[2]).after('<td>' + domain + '</td>');
-               $($row.find("td")[4]).after('<td>' + pageTitle + '</td>');
-               $($row.find("td")[5]).after('<td style="max-width: 500px;word-break: break-word;white-space: normal">' + notes + '</td>');
-               $($row.find("td")[6]).after('<td style="max-width: 500px;word-break: break-word;white-space: normal">' + rejections + '</td>');
+               $($row.find("td")[0]).after('<td class="revisions-email">' + email + '</td>');
+               $($row.find("td")[1]).after('<td class="revisions-tags">' + allTags + '</td>');
+               $($row.find("td")[2]).after('<td class="revisions-domains">' + domain + '</td>');
+               $($row.find("td")[4]).after('<td class="revisions-page">' + pageTitle + '</td>');
+               $($row.find("td")[5]).after('<td class="revisions-notes">' + notes + '</td>');
+               $($row.find("td")[6]).after('<td class="revisions-notes">' + rejections + '</td>');
                $row.find(".advisor-tags").remove();
                $row.find("td")[11].remove();
 
             });
 
-            $(".advisor-profile").remove();
             $(".wrapper").css("width", "100%").css("max-width", "unset").css("margin", "5px");
 
+            $(".dataTable").addClass("reportorized");
             $(".dataTable").css("font-size", ".75em");
             $($(".dataTable").find("thead").find("th")[3]).css("min-width", "150px");
 
@@ -1239,7 +1250,7 @@ function addNoteToAll() {
                      });
                   });
                });
-            }, 500);
+            }, 1000);
          });
       });
    }

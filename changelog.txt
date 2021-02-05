@@ -1,3 +1,9 @@
+1.5.1.2
+- Will scroll back down after 1.5 seconds instead of 2
+- Increased 'Adding Note to All' timer increased to 1 second instead of .5
+- Will scroll back down if cancel is clicked
+- Added better styling to Reportorize reports
+- Removed Paul and staging accounts
 1.5.1.1
 - Will scroll down page to item in last that a rejection or note was added to
 - Fixed issue with a styling showing when not in nightmode
