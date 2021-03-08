@@ -88,7 +88,7 @@ $(function() {
       '.search-help{position: absolute;top: 12px;right: 25px;width: 20px;height: 20px;border-radius: 50%;background: #cccccc;z-index: 1;line-height: 20px;text-align: center;opacity: .9;}' +
       '.search-bar .form-control:valid+label{color: #626262;transform: translate3d(3px, -28px, 0) scale3d(0.7, 0.7, 1);}'+
       'body.providence .search-bar table.table{border-radius: 14px;}'+
-      'body.providence #providence-wrapper .search-bar table.table thead th{font-family: "CircularXXWeb-Medium",Helvetica,Arial,sans-serif;background: #03182e;padding: 2rem 27px 2rem 15px;vertical-align: middle;border: none; border-left: 2px solid #2d2d2d; border-bottom: 2px solid #2d2d2d;}'+
+      'body.providence #providence-wrapper .search-bar table.table thead th{font-family: "CircularXXWeb-Medium",Helvetica,Arial,sans-serif;background: #fff;padding: 2rem 27px 2rem 15px;vertical-align: middle;border: none; border-left: 2px solid #e6e6e6; border-bottom: 2px solid #e6e6e6;}'+
       'body.providence #providence-wrapper .search-bar table.table thead th:first-child{border-left: none;border-radius: 8px 0 0 0;}'+
       'body.providence #providence-wrapper .search-bar table.table thead th:last-child{border-radius: 0 8px 0 0;}'+
 
@@ -121,10 +121,12 @@ $(function() {
       'body.providence.nightMode #advisors-list th, body.providence.nightMode #advisorsList th, body.providence.nightMode #content-list th, body.providence.nightMode #content-list-admin th, body.providence.nightMode #revisions-list th, body.providence.nightMode #custom-content-list th, body.providence.nightMode #officerReports th {background: #03182e;}'+
       'body.providence.nightMode .providence-overview--nav a.active, body.providence.nightMode .providence-overview--nav a:hover {color: #efefef;}'+
       'body.providence.nightMode .review-filter th, .review-filter .active {color: #afafaf;}'+
+      'body.providence.nightMode #providence-wrapper .search-bar table.table thead th{font-family: "CircularXXWeb-Medium",Helvetica,Arial,sans-serif;background: #03182e;padding: 2rem 27px 2rem 15px;vertical-align: middle;border: none; border-left: 2px solid #2d2d2d; border-bottom: 2px solid #2d2d2d;}'+
+
 
       'body.providence.nightMode .table{background-color: #212121;}'+
       'body.providence.nightMode .table tbody tr{background-color: #212121}'+
-      'body.providence.nightMode #advisors-list tbody>tr:hover, body.providence.nightMode #advisorsList tbody>tr:hover, body.providence.nightMode #content-list tbody>tr:hover, body.providence.nightMode #content-list-admin tbody>tr:hover, body.providence.nightMode #revisions-list tbody>tr:hover, body.providence.nightMode #custom-content-list tbody>tr:hover, body.providence.nightMode #officerReports tbody>tr:hover {background-color: #333333;}'+
+      'body.providence.nightMode #advisors-list tbody>tr:hover, body.providence.nightMode #advisorsList tbody>tr:hover, body.providence.nightMode .search-bar tr:hover, body.providence.nightMode #content-list tbody>tr:hover, body.providence.nightMode #content-list-admin tbody>tr:hover, body.providence.nightMode #revisions-list tbody>tr:hover, body.providence.nightMode #custom-content-list tbody>tr:hover, body.providence.nightMode #officerReports tbody>tr:hover {background-color: #333333;}'+
       'body.providence.nightMode .table span.advisor-tags, body.providence.nightMode .table td.has-date {color: #ddd;}'+
       'body.providence.nightMode .table td, body.providence #advisors-list th, body.providence.nightMode #advisorsList th, body.providence.nightMode #content-list th, body.providence.nightMode #content-list-admin th, body.providence.nightMode #revisions-list th, body.providence.nightMode #custom-content-list th, body.providence #officerReports th { border-color: #2d2d2d!important;}'+
       'body.providence.nightMode th.sorting_desc, body.providence.nightMode th.sorting_asc { color: #08aeea !important;}'+
@@ -241,7 +243,7 @@ $(function() {
 
       if(localStorage.getItem("lastReviewed")){
         let lastReviewed = JSON.parse(localStorage.getItem("lastReviewed"));
-        if(lastReviewed.id == advisorId){
+        if(lastReviewed && lastReviewed.id == advisorId){
           // $(".changes-header").append('<a class="backToLastBtn btn btn--action-default-outlined" style="background-color: rgba(0,0,0,0);color: #888">Back to last item</a>');
           // $(".backToLastBtn").on('click', function(){
             localStorage.setItem("lastReviewed", null);
@@ -1116,7 +1118,7 @@ $(function() {
                      officers['Market Conduct Compliance'].push($(this));
                   } else if (isMiscellaneous(id)) {
                      officers['Miscellaneous'].push($(this));
-                  } else {
+                  } else{
                      officers['Other'].push($(this));
                   }
                });
@@ -1124,8 +1126,13 @@ $(function() {
                  if(key != "Other" || (key == "Other" && officers["Other"].length > 0)){
                    let group = '<optgroup style="padding-top: 4px;" label="' + key + '">';
                     value.forEach(function(item) {
+                      let id = item[0].value.substr(item[0].value.indexOf('|') + 1);
+
+                      if(isNotActive(id))
+                        item = item.css("color", "#888");
+
                        group += item[0].outerHTML;
-                       item.remove();
+                      item.remove();
                     });
                     $(this).append(group);
                  }

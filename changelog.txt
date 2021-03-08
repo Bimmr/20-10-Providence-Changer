@@ -1,3 +1,8 @@
+1.5.2
+- Added a NotActive group
+  - Added Josee and Paul
+- Fixed night mode colours on search table header and on hover
+- Fixed error with scrolling to last reviewed item
 1.5.1.2
 - Will scroll back down after 1.5 seconds instead of 2
 - Increased 'Adding Note to All' timer increased to 1 second instead of .5

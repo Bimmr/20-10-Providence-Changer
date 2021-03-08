@@ -1,7 +1,5 @@
 var isEditing = false;
-
 $(function() {
-
   $("body").append(
     "<style>" +
     //Show active tab
@@ -112,8 +110,13 @@ $(function() {
    if (localStorage.getItem("nightMode-p") == "true")
      $("body.app").addClass("nightMode");
 
-    $("#header .tot_dropdown .tot_droplist ul").first().prepend('<li class="nightModeToggle"><a href="#">Toggle Night Mode</a></li>');
-     $(".nightModeToggle").on('click', function(){
+    $("#header .tot_dropdown .tot_droplist ul").first().prepend('<li class="nightModeToggle"><a href="#">Toggle Night Mode</a></li>')
+    // .prepend('<li class="devHelperToggle"><a href="#">Toggle DevHelper</a></li>');
+    // $(".devHelperToggle").on('click', function(){
+    //   let currentState = localStorage.getItem("devHelper") ? localStorage.getItem("devHelper") == "true" : false;
+    //   localStorage.setItem("devHelper", !currentState);
+    // });
+    $(".nightModeToggle").on('click', function(){
       $("body.app").toggleClass("nightMode");
       localStorage.setItem('nightMode-p', $("body.app").hasClass("nightMode"));
     });
