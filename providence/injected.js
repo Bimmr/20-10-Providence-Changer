@@ -936,8 +936,11 @@ $(function() {
                }
 
                function isRandysList(item) {
-                  return ((isSiteForward(item.officer_id) && hasStatus("review completed", item)) || isCompliance(item.officer_id) && (hasStatus("editing", item) || hasStatus("review completed", item))) ||
-                     (isOnHold(item.officer_id) && hasStatus("editing", item));
+                  return (
+                      (isSiteForward(item.officer_id) && hasStatus("review completed", item))
+                        || isCompliance(item.officer_id) && (hasStatus("editing", item)
+                        || hasStatus("review completed", item)))
+                    || isOnHold(item.officer_id);
                }
 
                let searchTerms = search.split("|");
@@ -1228,9 +1231,10 @@ function addNoteToAll() {
    var notes = $(".revision-note");
    noteIndex = -1;
    var note = prompt("Add your note", );
-   addNote(function() {
-      location.reload();
-   });
+   if(note != null)
+    addNote(function() {
+        location.reload();
+      });
 
    function addNote(cb) {
       noteIndex++;

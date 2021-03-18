@@ -1,3 +1,7 @@
+1.5.3
+- Add Note To All only runs if a note was given
+- Randy's list now shows on hold regardless of status
+- Added Julien
 1.5.2
 - Added a NotActive group
   - Added Josee and Paul
