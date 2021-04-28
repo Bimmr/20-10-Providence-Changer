@@ -4,7 +4,6 @@ let baseUrl = "https://app.twentyoverten.com/"
 let advisorInfo = [];
 let tableData;
 
-
 $(function() {
 
   //Load advisor list from storage
@@ -38,6 +37,7 @@ $(function() {
       '.filter-cards{color: #737373;}' +
       '.filter-cards:hover{color: #08aeea;}' +
       '.providence-pending--title{padding: 1em;}'+
+
 
       // Cards
       '.card-extras{font-size: 14px;padding: 15px;margin-top: 15px;background-color: #fafafa; border-radius: 10px;}'+
@@ -107,6 +107,39 @@ $(function() {
       'body.providence #revisions-list.reportorized td.revisions-page .revisions-page-title, body.providence #revisions-list.reportorized td.revisions-tags .revisions-tags-tag, body.providence #revisions-list.reportorized td.revisions-notes .revisions-notes-note{display: block}'+
       'body.providence #revisions-list.reportorized td.revisions-notes, body.providence #revisions-list.reportorized td.revisions-page{max-width: 500px;word-break: break-word;white-space: normal;}'+
 
+      '.details-wrapper{max-height: calc(100% - 50px); overflow-y: auto;}'+
+
+      //Advisor notes
+      '#advisor-details{overflow: unset !important}'+
+      '.sidebar-module, .sidebar-module *{ transition: 0.5s top, 0.5s right, 0.5s width, 0.5s height}'+
+      '.sidebar-module{cursor: pointer; overflow: hidden; position: absolute; top: 0px; right: -25px; background: #f9f9f9; width: 25px; height: 90px; box-shadow: 1px 1px 1px #bdbdbd; color: #9c9c9c; border-radius: 0 5px 5px 0;}'+
+      '.sidebar-module:is(:focus, :focus-within){cursor: auto;right: -300px; width: 300px; height: 100%;}'+
+      '.sidebar-module .sidebar-module-icon{top: -5px; position: absolute; left: 12px; opacity: 1; transform: rotate(90deg); transform-origin: left; display: flex; width: 150px;}'+
+      '.sidebar-module .sidebar-module-icon span{left: 10px; position: relative;}'+
+      '.sidebar-module .sidebar-module-icon i{top: 4px; position: relative;}'+
+      '.sidebar-module:is(:focus, :focus-within) .sidebar-module-icon{left: -50px; opacity: 0}'+
+      '.sidebar-module .sidebar-module-wrapper{position: absolute; top: 0;left:0; opacity: 0; width: 100%; display: flex; flex-flow: column;height: 100%;}'+
+      '.sidebar-module:is(:focus, :focus-within) .sidebar-module-wrapper{opacity: 1;}'+
+      '.sidebar-module-header{font-size: 1.5em; text-align: center; padding: 10px; background: rgba(210,210,210,0.5); width: 100%; box-shadow: 0px 5px 10px 0px rgb(0 0 0 / 20%); border-bottom: 1px solid #cecece; color: #4d4d4d;}'+
+      '.sidebar-module-body{flex: 1; overflow: auto;}'+
+      '.sidebar-module-message{ margin: 15px 10px; position: relative; overflow: hidden;}'+
+      '.sidebar-module-message-info{ display: flex; align-items: center;justify-content: space-between;background: #4d4d4d;padding: 5px;border-radius: 5px 5px 0 0;}'+
+      '.sidebar-module-message-info span{ font-size: .6875em;line-height: 1;color: rgba(255,255,255,0.6);}'+
+      '.sidebar-module-message-content{color: #2d2d2d; background: #fefefe;padding: 5px;border-radius: 0 0 5px 5px;word-break: break-word;font-size: .9em;}'+
+      '.sidebar-module-footer{background: rgba(255,255,255,0.5);padding: 5px;box-shadow: 0 -5px 10px 0px rgb(0 0 0 / 18%);}'+
+      '.sidebar-module-footer input{font-size: .8em; margin-top: 0px; margin-bottom: 0px; height: 24px; width: 80%; position: relative;padding-left: 2px;}'+
+
+      '.sidebar-module.advisor-notes:is(:focus, :focus-within){z-index: 1;}'+
+      '.sidebar-module.advisor-statuses{top: 90px;}'+
+      '.sidebar-module.advisor-statuses:is(:focus, :focus-within){top: 0; z-index: 1;}'+
+      '.sidebar-module.advisor-statuses .sidebar-module-message .sidebar-module-message-icon {position: absolute; width: 20px; height: 20px; bottom: 1px; right: -50px; color: #111; opacity: 0; transition: .3s all ease-in-out;  font-size: .85em; cursor: pointer;}'+
+      '.sidebar-module.advisor-statuses .sidebar-module-message:is(:hover) .sidebar-module-message-icon {opacity: .5; right: -4px;}'+
+
+      '.sidebar-module.advisor-notes .sidebar-module-message{height: calc(100% - 30px)}'+
+      '.sidebar-module.advisor-notes .sidebar-module-message-content{height: 100%;}'+
+      '.sidebar-module.advisor-notes .sidebar-module-message-content textarea{font-size: .8em; color: #2b2b2b}'+
+      '.sidebar-module.advisor-notes .updateNotes-button{width: 100%}'+
+
 
       //Night Themed
       'body.providence.nightMode h1{color: #efefef}'+
@@ -157,6 +190,13 @@ $(function() {
       'body.providence.nightMode .review-item-note-rejection span, body.providence.nightMode .review-item-note span{color: #888888}'+
       'body.providence.nightMode .toggle-group p {color: #888;}'+
 
+      'body.providence.nightMode .sidebar-module{background: #414141; box-shadow: 1px 1px 1px #656565; color: #fff}'+
+      'body.providence.nightMode .sidebar-module-message-info{ background: #4d4d4d;}'+
+      'body.providence.nightMode .sidebar-module-message-info span{ color: rgba(255,255,255,0.6);}'+
+      'body.providence.nightMode .sidebar-module-header{background: rgba(0,0,0,0.5); width: 100%; box-shadow: 0px 5px 10px 0px rgb(0 0 0 / 20%); border-bottom: 1px solid #2d2d2d;color: #fff;}'+
+      'body.providence.nightMode .sidebar-module-message-content{color: #2d2d2d; background: #fefefe;}'+
+      'body.providence.nightMode .sidebar-module-footer{background: rgba(0,0,0,0.5);}'+
+
       '</style>');
 
 
@@ -174,6 +214,8 @@ $(function() {
 
       //Wait for the chat to initialize (2s)
       setTimeout(() => {
+
+        var advisorId = $(".recent-chats").find("li.active a").first().attr("data-advisor_id") || $("#open-chat").data("advisor_id");
 
          //When the chat gets opened, display saved message
          if (localStorage.getItem('savedChatMsg') && localStorage.getItem('savedChatMsg') != 'null' && localStorage.getItem('savedChatMsg') != 'undefined') {
@@ -193,7 +235,6 @@ $(function() {
          });
 
          //Get currently opened chat's advisor id, and add the icon
-         var advisorId = $(".recent-chats").find("li.active a").first().attr("data-advisor_id");
          $(".chat-wrapper .tot_tip").after('<a target="_blank" href="/manage/advisor/' + advisorId + '" class="tot_tip bottom view-profile-chat" data-content="View Profile" style="position: absolute;top: 0;right: 60px;height: 20px;width: 20px;margin: 25px 20px;z-index: 1;color: #909090;font-size: 1.1em;"><i class="fas fa-user"></i></a>');
 
          // IF the chat is changed, grab the new advisor id and update the icon's link
@@ -201,15 +242,15 @@ $(function() {
             var advisorClickedId = $(this).find("a").first().attr("data-advisor_id");
             $(".view-profile-chat")[0].href = '/manage/advisor/' + advisorClickedId;
             setTimeout(() => {
-               manageChatRejections();
+               manageChatRejections(advisorClickedId);
             }, 1000);
          });
 
          //Wait for the chat to initialize
          setTimeout(() => {
-            manageChatRejections();
+            manageChatRejections(advisorId);
          }, 1000);
-      }, 2000);
+      }, 3000);
    });
 
    //Get the URL Parts
@@ -239,7 +280,133 @@ $(function() {
       if (advisor && advisor.email)
          $(".advisor-quick-links").append('<a href="/manage/revisions?email=' + encodeURIComponent(advisor.email) + '" class="btn pill secondary btn--action-default" style="max-width: unset">View Revisions</a>');
 
-         setTimeout(function(){
+      $(".advisor-actions").append('<li><a href="https://' + advisor?.site?.settings?.subdomain + '.app.twentyoverten.com" class="tot_tip top center" data-content="View Preview Website"><svg id="icon-preview-website" viewBox="0 0 24 24" class="action-icon"> <path d="M8.617,12.682H5.9a6.149,6.149,0,0,0,4.544,5.258,12.465,12.465,0,0,1-1.207-2.378A9.792,9.792,0,0,1,8.617,12.682Z"> </path> <path d="M10.444,6.062A6.147,6.147,0,0,0,5.9,11.318H8.617A10.69,10.69,0,0,1,10.444,6.062Z"></path> <path d="M9.981,11.32h4.038A8.453,8.453,0,0,0,13.8,9.956a9.382,9.382,0,0,0-.376-1.207,10.325,10.325,0,0,0-.479-1.036q-0.271-.511-0.49-0.841T12,6.237q-0.235.3-.45,0.637t-0.49.844a9.048,9.048,0,0,0-.858,2.24A8.275,8.275,0,0,0,9.981,11.32Z"> </path> <path d="M12,0A12,12,0,1,0,24,12,12,12,0,0,0,12,0Zm7.242,13.947a7.416,7.416,0,0,1-1.843,3.26,7.431,7.431,0,0,1-1.457,1.18,7.514,7.514,0,0,1-1.728.781,7.408,7.408,0,0,1-1.925.327Q12.192,19.5,12,19.5t-0.288-.005a7.514,7.514,0,0,1-6.235-3.787,7.6,7.6,0,0,1-.719-1.76,7.461,7.461,0,0,1,0-3.893A7.416,7.416,0,0,1,6.6,6.794a7.431,7.431,0,0,1,1.457-1.18,7.514,7.514,0,0,1,1.728-.781,7.408,7.408,0,0,1,1.925-.327Q11.808,4.5,12,4.5t0.288,0.005a7.514,7.514,0,0,1,6.235,3.787,7.6,7.6,0,0,1,.719,1.76A7.461,7.461,0,0,1,19.242,13.947Z"> </path> <path d="M13.556,6.061h0a10.792,10.792,0,0,1,1.833,5.258H18.1A6.149,6.149,0,0,0,13.556,6.061Z"></path> <path d="M13.555,17.94A6.15,6.15,0,0,0,18.1,12.682H15.387A10.782,10.782,0,0,1,13.555,17.94Z"></path> <path d="M14.019,12.682H9.981a8.453,8.453,0,0,0,.221,1.364,9.381,9.381,0,0,0,.376,1.207,10.312,10.312,0,0,0,.479,1.036q0.271,0.511.49,0.841T12,17.765q0.235-.3.453-0.637t0.49-.844a10.017,10.017,0,0,0,.479-1.036,9.631,9.631,0,0,0,.376-1.2A8.274,8.274,0,0,0,14.019,12.682Z"> </path> </svg></a></li>');
+
+      //Load Notes
+      let notesLoaded = false;
+      $("#advisor-details").prepend('<div class="sidebar-module advisor-notes" tabindex="0" ><div class="sidebar-module-icon"><i class="far fa-pencil-alt"></i><span>Notes</span></div><div class="sidebar-module-wrapper"><div class="sidebar-module-header">Website Notes</div><div class="sidebar-module-body"><div class="sidebar-module-message"><div class="sidebar-module-message-content" style="color: #9a9a9a; border-radius: 10px; "><textarea style="width: 100%;height: 100%;padding: 5px;" class="updateNotes-textarea" placeholder="Loading Notes..."></textarea></div></div></div><div class="sidebar-module-footer"><button class="btn updateNotes-button" style="display: none">Save</button></div></div></div>')
+      $(".advisor-notes").on('click', function(){loadNotes()});
+      $(".updateNotes-textarea").on("keyup", delay(() => $(".updateNotes-button").show(), 1000));
+
+      let statusesLoaded = false;
+      $("#advisor-details").prepend('<div class="sidebar-module advisor-statuses" tabindex="0" ><div class="sidebar-module-icon"><i class="far fa-comments-alt"></i><span>Status</span></div><div class="sidebar-module-wrapper"><div class="sidebar-module-header">Website Status</div><div class="sidebar-module-body"><div class="sidebar-module-message statusPlaceholder"><div class="sidebar-module-message-content" style=" padding: 20px; color: #9a9a9a; border-radius: 10px; text-align:center">Loading Statuses...</div></div></div><div class="sidebar-module-footer"><input class="addStatus-input" type="text" placeholder="Add a status"><button class="btn addStatus-button">Send</button></div></div></div>')
+      $(".advisor-statuses").on('click', function(){loadStatuses()});
+
+      //Notes
+      $(".updateNotes-button").on('click', function(event){
+        $(".updateNotes-button").text("Updating Notes...");
+        updateNotes(advisorId, $(".updateNotes-textarea").val())
+        .then(data =>{
+          $(".updateNotes-button").text("Notes Updated!");
+          setTimeout(function(){
+            $(".updateNotes-button").text("Save");
+            $(".updateNotes-button").hide();
+          }, 1500);
+        })
+        .catch(err => {
+          $(".updateNotes-button").text("Unable to update notes!");
+          setTimeout(function(){
+            $(".updateNotes-button").text("Save");
+          }, 1500);
+        });
+      });
+
+      function loadNotes(){
+        if(notesLoaded)
+          return;
+
+        getNotes(advisorId)
+        .then(notes => {
+          notesLoaded = true;
+          $(".updateNotes-textarea")[0].placeholder = "There are no notes for this website.\nClick here to add some.";
+          if(notes)
+            $(".updateNotes-textarea").val(notes.message)
+          })
+          .catch(err => {
+            $(".updateNotes-textarea")[0].placeholder = "Unable to load notes.";
+          });
+      }
+
+      // Statuses
+      $(".addStatus-input").on('keyup', function(event){
+        if((event.keyCode ? event.keyCode : event.which) == '13')
+            $(".addStatus-button").click();
+      });
+
+      $(".addStatus-button").on('click', function(event){
+        let officer = $("#header").find(".display-name + small").text();
+        let message = $(".addStatus-input").val();
+        let now = new Date();
+        addStatus(advisorId, officer, message)
+          .then(data => {
+            $(".statusPlaceholder").remove();
+            $(".addStatus-input").val("");
+            let date = now;
+            let term = date.getHours() >= 12 ? 'pm' : 'am';
+            date = date.getMonth() + '/' + date.getDate() + '/' + date.getFullYear() + ' - ' + ((date.getHours() % 12) || 12) + ':' + (date.getMinutes() < 10 ? '0' : '') +date.getMinutes() +term;
+            $(".sidebar-module.advisor-statuses .sidebar-module-body").append('<div class="sidebar-module-message"><div class="sidebar-module-message-icon"><i class="fas fa-trash-alt"></i></div><div class="sidebar-module-message-info"><span class="sidebar-module-message-name">'+officer+'</span><span class="sidebar-module-message-time" data-time="'+now.getTime()+'">'+date+'</span></div><div class="sidebar-module-message-content">'+message+'</div></div>');
+            $(".sidebar-module.advisor-statuses .sidebar-module-body").scrollTop(function() { return this.scrollHeight; });
+            $(".sidebar-module-message-icon").off().on('click', function(e){
+              let confirmation = confirm("Are you sure you want to delete this status?");
+              if(confirmation == true){
+                let messageModule = $(this).parent();
+                let timeStamp = messageModule.find("[data-time]").data("time");
+                delStatus(advisorId, timeStamp)
+                .then(data =>{
+                  messageModule.remove();
+                })
+                .catch(err =>{
+                  alert("Unable to delete status.");
+                })
+              }
+            });
+          }).catch(err => {
+            alert("Unable to add Status")
+          });
+      });
+
+      function loadStatuses(){
+        if(statusesLoaded){
+          $(".sidebar-module.advisor-statuses .sidebar-module-body").scrollTop(function() { return this.scrollHeight; });
+          return;
+        }
+
+        getStatuses(advisorId)
+        .then( statuses => {
+          statusesLoaded = true;
+          if(statuses.length > 0){
+            $(".sidebar-module.advisor-statuses .sidebar-module-body").empty();
+            statuses.sort(function(i1, i2){
+              if(i1.timestamp > i2) return -1;
+              else return 1;
+            }).forEach(item => {
+              let date = new Date(item.timestamp);
+              let term = date.getHours() >= 12 ? 'pm' : 'am';
+              date = date.getMonth() + '/' + date.getDate() + '/' + date.getFullYear() + ' - ' + ((date.getHours() % 12) || 12) + ':' + (date.getMinutes() < 10 ? '0' : '') +date.getMinutes() +term;
+              $(".sidebar-module.advisor-statuses .sidebar-module-body").append('<div class="sidebar-module-message"><div class="sidebar-module-message-icon"><i class="fas fa-trash-alt"></i></div><div class="sidebar-module-message-info"><span class="sidebar-module-message-name">'+item.officer+'</span><span class="sidebar-module-message-time" data-time="'+item.timestamp+'">'+date+'</span></div><div class="sidebar-module-message-content">'+item.message+'</div></div>');
+            });
+            $(".sidebar-module.advisor-statuses .sidebar-module-body").scrollTop(function() { return this.scrollHeight; });
+            $(".sidebar-module-message-icon").off().on('click', function(e){
+              let confirmation = confirm("Are you sure you want to delete this status?");
+              if(confirmation == true){
+                let messageModule = $(this).parent();
+                let timeStamp = messageModule.find("[data-time]").data("time");
+                delStatus(advisorId, timeStamp)
+                .then(data =>{
+                  messageModule.remove();
+                })
+                .catch(err =>{
+                  alert("Unable to delete status.");
+                })
+              }
+            });
+          }else
+            $(".sidebar-module.advisor-statuses .sidebar-module-message-content").html("There are no statuses for this website.");
+        });
+      }
+
+      //Scroll down if needed
+      setTimeout(function(){
 
       if(localStorage.getItem("lastReviewed")){
         let lastReviewed = JSON.parse(localStorage.getItem("lastReviewed"));
@@ -724,9 +891,12 @@ $(function() {
    else {
 
       //Auto open all advisors
-      if ($("#showAllAdvisors").length > 0)
-        $("#showAllAdvisors").click();
-
+      setTimeout(function(){
+        if(!$("#showAllAdvisors").hasClass("active")){
+          $("#showAllAdvisors").click();
+          console.log("showing all");
+        }
+      }, 500);
       //
       // $("#showMyAdvisors").after('<a href="#" id="showMyTeam">My Team</a>');
       // $(".providence-overview--nav a").on('click', function(){
@@ -1147,80 +1317,31 @@ $(function() {
    }
 });
 
-function manageChatRejections() {
-   var advisorId = $(".recent-chats").find("li.active a").first().attr("data-advisor_id");
-   let rejections = updateRejections('rejections-' + advisorId);
-   rejections.forEach(e => {
-      $('.rejection-notice[data-id=' + e.id + ']').find(".rejected-item").each(function() {
-         let title = getOnlyText($(this).find(".rejected-title"));
-         let rejection = e.rejections.find(e2 => {
-            return title == e2.title;
-         });
-         let isCompleted = rejection.completed;
-         $(this).prepend('<input class="rejection-completed"' + (isCompleted ? 'checked=true' : '') + ' type="checkbox">');
+function manageChatRejections(advisorId) {
+  console.log(advisorId)
+  getRejections(advisorId)
+  .then(rejections => {
+      $(".rejection-notice").each(function(){
+        let rejectionItem = rejections.find(item => {return item.rejectionId == $(this).data("id")}) || []
+        $(this).find(".rejected-item").each(function(i, rejectionWrapper) {
+          console.log(rejectionItem);
+          let isCompleted = rejectionItem?.rejection ? rejectionItem.rejection[i] : false;
+          $(this).prepend('<input class="rejection-completed"' + (isCompleted ? 'checked=true' : '') + ' type="checkbox">');
+        })
       });
-   });
-   $(".rejection-completed").off().on('change', function() {
-      let id = $(this).parent().parent().parent().parent().data("id"),
-         title = getOnlyText($(this).parent().find(".rejected-title"));
-      rejections.find(function(e) {
-         if (e.id == id)
-            return e.rejections.find(e2 => {
-               if (e2.title == title) {
-                  e2.completed = !e2.completed;
-                  return true;
-               }
-            });
-      });
-      localStorage.setItem('rejections-' + advisorId, JSON.stringify(rejections));
-   });
-
-   function updateRejections(key) {
-      let savedRejections = JSON.parse(localStorage.getItem(key));
-      if (!savedRejections)
-         savedRejections = [];
-      var rejections = [];
-
-      $(".rejection-notice").each(function(notice) {
-         let rejected = {
-            id: $(this).data("id"),
-            rejections: []
-         };
-
-         $(this).find(".rejected-item").each(function(item) {
-            let rejection = {
-               title: getOnlyText($(this).find(".rejected-title")),
-               message: $(this).find(".note-content p").text(),
-               completed: false
-            };
-            rejected.rejections.push(rejection);
-         });
-         rejections.push(rejected);
-      });
-
-      rejections.forEach((e, i) => {
-         if (!savedRejections.some(e2 => {
-               return e.id == e2.id;
-            })) {
-            savedRejections.push(e);
-         }
-      });
-      localStorage.setItem(key, JSON.stringify(savedRejections));
-      return savedRejections;
-   }
-
-   function getOnlyText(e) {
-      return e.clone() //clone the element
-         .children() //select all the children
-         .remove() //remove all the children
-         .end() //again go back to selected element
-         .text();
-   }
-
-   function getItemById(c, id) {
-      var v = $("." + c + "[data-id=" + id + "]");
-      return v
-   }
+      $(".rejection-completed").off().on("change", function(){
+        let index = Array.prototype.indexOf.call(this.parentNode.parentNode.children, this.parentNode);
+        let rejectionId = $(this).parent().parent().parent().parent().data("id");
+        let rejectionArray = [];
+        $(this).parent().parent().find(".rejected-item").each(function(e, item){
+          rejectionArray.push($(item).find(".rejection-completed")[0].checked ? true : false);
+        });
+        updateRejection(advisorId, rejectionId, rejectionArray);
+      })
+  })
+  .catch(err =>{
+    console.log(err);
+  });
 }
 
 function approveAll() {

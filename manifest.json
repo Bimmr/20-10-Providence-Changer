@@ -1,7 +1,7 @@
 {
 
   "name": "Providence Changer",
-  "version": "1.5.3",
+  "version": "1.5.5",
 
   "description": "Providence Changes",
   "icons": {
@@ -19,8 +19,8 @@
         ],
         "all_frames": false,
         "js": [
-            "/js/jquery-3.3.1.min.js",
             "/js/utils.js",
+            "/js/db.js",
             "/providence/onLoad.js"
         ]
     },
@@ -30,8 +30,8 @@
           "https://app.twentyoverten.com/publish"
         ],
         "js": [
-            "/js/jquery-3.3.1.min.js",
             "/js/utils.js",
+            "/js/db.js",
             "/edit/onLoad.js"
         ]
     }
@@ -39,6 +39,7 @@
 "web_accessible_resources": [
     "/providence/injected.js",
     "/js/utils.js",
+    "/js/db.js",
     "/edit/injected.js"
   ],
 

@@ -175,30 +175,29 @@ $(function() {
     //Wait for the chat to initialize
     setTimeout(() => {
 
-      let rejections = updateRejections('rejections-' + window.loggedInUser);
-      rejections.forEach(e => {
-        $('.rejection-notice[data-id=' + e.id + ']').find(".rejected-item").each(function() {
-          let title = getOnlyText($(this).find(".rejected-title"));
-          let rejection = e.rejections.find(e2 => {
-            return title == e2.title;
+      let advisorId = window.loggedInUser;
+      getRejections(advisorId)
+      .then(rejections => {
+          $(".rejection-notice").each(function(){
+            let rejectionItem = rejections.find(item => {return item.rejectionId == $(this).data("id")}) || []
+            $(this).find(".rejected-item").each(function(i, rejectionWrapper) {
+              console.log(rejectionItem);
+              let isCompleted = rejectionItem?.rejection ? rejectionItem.rejection[i] : false;
+              $(this).prepend('<input class="rejection-completed"' + (isCompleted ? 'checked=true' : '') + ' type="checkbox">');
+            })
           });
-          let isCompleted = rejection.completed;
-          $(this).prepend('<input class="rejection-completed"' + (isCompleted ? 'checked=true' : '') + ' type="checkbox">');
-        });
-      });
-      $(".rejection-completed").on('change', function() {
-        let id = $(this).parent().parent().parent().parent().data("id"),
-          title = getOnlyText($(this).parent().find(".rejected-title"));
-        rejections.find(function(e) {
-          if (e.id == id)
-            return e.rejections.find(e2 => {
-              if (e2.title == title) {
-                e2.completed = !e2.completed;
-                return true;
-              }
+          $(".rejection-completed").off().on("change", function(){
+            let index = Array.prototype.indexOf.call(this.parentNode.parentNode.children, this.parentNode);
+            let rejectionId = $(this).parent().parent().parent().parent().data("id");
+            let rejectionArray = [];
+            $(this).parent().parent().find(".rejected-item").each(function(e, item){
+              rejectionArray.push($(item).find(".rejection-completed")[0].checked ? true : false);
             });
-        });
-        localStorage.setItem('rejections-' + window.loggedInUser, JSON.stringify(rejections));
+            updateRejection(advisorId, rejectionId, rejectionArray);
+          })
+      })
+      .catch(err =>{
+        console.log(err);
       });
 
       //When the chat gets opened, display saved message
@@ -220,40 +219,6 @@ $(function() {
     }, 2000);
   });
 });
-
-function updateRejections(key) {
-  let savedRejections = JSON.parse(localStorage.getItem(key));
-  if (!savedRejections)
-    savedRejections = [];
-  var rejections = [];
-
-  $(".rejection-notice").each(function(notice) {
-    let rejected = {
-      id: $(this).data("id"),
-      rejections: []
-    };
-
-    $(this).find(".rejected-item").each(function(item) {
-      let rejection = {
-        title: getOnlyText($(this).find(".rejected-title")),
-        message: $(this).find(".note-content p").text(),
-        completed: false
-      };
-      rejected.rejections.push(rejection);
-    });
-    rejections.push(rejected);
-  });
-
-  rejections.forEach((e, i) => {
-    if (!savedRejections.some(e2 => {
-        return e.id == e2.id;
-      })) {
-      savedRejections.push(e);
-    }
-  });
-  localStorage.setItem(key, JSON.stringify(savedRejections));
-  return savedRejections;
-}
 
 function getOnlyText(e) {
   return e.clone() //clone the element

@@ -1,3 +1,9 @@
+1.5.5
+- Removed not used JS Libraries
+- Added Notes & Status
+- Uses AWS DynamoDB for Notes, Status, and Rejections
+1.5.4
+- Added Preview Site link to profile
 1.5.3
 - Add Note To All only runs if a note was given
 - Randy's list now shows on hold regardless of status

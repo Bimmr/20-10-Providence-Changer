@@ -1,4 +1,3 @@
-
 let sfAccounts = [
   '5b6b0b38c7b3f042604e254c', // SiteForward
   '5b44a4121ee2f32880ef9485', // Mandy
