@@ -125,7 +125,7 @@ $(function() {
       '.sidebar-module-message{ margin: 15px 10px; position: relative; overflow: hidden;}'+
       '.sidebar-module-message-info{ display: flex; align-items: center;justify-content: space-between;background: #4d4d4d;padding: 5px;border-radius: 5px 5px 0 0;}'+
       '.sidebar-module-message-info span{ font-size: .6875em;line-height: 1;color: rgba(255,255,255,0.6);}'+
-      '.sidebar-module-message-content{color: #2d2d2d; background: #fefefe;padding: 5px;border-radius: 0 0 5px 5px;word-break: break-word;font-size: .9em;}'+
+      '.sidebar-module-message-content{color: #2d2d2d; background: #fefefe;padding: 5px;border-radius: 0 0 5px 5px;word-break: break-word;font-size: .8em;}'+
       '.sidebar-module-footer{background: rgba(255,255,255,0.5);padding: 5px;box-shadow: 0 -5px 10px 0px rgb(0 0 0 / 18%);}'+
       '.sidebar-module-footer input{font-size: .8em; margin-top: 0px; margin-bottom: 0px; height: 24px; width: 80%; position: relative;padding-left: 2px;}'+
 
@@ -137,7 +137,7 @@ $(function() {
 
       '.sidebar-module.advisor-notes .sidebar-module-message{height: calc(100% - 30px)}'+
       '.sidebar-module.advisor-notes .sidebar-module-message-content{height: 100%;}'+
-      '.sidebar-module.advisor-notes .sidebar-module-message-content textarea{font-size: .8em; color: #2b2b2b}'+
+      '.sidebar-module.advisor-notes .sidebar-module-message-content textarea{ color: #2b2b2b}'+
       '.sidebar-module.advisor-notes .updateNotes-button{width: 100%}'+
 
 
