@@ -8,7 +8,7 @@ Misc:
 - Added "View Profile" icon to chat wrapper
 - Checkboxes for rejections in chat (Saves locally)
 - Added view profile to chat
-- Adds a Night Mode
+- Added Night Mode
 
 Main List:
 - Adds search bar that can search by tags, names, email, status, created year
@@ -48,6 +48,9 @@ Advisor Profile & Review:
 - Shows tags on sidebar
 - Shows who made the approval/rejection and when
 - Shows any review notes and rejections (Cropped)
+- After clicking Back in preview it will scroll down page to the item in list
+- Added Notes & Status
+- Added Preview Site link
 
 Revisions:
 - Adds option to turn revisions table to a full compliance report that includes notes and rejections
@@ -56,3 +59,4 @@ Editing Website:
 - Highlights what page you're editing in the sidebar navigation
 - Adds an "Edit All" button (If user is on SiteForward team)
 - Enables devHelper mode by default (Only works on Prisim framework)
+- Added night mode to website engine
