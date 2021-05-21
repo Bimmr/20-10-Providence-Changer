@@ -125,7 +125,7 @@ $(function() {
       '.sidebar-module-message{ margin: 15px 10px; position: relative; overflow: hidden;}'+
       '.sidebar-module-message-info{ display: flex; align-items: center;justify-content: space-between;background: #4d4d4d;padding: 5px;border-radius: 5px 5px 0 0;}'+
       '.sidebar-module-message-info span{ font-size: .6875em;line-height: 1;color: rgba(255,255,255,0.6);}'+
-      '.sidebar-module-message-content{color: #2d2d2d; background: #fefefe;padding: 5px;border-radius: 0 0 5px 5px;word-break: break-word;font-size: .8em;}'+
+      '.sidebar-module-message-content{color: #2d2d2d; background: #fefefe;padding: 5px;border-radius: 0 0 5px 5px;word-break: break-word;font-size: .8em;white-space: pre;}'+
       '.sidebar-module-footer{background: rgba(255,255,255,0.5);padding: 5px;box-shadow: 0 -5px 10px 0px rgb(0 0 0 / 18%);}'+
       '.sidebar-module-footer input{font-size: .8em; margin-top: 0px; margin-bottom: 0px; height: 24px; width: 80%; position: relative;padding-left: 2px;}'+
 
@@ -134,6 +134,8 @@ $(function() {
       '.sidebar-module.advisor-statuses:is(:focus, :focus-within){top: 0; z-index: 1;}'+
       '.sidebar-module.advisor-statuses .sidebar-module-message .sidebar-module-message-icon {position: absolute; width: 20px; height: 20px; bottom: 1px; right: -50px; color: #111; opacity: 0; transition: .3s all ease-in-out;  font-size: .85em; cursor: pointer;}'+
       '.sidebar-module.advisor-statuses .sidebar-module-message:is(:hover) .sidebar-module-message-icon {opacity: .5; right: -4px;}'+
+      '.sidebar-module.advisor-statuses .addStatus-input{width: 100%; padding: 5px;font-size: .9em;}'+
+      '.sidebar-module.advisor-statuses .addStatus-button{width: 100%;}'+
 
       '.sidebar-module.advisor-notes .sidebar-module-message{height: calc(100% - 30px)}'+
       '.sidebar-module.advisor-notes .sidebar-module-message-content{height: 100%;}'+
@@ -196,6 +198,7 @@ $(function() {
       'body.providence.nightMode .sidebar-module-header{background: rgba(0,0,0,0.5); width: 100%; box-shadow: 0px 5px 10px 0px rgb(0 0 0 / 20%); border-bottom: 1px solid #2d2d2d;color: #fff;}'+
       'body.providence.nightMode .sidebar-module-message-content{color: #2d2d2d; background: #fefefe;}'+
       'body.providence.nightMode .sidebar-module-footer{background: rgba(0,0,0,0.5);}'+
+
 
       '</style>');
 
@@ -289,7 +292,7 @@ $(function() {
       $(".updateNotes-textarea").on("keyup", delay(() => $(".updateNotes-button").show(), 1000));
 
       let statusesLoaded = false;
-      $("#advisor-details").prepend('<div class="sidebar-module advisor-statuses" tabindex="0" ><div class="sidebar-module-icon"><i class="far fa-comments-alt"></i><span>Status</span></div><div class="sidebar-module-wrapper"><div class="sidebar-module-header">Website Status</div><div class="sidebar-module-body"><div class="sidebar-module-message statusPlaceholder"><div class="sidebar-module-message-content" style=" padding: 20px; color: #9a9a9a; border-radius: 10px; text-align:center">Loading Statuses...</div></div></div><div class="sidebar-module-footer"><input class="addStatus-input" type="text" placeholder="Add a status"><button class="btn addStatus-button">Send</button></div></div></div>')
+      $("#advisor-details").prepend('<div class="sidebar-module advisor-statuses" tabindex="0" ><div class="sidebar-module-icon"><i class="far fa-comments-alt"></i><span>Status</span></div><div class="sidebar-module-wrapper"><div class="sidebar-module-header">Website Status</div><div class="sidebar-module-body"><div class="sidebar-module-message statusPlaceholder"><div class="sidebar-module-message-content" style=" padding: 20px; color: #9a9a9a; border-radius: 10px; text-align:center">Loading Statuses...</div></div></div><div class="sidebar-module-footer"><textarea class="addStatus-input" type="text" placeholder="Add a status"></textarea><button class="btn addStatus-button">Send</button></div></div></div>')
       $(".advisor-statuses").on('click', function(){loadStatuses()});
 
       //Notes
@@ -328,10 +331,10 @@ $(function() {
       }
 
       // Statuses
-      $(".addStatus-input").on('keyup', function(event){
-        if((event.keyCode ? event.keyCode : event.which) == '13')
-            $(".addStatus-button").click();
-      });
+      // $(".addStatus-input").on('keyup', function(event){
+      //   if((event.keyCode ? event.keyCode : event.which) == '13')
+      //       $(".addStatus-button").click();
+      // });
 
       $(".addStatus-button").on('click', function(event){
         let officer = $("#header").find(".display-name + small").text();

@@ -1,3 +1,6 @@
+1.5.5.2
+- Changed status input to textarea
+- Statuses can have line breaks
 1.5.5.1
 - Lowered font size for statuses
 - Increased font size for notes
