@@ -1,3 +1,5 @@
+1.5.5.4
+- Apparently I need to test more. Re-added "white-space: pre-wrap" for text wrapping and keeping linebreaks
 1.5.5.3
 - Removed white-space to allow statuses to wrap
 1.5.5.2
