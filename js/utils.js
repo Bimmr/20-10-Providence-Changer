@@ -37,10 +37,10 @@ let isSiteForward = function(id){
 let isCompliance = function(id){
   return mlsAccounts.some( i => i == id) || msiAccounts.some( i => i == id);
 }
-let isMLSCompliance = function(id){
+let isMLSSalesCompliance = function(id){
   return mlsAccounts.some( i => i == id);
 }
-let isInsuranceCompliance = function(id){
+let isMarketConductCompliance = function(id){
   return msiAccounts.some( i => i == id);
 }
 let isMiscellaneous = function(id){

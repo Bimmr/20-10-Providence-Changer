@@ -1,3 +1,7 @@
+1.5.6
+- Fixed issue with Status Month being 1 month behind
+- Can now search for "Advisor Revisions Needed"
+- Added searches is_siteforward, is_compliance, is_mlssalescompliance, is_marketconductcompliance, is_onhold
 1.5.5.4
 - Apparently I need to test more. Re-added "white-space: pre-wrap" for text wrapping and keeping linebreaks
 1.5.5.3
