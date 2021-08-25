@@ -1232,16 +1232,8 @@ $(function() {
                 timeB = getTime(b.find(".submitted").text());
 
               // //Check if either card is a construction page
-              let isConstructionA = hasTag("Construction Page", infoA),
-                isConstructionB = hasTag("Construction Page", infoB);
-
-              let isFullReviewA = hasTag("FULL SITE REVIEW", infoA),
-                isFullReviewB = hasTag("FULL SITE REVIEW", infoB);
-
-               let isContentReviewA = hasTag("CONTENT REVIEW", infoA),
-                 isContentReviewB = hasTag("CONTENT REVIEW", infoB);
-              //
-              // console.log(isContentReviewA);
+              let isConstructionA = hasTag("Construction", infoA),
+                isConstructionB = hasTag("Construction", infoB);
 
               //Construction Pages come first
               if (isConstructionA && !isFullReviewA && !isFullReviewB && !isConstructionB)
@@ -1249,18 +1241,7 @@ $(function() {
               else if (isConstructionB && !isFullReviewA && !isFullReviewB && !isConstructionA)
                 return 1;
 
-              //
-              // //Full Review Pages come last
-              // if (isFullReviewA && !isFullReviewB)
-              //   return 1;
-              // else if (isFullReviewB && !isFullReviewA)
-              //   return -1;
-              //
-               if (isContentReviewA && !isContentReviewB)
-                 return 1;
-               else if (isContentReviewB && !isContentReviewA)
-                 return -1;
-
+             
                //Compare time
                return (timeA < timeB) ? 1 : (timeA > timeB) ? -1 : 0;
                // return 0;
@@ -1596,34 +1577,35 @@ function updateSlideCardCount() {
 
   //{Name, Items, Pending Changes, Total Changes}
    var reviewers = [
-      ["All In Review", 0, 0, 0],
-      ["Content Review", 0, 0, 0]
+      ["All In Review", 0, 0, 0]
    ];
    var tags = [
    ["Normal Reviews", 0,'-'],
+   ["Construction", 0,'-'],
+   ["Migrating", 0,'-'],
    ["Brand New", 0,'-'],
-   ["Redesign", 0,'-'],
+   ["Redesign", 0,'-']
  ];
 
    $(".advisor-card").each((i, e) => {
       var reviewName = $(e).data("officer");
+      var isConstruction = $(e).data("importanttags").indexOf("Construction") >= 0;
+      var isMigrating = $(e).data("importanttags").indexOf("Migrating") >= 0;
       var isBrandNew = $(e).data("importanttags").indexOf("Brand New") >= 0;
-      var isRedesign = $(e).data("importanttags").indexOf("Brand New") == -1 && $(e).data("importanttags").indexOf("Full Review") >= 0;
-      var isContentReview = $(e).data("importanttags").indexOf("Content Review") >= 0;
-      var isOther = !isBrandNew && !isRedesign && !isContentReview;
-      var found = 0;
-
-      if(isBrandNew)
+      var isRedesign = $(e).data("importanttags").indexOf("Redesign") >= 0;
+ 
+      if(isConstruction)
         tags[1][1] = tags[1][1]+1;
+      if(isMigrating)
+         tags[2][1] = tags[2][1]+1;
+      else if(isBrandNew)
+         tags[3][1] = tags[3][1]+1;
       else if(isRedesign)
-        tags[2][1] = tags[2][1]+1;
-      else if(isContentReview){
-        // found = 1;
-        reviewers[1][1] = reviewers[1][1] + 1;
-      }
+         tags[4][1] = tags[4][1]+1;
       else
         tags[0][1] = tags[0][1]+1;
-
+      
+      var found = 0;
       reviewers.forEach((e, i) => {
          if (e[0].indexOf(reviewName) >= 0) {
             e[1] = e[1] + 1;
@@ -1648,10 +1630,6 @@ function updateSlideCardCount() {
        reviewers[0][3] = reviewers[0][3] + approvals + rejections + changes;
        reviewers[found][2] = reviewers[found][2] + changes;
        reviewers[found][3] = reviewers[found][3] + approvals + rejections + changes;
-       if(isContentReview){
-         reviewers[1][2] = reviewers[1][2] + changes;
-         reviewers[1][3] = reviewers[1][3] + approvals + rejections + changes;
-       }
       }
    });
    var reviewersText = '<table style="width: 100%; text-align:left">';
@@ -1668,7 +1646,7 @@ function updateSlideCardCount() {
         reviewersText += '<td><a href="#" class="filter-cards">' + e[0] + '</a></td><td style="text-align:right">' + e[1] + '</td><td style="text-align:right"> ' + e[2] + '</td>';
        }
       reviewersText += '</tr>';
-      if(i == 1 || (i == 0 && reviewers[1][1] == 0))
+      if(i == 0)
         reviewersText += '<tr><td colspan="3" style="padding-bottom: 5px"></td></tr><tr class="seperator"><td colspan="3" style="padding-bottom: 5px"></td></tr>';
       }
    });
@@ -1695,9 +1673,13 @@ function updateSlideCardCount() {
       } else {
          $(".advisor-card").hide();
          $(".advisor-card").filter(function() {
-            return $(this).data("officer").indexOf(filterName) >= 0
-            || (filterName == "Redesign" ? $(this).data("importanttags").indexOf('Full Review') >= 0 && $(this).data("importanttags").indexOf("Brand New") == -1 : $(this).data("importanttags").indexOf(filterName) >= 0)
-            || (filterName == "Normal Reviews" && $(this).data("importanttags").indexOf('Full Review') == -1 && $(this).data("importanttags").indexOf('Brand New') == -1 && $(this).data("importanttags").indexOf('Content Review') == -1);
+            return $(this).data("officer").indexOf(filterName) >= 0 || $(this).data("tags").indexOf(filterName) >= 0 ||
+            (filterName == "Normal Reviews" && 
+               $(this).data("importanttags").indexOf('Brand New') == -1 &&
+               $(this).data("importanttags").indexOf('Migrating') == -1 &&
+               $(this).data("importanttags").indexOf('Construction') == -1 &&
+               $(this).data("importanttags").indexOf('Redesign') == -1
+               );
          }).show();
       }
    })
@@ -1773,45 +1755,42 @@ function updateSlider() {
 
       //Find who's assigned to the current card
       let assigned = info ? getOfficerName(info.officer_id) : "";
+     
+      // Important Tags List
+      let importantTagsList = [
+         "Migrating",
+         "Brand New",
+         "Redesign",
+         "Construction",
+         "Dealer OBA",
+         "Not On Program",
+         "Tier"
+      ];
 
-      //Check if the site is migrating or new
-      let isMigrating = hasTag("Migrating", info),
-         isNew = hasTag("Brand New", info),
-         isNotOnProgram = hasTag("Not On Program", info),
-         isConstruction = hasTag("Construction Page", info),
-         isContentReview = hasTag("Content Review", info),
-         isDealerOBA = hasTag("Dealer OBA", info),
-         isFullReview = hasTag("Full Site Review", info);
-      let iTagString = (isMigrating ? "Migrating As Is | " : "") +
-         (isNew ? "Brand New | " : "") +
-         (isFullReview ? "- Full Review - | " : "") +
-         (isContentReview ? "- Content Review - | " : "") +
-         (isConstruction ? "- Construction Page - | " : "") +
-         (isDealerOBA ? " Dealer OBA | " : "") +
-         (isNotOnProgram ? "NOT ON PROGRAM | " : "");
-      if (iTagString.length > 0)
-         iTagString = iTagString.substr(0, iTagString.length - 3);
-
-      let tags = "";
       let tier = "";
-      if (info && info.settings && info.settings.broker_tags) {
-         info.settings.broker_tags.forEach(function(i) {
-            if (i.name.toLowerCase().indexOf("tier") >= 0) {
-               tier = "Tier: " + i.name.substr(5);
-            } else if (i.name.toLowerCase().indexOf("construction") == -1
-            && i.name.toLowerCase().indexOf("migrating") == -1
-            && i.name.toLowerCase().indexOf("brand new") == -1
-            && i.name.toLowerCase().indexOf("not on program") == -1
-            && i.name.toLowerCase().indexOf("full site review") == -1
-            && i.name.toLowerCase().indexOf("content review") == -1
-            && i.name.toLowerCase().indexOf("dealer oba") == -1
-          )
-               tags += i.name + ", ";
-         });
+      let importantTagsString = "";
+      let nonImportantTagsString = "";
+      let allTagsString = "";
 
-         tags = tags.substr(0, tags.length - 2);
+      if (info && info.settings && info.settings.broker_tags) {
+         info.settings.broker_tags.forEach(allTag => {
+            allTag = allTag.name
+            if(allTag.indexOf("Tier") >= 0)
+               tier = "Tier: " + allTag.substr(5);
+            else if(importantTagsList.some(impTag => allTag.indexOf(impTag) >= 0))
+               importantTagsString += allTag + ", "
+            else if(!importantTagsList.some(impTag => allTag.indexOf(impTag) >= 0))
+               nonImportantTagsString += allTag + ", "
+            
+            allTagsString += allTag + ", "
+         })
       }
 
+      if (importantTagsString.length > 0)
+         importantTagsString = importantTagsString.substr(0, importantTagsString.length - 2);
+         
+      if (nonImportantTagsString.length > 0)
+         nonImportantTagsString = nonImportantTagsString.substr(0, nonImportantTagsString.length - 2);
 
       //Check if the person assigned to the advisor is found
       if (assigned.length > 0) {
@@ -1820,17 +1799,19 @@ function updateSlider() {
 
          $(this).attr("data-name", name);
          $(this).attr("data-officer", assigned);
-         $(this).attr("data-importantTags", iTagString);
-         $(this).attr("data-tags", tags);
+         $(this).attr("data-importantTags", importantTagsString);
+         $(this).attr("data-nonimportantTags", nonImportantTagsString);
+         $(this).attr("data-tags", allTagsString);
          $(this).attr("data-id", info._id);
 
          $(this).find(".cardOfficer").html('<span>' + assigned + '</span>');
-         $(this).find(".cardImportantTags").html('<span>' + iTagString.replace(/\|/g, "<br>") + '</span>');
-         $(this).find(".card-tags").html('<span>' + tags + '</span>');
+         $(this).find(".cardImportantTags").html('<span>' + importantTagsString.replace(/\, /g, "<br>") + '</span>');
+         $(this).find(".card-tags").html('<span>' + allTagsString + '</span>');
          $(this).find(".card-tier").html('<span>' + tier + '</span>');
 
          //Add the Open chat button to the card
          if (!$(this).find(".open-chat-extension").length) {
+            $(this).find(".card-action").find(".btn--action-review")[0].target = "_blank";
             $(this).find(".card-action").append('<a href="#messages" style="margin-left: 5px;flex-grow:1" class="btn pill primary btn--action-review open-chat-extension" data-advisor_id="' + info._id + '" data-cover="Open Chat">Open Chat</a>');
          }
 
@@ -1888,7 +1869,7 @@ function updateList(container) {
             state.append('<p style="font-size: .75em;color: #1fe9ae;text-align: center;margin: 5px 0 0 0; font-family: \'Anonymous Pro\', Courier, monospace;">Not Published</p>');
          }
          //   //Add a note saying when it was reviwed
-         //- Not sure if theres a way to get the time of it's last rejection. I can get the rejection ID from the chat, or the revisions page. but I cna't get a list of them
+         //- Not sure if theres a way to get the time of it's last rejection. I can get the rejection ID from the chat, or the revisions page. but I can't get a list of them
          //   if (hasStatus("review completed", info)) {
          //     let state = list.parent().parent().parent().parent().find(".has-state");
          //     let reviewDate = new Date(Date.parse(info.site.updated_at));

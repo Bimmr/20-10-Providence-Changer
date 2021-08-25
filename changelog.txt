@@ -1,3 +1,5 @@
+1.5.7
+- Updated tagging to make more sense
 1.5.6
 - Fixed issue with Status Month being 1 month behind
 - Can now search for "Advisor Revisions Needed"
