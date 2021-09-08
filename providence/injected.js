@@ -1061,10 +1061,10 @@ $(function() {
        }
 
        updateList();
-       sort();
        updateCustomEvents();
        updateOfficerList();
        updateSlider();
+       sort();
       }, 750));
 
       //Filter warning
@@ -1196,7 +1196,7 @@ $(function() {
                }
                time = parseInt(time) * 60 * 24;
             }
-            //Hours (2 Hours/an few hours)
+            //Hours (2 Hours/a few hours)
             else if (time.indexOf("hour") > 0) {
                if (time.split(" ")[0].indexOf("a") >= 0)
                   time = 1;
@@ -1231,17 +1231,16 @@ $(function() {
              let timeA = getTime(a.find(".submitted").text()),
                 timeB = getTime(b.find(".submitted").text());
 
-              // //Check if either card is a construction page
+              // Check if either card is a construction page
               let isConstructionA = hasTag("Construction", infoA),
                 isConstructionB = hasTag("Construction", infoB);
-
+                
               //Construction Pages come first
-              if (isConstructionA && !isFullReviewA && !isFullReviewB && !isConstructionB)
+              if (isConstructionA && !isConstructionB)
                 return -1;
-              else if (isConstructionB && !isFullReviewA && !isFullReviewB && !isConstructionA)
+              else if (isConstructionB && !isConstructionA)
                 return 1;
 
-             
                //Compare time
                return (timeA < timeB) ? 1 : (timeA > timeB) ? -1 : 0;
                // return 0;
