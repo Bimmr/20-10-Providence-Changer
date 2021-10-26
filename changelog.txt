@@ -1,3 +1,9 @@
+1.5.9
+- Updated colour for approved chip to make them stand out a bit more
+- Fixed issue with notes & rejections not always showing
+- Moved to Manifest v3
+- Removed not used CSS File
+- Made some changes to Edit Nightmode
 1.5.8
 - Updated sorting of cards
 1.5.7

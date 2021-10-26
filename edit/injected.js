@@ -16,7 +16,7 @@ $(function() {
     // "#app-wrapper > #header{z-index: 10 !important;}"+
     // "#app-wrapper > #page-settings-overlay{top: 60px !important;}"+
     'body.app.nightMode h1, body.app.nightMode h2, body.app.nightMode  h3, body.app.nightMode  h4, body.app.nightMode .account-nav__my-account .display-name, body.app.nightMode .account-nav__chat .chat-name {color: #fff;}'+
-    'body.app.nightMode #header{background-color:  #03172f; color: #fff;}'+
+    'body.app.nightMode #header{background-color:  #2a2a2a; color: #fff;}'+
     'body.app.nightMode #header .logo{filter: grayscale(1) invert(1);}'+
     'body.app.nightMode #header .logo:before{display: none}'+
     'body.app.nightMode .sidebar, body.app.nightMode #app-wrapper{background-color: #2d2d2d}'+
@@ -57,7 +57,7 @@ $(function() {
     'body.app.nightMode ul.domain_list li .domain-tools a:hover span.icon{color: #aaa;}'+
     'body.app.nightMode .form--note {color: #efefef;}'+
 
-    'body.app.nightMode .integration-actions {background: linear-gradient(to right, #2d2d20 0%, #2d2d2dbf 10%, #2d2d2d 20%, #212121 100%);}'+
+    'body.app.nightMode .integration-actions {background: linear-gradient(to right, #2c2c2c00 0%, #2c2c2c63 10%, #2c2c2cbf 20%, #2c2c2c 100%);}'+
     'body.app.nightMode .integration-details .integration-title, body.app.nightMode .integration-details p  { color: #efefef}'+
 
     'body.app.nightMode #site-preview {border-radius: 0}'+
@@ -66,7 +66,7 @@ $(function() {
     'body.app.nightMode .btn.secondary{background-color: #414141; color: #efefef}'+
     'body.app.nightMode .btn.secondary:hover{background-color: #333;}'+
 
-    'body.app.nightMode .settings-wrapper {background-color: #2d2d2d}'+
+    'body.app.nightMode .settings-wrapper, body.app.nightMode #redirects-overlay, body.app.nightMode #page-settings-overlay, body.app.nightMode #dns-settings-overlay, body.app.nightMode #integrations-overlay {background-color: #2d2d2d}'+
     'body.app.nightMode .settings-wrapper .settings-header, body.app.nightMode .settings-wrapper .settings-footer {background-color: #212121;}'+
     'body.app.nightMode .settings-wrapper .settings-header h2, body.app.nightMode .settings-wrapper .settings-header h1, body.app.nightMode .settings-wrapper .settings-footer h2{color: #efefef; }'+
 
@@ -110,12 +110,8 @@ $(function() {
    if (localStorage.getItem("nightMode-p") == "true")
      $("body.app").addClass("nightMode");
 
-    $("#header .tot_dropdown .tot_droplist ul").first().prepend('<li class="nightModeToggle"><a href="#">Toggle Night Mode</a></li>')
-    // .prepend('<li class="devHelperToggle"><a href="#">Toggle DevHelper</a></li>');
-    // $(".devHelperToggle").on('click', function(){
-    //   let currentState = localStorage.getItem("devHelper") ? localStorage.getItem("devHelper") == "true" : false;
-    //   localStorage.setItem("devHelper", !currentState);
-    // });
+    $("#header .tot_dropdown .tot_droplist ul").first()
+    .prepend('<li class="nightModeToggle"><a href="#">Toggle Night Mode</a></li>');
     $(".nightModeToggle").on('click', function(){
       $("body.app").toggleClass("nightMode");
       localStorage.setItem('nightMode-p', $("body.app").hasClass("nightMode"));

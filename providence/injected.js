@@ -29,6 +29,8 @@ $(function() {
       'body.providence .table .show-email {font-size: 0.9em}'+
       'body.providence .table span.advisor-tags {font-size: 0.75em}'+
 
+      'body.providence .table .chip--approved{ background: #bdffe9 !important}'+
+
       //Pending Review Count
       '.review-filter{font-size: .6em;border-top: 1px solid rgba(98,98,98,0.5); color: rgba(140,140,140,0.8); padding-top: .5rem; font-family: "CircularXXWeb-Book",Helvetica,Arial,sans-serif;}'+
       '.review-filter th, .review-filter .active{color: #626262;}'+
@@ -1538,7 +1540,7 @@ async function displayReviewer(url, container, cb) {
             }
 
             function getChildren(node) {
-               if ((!node.children || node.children.length < 1) && node.innerHTML) {
+               if ((!node.children || node.children.length <= 1) && node.innerHTML) {
                   msgText += node.innerHTML + "<br>";
                }
                node = node.firstChild;
