@@ -21,6 +21,7 @@ $(function() {
     'body.app.nightMode #header .logo:before{display: none}'+
     'body.app.nightMode .sidebar, body.app.nightMode #app-wrapper{background-color: #2d2d2d}'+
     'body.app.nightMode .pages-pane > .scroller{overflow-x:hidden}'+
+    'body.app.nightMode .active-page-tab { border-radius: 13px;}'+
     'body.app.nightMode .dd-item button, body.app.nightMode ol.pages li .drag:hover+.title {background-color: #212121; color: #efefef}'+
     'body.app.nightMode .dd-item button:hover {background-color: #333; }'+
     'body.app.nightMode .active-page-tab ol { background: #2d2d2d;}'+
@@ -60,13 +61,13 @@ $(function() {
     'body.app.nightMode .integration-actions {background: linear-gradient(to right, #2c2c2c00 0%, #2c2c2c63 10%, #2c2c2cbf 20%, #2c2c2c 100%);}'+
     'body.app.nightMode .integration-details .integration-title, body.app.nightMode .integration-details p  { color: #efefef}'+
 
-    'body.app.nightMode #site-preview {border-radius: 0}'+
+    'body.app.nightMode #site-preview {box-shadow: 0 0 2rem 0 rgb(255 255 255 / 10%);}'+
     'body.app.nightMode #site-preview .browser .browser-bar {background-color: #212121}'+
     'body.app.nightMode #site-preview .browser .browser-bar .title {color: #ccc}'+
     'body.app.nightMode .btn.secondary{background-color: #414141; color: #efefef}'+
     'body.app.nightMode .btn.secondary:hover{background-color: #333;}'+
 
-    'body.app.nightMode .settings-wrapper, body.app.nightMode #redirects-overlay, body.app.nightMode #page-settings-overlay, body.app.nightMode #dns-settings-overlay, body.app.nightMode #integrations-overlay {background-color: #2d2d2d}'+
+    'body.app.nightMode .settings-wrapper, body.app.nightMode #brokercheck-overlay, body.app.nightMode #account-settings-overlay, body.app.nightMode #redirects-overlay, body.app.nightMode #dns-settings-overlay, body.app.nightMode #integrations-overlay {background-color: #2d2d2d}'+
     'body.app.nightMode .settings-wrapper .settings-header, body.app.nightMode .settings-wrapper .settings-footer {background-color: #212121;}'+
     'body.app.nightMode .settings-wrapper .settings-header h2, body.app.nightMode .settings-wrapper .settings-header h1, body.app.nightMode .settings-wrapper .settings-footer h2{color: #efefef; }'+
 
@@ -79,6 +80,8 @@ $(function() {
     'body.app.nightMode #uploads-library {background-color: #2d2d2d}'+
     'body.app.nightMode .library-wrapper .library-sidebar {background: #21212180;}'+
     'body.app.nightMode .filter-uploads a:hover {color: #efefef;}'+
+    'body.app.nightMode .assisted-overlay{background-color: #2d2d2d;}'+
+    'body.app.nightMode .checkbox-group{background: #272727;}'+
 
     'body.app.nightMode a.download-chat:hover span , body.app.nightMode .close-chat:hover span, body.app.nightMode .close-library:hover span, body.app.nightMode .close-archives:hover span, .close-diff:hover span { background: #efefef;}'+
     'body.app.nightMode .chat-wrapper, body.app.nightMode .chat-footer{background-color: #2d2d2d;}'+

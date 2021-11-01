@@ -1541,7 +1541,7 @@ async function displayReviewer(url, container, cb) {
 
             function getChildren(node) {
                if ((!node.children || node.children.length <= 1) && node.innerHTML) {
-                  msgText += node.innerHTML + "<br>";
+                  msgText += node.textContent + "<br>";
                }
                node = node.firstChild;
                while (node) {
@@ -1549,9 +1549,6 @@ async function displayReviewer(url, container, cb) {
                   node = node.nextSibling;
                }
             }
-
-            if (msgText.length > 500)
-               msgText = msgText.substr(0, 500) + "...";
 
             review.push(msgText);
 

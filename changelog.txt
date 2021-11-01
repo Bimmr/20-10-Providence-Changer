@@ -1,3 +1,6 @@
+1.6.0
+- Fixed up a bug with editor's dark mode
+- Worked a little more on getting editor's dark mode to look nice
 1.5.9
 - Updated colour for approved chip to make them stand out a bit more
 - Fixed issue with notes & rejections not always showing
