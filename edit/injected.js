@@ -38,6 +38,7 @@ $(function() {
     'body.app.nightMode .color-picker, body.app.nightMode .select-control.font-picker::before, body.app.nightMode .select-control.weight-picker::before {color: #ccc; background-color: #333}'+
     'body.app.nightMode .select-control .selected {color: #ccc;}'+
     'body.app.nightMode .form-item.is-select::after{color:#888}'+
+    'body.app.nightMode .select-control ul.dropdown-options li span, body.app.nightMode .select-control ul.dropdown-options button span {color: #fafafa}'+
 
     'body.app.nightMode .noUi-tooltip{background: #2d2d2d;color: #efefef;}'+
     'body.app.nightMode .noUi-handle {background-color: #efefef;}'+

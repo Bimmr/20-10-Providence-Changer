@@ -1,17 +1,17 @@
 let baseUrl = "https://app.twentyoverten.com/"
-              //"https://staging-app.twentyoverten.com/"
+//"https://staging-app.twentyoverten.com/"
 
 let advisorInfo = [];
 let tableData;
 
-$(function() {
+$(function () {
 
-  //Load advisor list from storage
-  if (localStorage.getItem("advisorList") != null)
-    advisorInfo = JSON.parse(localStorage.getItem('advisorList'));
+   //Load advisor list from storage
+   if (localStorage.getItem("advisorList") != null)
+      advisorInfo = JSON.parse(localStorage.getItem('advisorList'));
 
-  if (isSiteForward(window.loggedInUser))
-     localStorage.setItem('IsSiteForward', true);
+   if (isSiteForward(window.loggedInUser))
+      localStorage.setItem('IsSiteForward', true);
 
    $("head").append('<style>' +
 
@@ -20,37 +20,37 @@ $(function() {
       '.dataTables_paginate {width: 750px;margin: 0 auto; z-index:3}' +
       '.table-length {height:72px;background-color: rgba(3,24,46,0.9); z-index: 2}' +
       '.dataTables_info {color:#dcdcde}' +
-      'body.providence .dataTables_paginate {padding: 10px}'+
-      'body.providence .dataTables_info, body.providence .dataTables_length {color:#fff}'+
-      'body.providence .dataTables_info select, body.providence .dataTables_length select {color: #03182e}'+
+      'body.providence .dataTables_paginate {padding: 10px}' +
+      'body.providence .dataTables_info, body.providence .dataTables_length {color:#fff}' +
+      'body.providence .dataTables_info select, body.providence .dataTables_length select {color: #03182e}' +
       '#advisorsList_wrapper .dataTables_paginate,  #advisorsList_wrapper .table-length {bottom: -2rem;}' +
 
       // Table details
-      'body.providence .table .show-email {font-size: 0.9em}'+
-      'body.providence .table span.advisor-tags {font-size: 0.75em}'+
+      'body.providence .table .show-email {font-size: 0.9em}' +
+      'body.providence .table span.advisor-tags {font-size: 0.75em}' +
 
-      'body.providence .table .chip--approved{ background: #bdffe9 !important}'+
+      'body.providence .table .chip--approved{ background: #bdffe9 !important}' +
 
       //Pending Review Count
-      '.review-filter{font-size: .6em;border-top: 1px solid rgba(98,98,98,0.5); color: rgba(140,140,140,0.8); padding-top: .5rem; font-family: "CircularXXWeb-Book",Helvetica,Arial,sans-serif;}'+
-      '.review-filter th, .review-filter .active{color: #626262;}'+
-      '.review-filter .seperator{border-top: 1px dashed rgba(88,88,88,0.53);}'+
+      '.review-filter{font-size: .6em;border-top: 1px solid rgba(98,98,98,0.5); color: rgba(140,140,140,0.8); padding-top: .5rem; font-family: "CircularXXWeb-Book",Helvetica,Arial,sans-serif;}' +
+      '.review-filter th, .review-filter .active{color: #626262;}' +
+      '.review-filter .seperator{border-top: 1px dashed rgba(88,88,88,0.53);}' +
       '.review-filter .active .filter-cards {color: #08aeea;}' +
       '.filter-cards{color: #737373;}' +
       '.filter-cards:hover{color: #08aeea;}' +
-      '.providence-pending--title{padding: 1em;}'+
+      '.providence-pending--title{padding: 1em;}' +
 
 
       // Cards
-      '.card-extras{font-size: 14px;padding: 15px;margin-top: 15px;background-color: #fafafa; border-radius: 10px;}'+
-      '.card-extras p{color:#2d2d2d}'+
-      '.card-changes{font-size: 12px;color: #737373;}'+
-      '.card-extras p.cardImportantTags{font-size: 12px; color: #08aeea;}'+
-      '.card-tags, .card-tier{color: #08aeea}'+
-      '.card-tags{font-size: .7em;}'+
-      '.card-tier{font-size: .6em;}'+
-      '.cardApprovals{ color: #007750}'+
-      '.cardRejections{ color: #C20000}'+
+      '.card-extras{font-size: 14px;padding: 15px;margin-top: 15px;background-color: #fafafa; border-radius: 10px;}' +
+      '.card-extras p{color:#2d2d2d}' +
+      '.card-changes{font-size: 12px;color: #737373;}' +
+      '.card-extras p.cardImportantTags{font-size: 12px; color: #08aeea;}' +
+      '.card-tags, .card-tier{color: #08aeea}' +
+      '.card-tags{font-size: .7em;}' +
+      '.card-tier{font-size: .6em;}' +
+      '.cardApprovals{ color: #007750}' +
+      '.cardRejections{ color: #C20000}' +
 
 
       // Add inform styles
@@ -62,165 +62,170 @@ $(function() {
       '.providence-pending--list .card-title h4{flex-basis: 75%;text-align: left;padding-left:10px;margin: 0; font-size: 1em;} ' +
       '.providence-pending--list .card-content{padding-top: 1rem;} ' +
       '.providence-pending--list .card-status{display: flex; align-items: center;justify-content: space-evenly;}' +
-      '.providence-pending--list .card-action .btn{padding:0.5em 0.25em;}'+
+      '.providence-pending--list .card-action .btn{padding:0.5em 0.25em;}' +
 
       // Format rejection box
       '.rejection-completed{position: absolute; top: 3.75rem; right:3rem;}' +
 
       //Format review notes'
-      '.review-item-note-rejection{color:#c2001e;}'+
-      '.review-item-note{color:#007750;}'+
-      '.review-item.approved-status .review-item__status{background-color: #E8F8F3; border-radius: 14px 0 0 14px;}'+
-      '.review-item.rejected-status .review-item__status{background-color: #F8E5E5; border-radius: 14px 0 0 14px;}'+
-      'body.providence .review-submission .approved-count.pending-count span.active {color: #717171}'+
+      '.review-item-preview .note p{margin-bottom: 3px}'+
+      '.review-item-preview .note ul{list-style: inside}'+
+      '.review-item-note-rejection{color:#c2001e;}' +
+      '.review-item-note{color:#007750;}' +
+      '.review-item-note-rejection h4, .review-item-note h4{position: relative}' +
+      '.review-item-note-rejection h4::after{content: ""; position: absolute; bottom: 0; left: 0; height: 1px; width: 65px; background: #c2001e;}' +
+      '.review-item-note h4::after{content: ""; position: absolute; bottom: 0; left: 0; height: 1px; width: 40px; background: #007750;}' +
+      '.review-item.approved-status .review-item__status{background-color: #E8F8F3; border-radius: 14px 0 0 14px;}' +
+      '.review-item.rejected-status .review-item__status{background-color: #F8E5E5; border-radius: 14px 0 0 14px;}' +
+      'body.providence .review-submission .approved-count.pending-count span.active {color: #717171}' +
 
       //Filter warning
-      '.filter-warning{background-color: #522626; width: 100%; text-align: center; display: block; position: fixed; color: #fff;}'+
+      '.filter-warning{background-color: #522626; width: 100%; text-align: center; display: block; position: fixed; color: #fff;}' +
 
       //Team filters
-      '.providence-overview--list:not(.loadedAll) .team-filter-row{display: none}'+
-      '.team-filter-row {margin-bottom: 10px;}'+
-      '.team-filter {padding: 5px 10px; color: #626262;transition: all 0.15s linear;}'+
-      '.team-filter.active { border-bottom: 1px solid #08aeea;}'+
-      '.team-filter.active,.team-filter:hover{color: #2d2d2d}'+
+      '.providence-overview--list:not(.loadedAll) .team-filter-row{display: none}' +
+      '.team-filter-row {margin-bottom: 10px;}' +
+      '.team-filter {padding: 5px 10px; color: #626262;transition: all 0.15s linear;}' +
+      '.team-filter.active { border-bottom: 1px solid #08aeea;}' +
+      '.team-filter.active,.team-filter:hover{color: #2d2d2d}' +
 
       // Search bar
       '.search-bar{display: flex; flex-flow: row wrap; margin-bottom: .5rem}' +
-      '.search-bar .form-control{border: 2px solid rgba(98,98,98,0.5); border-radius: 6px;}'+
+      '.search-bar .form-control{border: 2px solid rgba(98,98,98,0.5); border-radius: 6px;}' +
       '.search-help{position: absolute;top: 12px;right: 25px;width: 20px;height: 20px;border-radius: 50%;background: #cccccc;z-index: 1;line-height: 20px;text-align: center;opacity: .9;}' +
-      '.search-bar .form-control:valid+label{color: #626262;transform: translate3d(3px, -28px, 0) scale3d(0.7, 0.7, 1);}'+
-      'body.providence .search-bar table.table{border-radius: 14px;}'+
-      'body.providence #providence-wrapper .search-bar table.table thead th{font-family: "CircularXXWeb-Medium",Helvetica,Arial,sans-serif;background: #fff;padding: 2rem 27px 2rem 15px;vertical-align: middle;border: none; border-left: 2px solid #e6e6e6; border-bottom: 2px solid #e6e6e6;}'+
-      'body.providence #providence-wrapper .search-bar table.table thead th:first-child{border-left: none;border-radius: 8px 0 0 0;}'+
-      'body.providence #providence-wrapper .search-bar table.table thead th:last-child{border-radius: 0 8px 0 0;}'+
+      '.search-bar .form-control:valid+label{color: #626262;transform: translate3d(3px, -28px, 0) scale3d(0.7, 0.7, 1);}' +
+      'body.providence .search-bar table.table{border-radius: 14px;}' +
+      'body.providence #providence-wrapper .search-bar table.table thead th{font-family: "CircularXXWeb-Medium",Helvetica,Arial,sans-serif;background: #fff;padding: 2rem 27px 2rem 15px;vertical-align: middle;border: none; border-left: 2px solid #e6e6e6; border-bottom: 2px solid #e6e6e6;}' +
+      'body.providence #providence-wrapper .search-bar table.table thead th:first-child{border-left: none;border-radius: 8px 0 0 0;}' +
+      'body.providence #providence-wrapper .search-bar table.table thead th:last-child{border-radius: 0 8px 0 0;}' +
 
-      'body.providence #providence-wrapper .search-bar table.table td{vertical-align:middle;}'+
+      'body.providence #providence-wrapper .search-bar table.table td{vertical-align:middle;}' +
 
       //Providence list quick links
-      'body.providence #advisor-details .advisor-quick-links > a{margin: 5px 15px;}'+
+      'body.providence #advisor-details .advisor-quick-links > a{margin: 5px 15px;}' +
 
       //Revision table - Reportorize
-      'body.providence #revisions-list.reportorized td .advisor-profile{display: none}'+
-      'body.providence #revisions-list.reportorized td .advisor-profile+span{padding-left: 0; overflow-hidden}'+
-      'body.providence #revisions-list.reportorized td.revisions-page .revisions-page-title{font-size: .75em;}'+
-      'body.providence #revisions-list.reportorized td.revisions-page .revisions-page-title{font-size: .75em;}'+
-      'body.providence #revisions-list.reportorized td.revisions-email, body.providence #revisions-list.reportorized td.revisions-tags, body.providence #revisions-list.reportorized td.revisions-domains, body.providence #revisions-list.reportorized td.revisions-page{font-size: 1em}'+
-      'body.providence #revisions-list.reportorized td.revisions-notes{font-size: .85em}'+
-      'body.providence #revisions-list.reportorized td.revisions-page .revisions-page-title, body.providence #revisions-list.reportorized td.revisions-tags .revisions-tags-tag, body.providence #revisions-list.reportorized td.revisions-notes .revisions-notes-note{display: block}'+
-      'body.providence #revisions-list.reportorized td.revisions-notes, body.providence #revisions-list.reportorized td.revisions-page{max-width: 500px;word-break: break-word;white-space: normal;}'+
+      'body.providence #revisions-list.reportorized td .advisor-profile{display: none}' +
+      'body.providence #revisions-list.reportorized td .advisor-profile+span{padding-left: 0; overflow-hidden}' +
+      'body.providence #revisions-list.reportorized td.revisions-page .revisions-page-title{font-size: .75em;}' +
+      'body.providence #revisions-list.reportorized td.revisions-page .revisions-page-title{font-size: .75em;}' +
+      'body.providence #revisions-list.reportorized td.revisions-email, body.providence #revisions-list.reportorized td.revisions-tags, body.providence #revisions-list.reportorized td.revisions-domains, body.providence #revisions-list.reportorized td.revisions-page{font-size: 1em}' +
+      'body.providence #revisions-list.reportorized td.revisions-notes{font-size: .85em}' +
+      'body.providence #revisions-list.reportorized td.revisions-page .revisions-page-title, body.providence #revisions-list.reportorized td.revisions-tags .revisions-tags-tag, body.providence #revisions-list.reportorized td.revisions-notes .revisions-notes-note{display: block}' +
+      'body.providence #revisions-list.reportorized td.revisions-notes, body.providence #revisions-list.reportorized td.revisions-page{max-width: 500px;word-break: break-word;white-space: normal;}' +
 
-      '.details-wrapper{max-height: calc(100% - 50px); overflow-y: auto;}'+
+      '.details-wrapper{max-height: calc(100% - 50px); overflow-y: auto;}' +
 
       //Advisor notes
-      '#advisor-details{overflow: unset !important}'+
-      '.sidebar-module, .sidebar-module *{ transition: 0.5s top, 0.5s right, 0.5s width, 0.5s height}'+
-      '.sidebar-module{cursor: pointer; overflow: hidden; position: absolute; top: 0px; right: -25px; background: #f9f9f9; width: 25px; height: 90px; box-shadow: 1px 1px 1px #bdbdbd; color: #9c9c9c; border-radius: 0 5px 5px 0;}'+
-      '.sidebar-module:is(:focus, :focus-within){cursor: auto;right: -300px; width: 300px; height: 100%;}'+
-      '.sidebar-module .sidebar-module-icon{top: -5px; position: absolute; left: 12px; opacity: 1; transform: rotate(90deg); transform-origin: left; display: flex; width: 150px;}'+
-      '.sidebar-module .sidebar-module-icon span{left: 10px; position: relative;}'+
-      '.sidebar-module .sidebar-module-icon i{top: 4px; position: relative;}'+
-      '.sidebar-module:is(:focus, :focus-within) .sidebar-module-icon{left: -50px; opacity: 0}'+
-      '.sidebar-module .sidebar-module-wrapper{position: absolute; top: 0;left:0; opacity: 0; width: 100%; display: flex; flex-flow: column;height: 100%;}'+
-      '.sidebar-module:is(:focus, :focus-within) .sidebar-module-wrapper{opacity: 1;}'+
-      '.sidebar-module-header{font-size: 1.5em; text-align: center; padding: 10px; background: rgba(210,210,210,0.5); width: 100%; box-shadow: 0px 5px 10px 0px rgb(0 0 0 / 20%); border-bottom: 1px solid #cecece; color: #4d4d4d;}'+
-      '.sidebar-module-body{flex: 1; overflow: auto;}'+
-      '.sidebar-module-message{ margin: 15px 10px; position: relative; overflow: hidden;}'+
-      '.sidebar-module-message-info{ display: flex; align-items: center;justify-content: space-between;background: #4d4d4d;padding: 5px;border-radius: 5px 5px 0 0;}'+
-      '.sidebar-module-message-info span{ font-size: .6875em;line-height: 1;color: rgba(255,255,255,0.6);}'+
-      '.sidebar-module-message-content{color: #2d2d2d; background: #fefefe;padding: 5px;border-radius: 0 0 5px 5px;word-break: break-word;font-size: .8em; white-space: pre-wrap}'+
-      '.sidebar-module-footer{background: rgba(255,255,255,0.5);padding: 5px;box-shadow: 0 -5px 10px 0px rgb(0 0 0 / 18%);}'+
-      '.sidebar-module-footer input{font-size: .8em; margin-top: 0px; margin-bottom: 0px; height: 24px; width: 80%; position: relative;padding-left: 2px;}'+
+      '#advisor-details{overflow: unset !important}' +
+      '.sidebar-module, .sidebar-module *{ transition: 0.5s top, 0.5s right, 0.5s width, 0.5s height}' +
+      '.sidebar-module{cursor: pointer; overflow: hidden; position: absolute; top: 0px; right: -25px; background: #f9f9f9; width: 25px; height: 90px; box-shadow: 1px 1px 1px #bdbdbd; color: #9c9c9c; border-radius: 0 5px 5px 0;}' +
+      '.sidebar-module:is(:focus, :focus-within){cursor: auto;right: -300px; width: 300px; height: 100%;}' +
+      '.sidebar-module .sidebar-module-icon{top: -5px; position: absolute; left: 12px; opacity: 1; transform: rotate(90deg); transform-origin: left; display: flex; width: 150px;}' +
+      '.sidebar-module .sidebar-module-icon span{left: 10px; position: relative;}' +
+      '.sidebar-module .sidebar-module-icon i{top: 4px; position: relative;}' +
+      '.sidebar-module:is(:focus, :focus-within) .sidebar-module-icon{left: -50px; opacity: 0}' +
+      '.sidebar-module .sidebar-module-wrapper{position: absolute; top: 0;left:0; opacity: 0; width: 100%; display: flex; flex-flow: column;height: 100%;}' +
+      '.sidebar-module:is(:focus, :focus-within) .sidebar-module-wrapper{opacity: 1;}' +
+      '.sidebar-module-header{font-size: 1.5em; text-align: center; padding: 10px; background: rgba(210,210,210,0.5); width: 100%; box-shadow: 0px 5px 10px 0px rgb(0 0 0 / 20%); border-bottom: 1px solid #cecece; color: #4d4d4d;}' +
+      '.sidebar-module-body{flex: 1; overflow: auto;}' +
+      '.sidebar-module-message{ margin: 15px 10px; position: relative; overflow: hidden;}' +
+      '.sidebar-module-message-info{ display: flex; align-items: center;justify-content: space-between;background: #4d4d4d;padding: 5px;border-radius: 5px 5px 0 0;}' +
+      '.sidebar-module-message-info span{ font-size: .6875em;line-height: 1;color: rgba(255,255,255,0.6);}' +
+      '.sidebar-module-message-content{color: #2d2d2d; background: #fefefe;padding: 5px;border-radius: 0 0 5px 5px;word-break: break-word;font-size: .8em; white-space: pre-wrap}' +
+      '.sidebar-module-footer{background: rgba(255,255,255,0.5);padding: 5px;box-shadow: 0 -5px 10px 0px rgb(0 0 0 / 18%);}' +
+      '.sidebar-module-footer input{font-size: .8em; margin-top: 0px; margin-bottom: 0px; height: 24px; width: 80%; position: relative;padding-left: 2px;}' +
 
-      '.sidebar-module.advisor-notes:is(:focus, :focus-within){z-index: 1;}'+
-      '.sidebar-module.advisor-statuses{top: 90px;}'+
-      '.sidebar-module.advisor-statuses:is(:focus, :focus-within){top: 0; z-index: 1;}'+
-      '.sidebar-module.advisor-statuses .sidebar-module-message .sidebar-module-message-icon {position: absolute; width: 20px; height: 20px; bottom: 1px; right: -50px; color: #111; opacity: 0; transition: .3s all ease-in-out;  font-size: .85em; cursor: pointer;}'+
-      '.sidebar-module.advisor-statuses .sidebar-module-message:is(:hover) .sidebar-module-message-icon {opacity: .5; right: -4px;}'+
-      '.sidebar-module.advisor-statuses .addStatus-input{width: 100%; padding: 5px;font-size: .9em;}'+
-      '.sidebar-module.advisor-statuses .addStatus-button{width: 100%;}'+
+      '.sidebar-module.advisor-notes:is(:focus, :focus-within){z-index: 1;}' +
+      '.sidebar-module.advisor-statuses{top: 90px;}' +
+      '.sidebar-module.advisor-statuses:is(:focus, :focus-within){top: 0; z-index: 1;}' +
+      '.sidebar-module.advisor-statuses .sidebar-module-message .sidebar-module-message-icon {position: absolute; width: 20px; height: 20px; bottom: 1px; right: -50px; color: #111; opacity: 0; transition: .3s all ease-in-out;  font-size: .85em; cursor: pointer;}' +
+      '.sidebar-module.advisor-statuses .sidebar-module-message:is(:hover) .sidebar-module-message-icon {opacity: .5; right: -4px;}' +
+      '.sidebar-module.advisor-statuses .addStatus-input{width: 100%; padding: 5px;font-size: .9em;}' +
+      '.sidebar-module.advisor-statuses .addStatus-button{width: 100%;}' +
 
-      '.sidebar-module.advisor-notes .sidebar-module-message{height: calc(100% - 30px)}'+
-      '.sidebar-module.advisor-notes .sidebar-module-message-content{height: 100%;}'+
-      '.sidebar-module.advisor-notes .sidebar-module-message-content textarea{ color: #2b2b2b}'+
-      '.sidebar-module.advisor-notes .updateNotes-button{width: 100%}'+
+      '.sidebar-module.advisor-notes .sidebar-module-message{height: calc(100% - 30px)}' +
+      '.sidebar-module.advisor-notes .sidebar-module-message-content{height: 100%;}' +
+      '.sidebar-module.advisor-notes .sidebar-module-message-content textarea{ color: #2b2b2b}' +
+      '.sidebar-module.advisor-notes .updateNotes-button{width: 100%}' +
 
 
       //Night Themed
-      'body.providence.nightMode h1{color: #efefef}'+
-      'body.providence.nightMode .settings-wrapper h1, body.providence.nightMode .archives-wrapper .archives-header h1{color: #2d2d2d}'+
+      'body.providence.nightMode h1{color: #efefef}' +
+      'body.providence.nightMode .settings-wrapper h1, body.providence.nightMode .archives-wrapper .archives-header h1{color: #2d2d2d}' +
 
-      'body.providence.nightMode .search-help{background-color: #4c4c4c}'+
+      'body.providence.nightMode .search-help{background-color: #4c4c4c}' +
 
-      'body.providence.nightMode #providence-wrapper{background-color: #2d2d2d; color: #efefef}'+
-      'body.providence.nightMode .review-title .title span.meta {color: #efefef; }'+
-      'body.providence.nightMode #killswitch, body.providence.nightMode .review-submission.showing{border-top: 2px solid #4c4c4c;}'+
-      'body.providence.nightMode .providence-pending--title, body.providence.nightMode .providence-pending, body.providence.nightMode .providence-overview--toolbar, body.providence.nightMode .advisor-card .card-action {border-color: #424242;}'+
-      'body.providence.nightMode #advisors-list th, body.providence.nightMode #advisorsList th, body.providence.nightMode #content-list th, body.providence.nightMode #content-list-admin th, body.providence.nightMode #revisions-list th, body.providence.nightMode #custom-content-list th, body.providence.nightMode #officerReports th {background: #03182e;}'+
-      'body.providence.nightMode .providence-overview--nav a.active, body.providence.nightMode .providence-overview--nav a:hover {color: #efefef;}'+
-      'body.providence.nightMode .review-filter th, .review-filter .active {color: #afafaf;}'+
-      'body.providence.nightMode #providence-wrapper .search-bar table.table thead th{font-family: "CircularXXWeb-Medium",Helvetica,Arial,sans-serif;background: #03182e;padding: 2rem 27px 2rem 15px;vertical-align: middle;border: none; border-left: 2px solid #2d2d2d; border-bottom: 2px solid #2d2d2d;}'+
+      'body.providence.nightMode #providence-wrapper{background-color: #2d2d2d; color: #efefef}' +
+      'body.providence.nightMode .review-title .title span.meta {color: #efefef; }' +
+      'body.providence.nightMode #killswitch, body.providence.nightMode .review-submission.showing{border-top: 2px solid #4c4c4c;}' +
+      'body.providence.nightMode .providence-pending--title, body.providence.nightMode .providence-pending, body.providence.nightMode .providence-overview--toolbar, body.providence.nightMode .advisor-card .card-action {border-color: #424242;}' +
+      'body.providence.nightMode #advisors-list th, body.providence.nightMode #advisorsList th, body.providence.nightMode #content-list th, body.providence.nightMode #content-list-admin th, body.providence.nightMode #revisions-list th, body.providence.nightMode #custom-content-list th, body.providence.nightMode #officerReports th {background: #03182e;}' +
+      'body.providence.nightMode .providence-overview--nav a.active, body.providence.nightMode .providence-overview--nav a:hover {color: #efefef;}' +
+      'body.providence.nightMode .review-filter th, .review-filter .active {color: #afafaf;}' +
+      'body.providence.nightMode #providence-wrapper .search-bar table.table thead th{font-family: "CircularXXWeb-Medium",Helvetica,Arial,sans-serif;background: #03182e;padding: 2rem 27px 2rem 15px;vertical-align: middle;border: none; border-left: 2px solid #2d2d2d; border-bottom: 2px solid #2d2d2d;}' +
 
 
-      'body.providence.nightMode .table{background-color: #212121;}'+
-      'body.providence.nightMode .table tbody tr{background-color: #212121}'+
-      'body.providence.nightMode #advisors-list tbody>tr:hover, body.providence.nightMode #advisorsList tbody>tr:hover, body.providence.nightMode .search-bar tr:hover, body.providence.nightMode #content-list tbody>tr:hover, body.providence.nightMode #content-list-admin tbody>tr:hover, body.providence.nightMode #revisions-list tbody>tr:hover, body.providence.nightMode #custom-content-list tbody>tr:hover, body.providence.nightMode #officerReports tbody>tr:hover {background-color: #333333;}'+
-      'body.providence.nightMode .table span.advisor-tags, body.providence.nightMode .table td.has-date {color: #ddd;}'+
-      'body.providence.nightMode .table td, body.providence #advisors-list th, body.providence.nightMode #advisorsList th, body.providence.nightMode #content-list th, body.providence.nightMode #content-list-admin th, body.providence.nightMode #revisions-list th, body.providence.nightMode #custom-content-list th, body.providence #officerReports th { border-color: #2d2d2d!important;}'+
-      'body.providence.nightMode th.sorting_desc, body.providence.nightMode th.sorting_asc { color: #08aeea !important;}'+
-      'body.providence.nightMode .table td.has-assignment .is-select .form-item--control {background-color: #2d2d2d; color: #efefef;}'+
-      'body.providence.nightMode .table .chip--editing {color: #888 !important;background-color: #444 !important;}'+
+      'body.providence.nightMode .table{background-color: #212121;}' +
+      'body.providence.nightMode .table tbody tr{background-color: #212121}' +
+      'body.providence.nightMode #advisors-list tbody>tr:hover, body.providence.nightMode #advisorsList tbody>tr:hover, body.providence.nightMode .search-bar tr:hover, body.providence.nightMode #content-list tbody>tr:hover, body.providence.nightMode #content-list-admin tbody>tr:hover, body.providence.nightMode #revisions-list tbody>tr:hover, body.providence.nightMode #custom-content-list tbody>tr:hover, body.providence.nightMode #officerReports tbody>tr:hover {background-color: #333333;}' +
+      'body.providence.nightMode .table span.advisor-tags, body.providence.nightMode .table td.has-date {color: #ddd;}' +
+      'body.providence.nightMode .table td, body.providence #advisors-list th, body.providence.nightMode #advisorsList th, body.providence.nightMode #content-list th, body.providence.nightMode #content-list-admin th, body.providence.nightMode #revisions-list th, body.providence.nightMode #custom-content-list th, body.providence #officerReports th { border-color: #2d2d2d!important;}' +
+      'body.providence.nightMode th.sorting_desc, body.providence.nightMode th.sorting_asc { color: #08aeea !important;}' +
+      'body.providence.nightMode .table td.has-assignment .is-select .form-item--control {background-color: #2d2d2d; color: #efefef;}' +
+      'body.providence.nightMode .table .chip--editing {color: #888 !important;background-color: #444 !important;}' +
 
-      'body.providence.nightMode .advisor-card{background-color: #212121; box-shadow: none}'+
-      'body.providence.nightMode .advisor-card h4, body.providence.nightMode .advisor-card span.submitted, body.providence.nightMode .advisor-card .card-extras p:not(.cardImportantTags) {color: #efefef}'+
-      'body.providence.nightMode .advisor-card .card-extras {background-color: #2d2d2d}'+
-      'body.providence.nightMode tr:not(.active) .filter-cards, body.providence.nightMode tr:not(::hover) .filter-cards, body.providence.nightMode .review-filter th { color: rgb(140 140 140 / 80%);}'+
-      'body.providence.nightMode .providence-overview--filter .filter-dropdown--title {background-color: #03172f}'+
+      'body.providence.nightMode .advisor-card{background-color: #212121; box-shadow: none}' +
+      'body.providence.nightMode .advisor-card h4, body.providence.nightMode .advisor-card span.submitted, body.providence.nightMode .advisor-card .card-extras p:not(.cardImportantTags) {color: #efefef}' +
+      'body.providence.nightMode .advisor-card .card-extras {background-color: #2d2d2d}' +
+      'body.providence.nightMode tr:not(.active) .filter-cards, body.providence.nightMode tr:not(::hover) .filter-cards, body.providence.nightMode .review-filter th { color: rgb(140 140 140 / 80%);}' +
+      'body.providence.nightMode .providence-overview--filter .filter-dropdown--title {background-color: #03172f}' +
 
-      'body.providence.nightMode #advisor-details, body.providence.nightMode #killswitch, body.providence.nightMode .providence--page-title {background-color: #212121;box-shadow: none;}'+
-      'body.providence.nightMode .dataTables_filter input, body.providence.nightMode .form-control, body.providence.nightMode .reports-toolbar .form .form-item.is-darker .form-item--control{background-color: #212121; color: #efefef;}'+
+      'body.providence.nightMode #advisor-details, body.providence.nightMode #killswitch, body.providence.nightMode .providence--page-title {background-color: #212121;box-shadow: none;}' +
+      'body.providence.nightMode .dataTables_filter input, body.providence.nightMode .form-control, body.providence.nightMode .reports-toolbar .form .form-item.is-darker .form-item--control{background-color: #212121; color: #efefef;}' +
 
-      'body.providence.nightMode .changes-header{background-color: #212121;}'+
-      'body.providence.nightMode .changes-header{background-color: #414141;box-shadow: none}'+
+      'body.providence.nightMode .changes-header{background-color: #212121;}' +
+      'body.providence.nightMode .changes-header{background-color: #414141;box-shadow: none}' +
 
-      'body.providence.nightMode .review-item .title-wrapper .title, body.providence.nightMode .changes-list h3 {color: #efefef !important}'+
-      'body.providence.nightMode .review-item {background-color: #414141; border-color: #494949;}'+
-      'body.providence.nightMode .review-item .title-wrapper a.review-url, body.providence.nightMode .review-item .title-wrapper span.description {color: #bdbdbd}'+
-      'body.providence.nightMode .review-submission {background-color: #2d2d2d}'+
-      'body.providence.nightMode .review-submission .rejected-count, body.providence.nightMode .review-submission .pending-count, body.providence.nightMode .review-submission .approved-count{color: #aaa}'+
-      'body.providence.nightMode .review-title, body.providence.nightMode .review-title .go-back{ background-color: #2d2d2d; border-color: #4c4c4c;}'+
-      'body.providence.nightMode .review-title .go-back a{color: #efefef;}'+
-      'body.providence.nightMode .review-title .go-back span::after {border-color: #efefef;}'+
-      'body.providence.nightMode .review-item__status {border-color: #4c4c4c;}'+
-      'body.providence.nightMode .review-item-note-rejection span, body.providence.nightMode .review-item-note span{color: #888888}'+
-      'body.providence.nightMode .toggle-group p {color: #888;}'+
+      'body.providence.nightMode .review-item .title-wrapper .title, body.providence.nightMode .changes-list h3 {color: #efefef !important}' +
+      'body.providence.nightMode .review-item {background-color: #414141; border-color: #494949;}' +
+      'body.providence.nightMode .review-item .title-wrapper a.review-url, body.providence.nightMode .review-item .title-wrapper span.description {color: #bdbdbd}' +
+      'body.providence.nightMode .review-submission {background-color: #2d2d2d}' +
+      'body.providence.nightMode .review-submission .rejected-count, body.providence.nightMode .review-submission .pending-count, body.providence.nightMode .review-submission .approved-count{color: #aaa}' +
+      'body.providence.nightMode .review-title, body.providence.nightMode .review-title .go-back{ background-color: #2d2d2d; border-color: #4c4c4c;}' +
+      'body.providence.nightMode .review-title .go-back a{color: #efefef;}' +
+      'body.providence.nightMode .review-title .go-back span::after {border-color: #efefef;}' +
+      'body.providence.nightMode .review-item__status {border-color: #4c4c4c;}' +
+      'body.providence.nightMode .review-item-note-rejection span, body.providence.nightMode .review-item-note span{color: #888888}' +
+      'body.providence.nightMode .toggle-group p {color: #888;}' +
 
-      'body.providence.nightMode .sidebar-module{background: #414141; box-shadow: 1px 1px 1px #656565; color: #fff}'+
-      'body.providence.nightMode .sidebar-module-message-info{ background: #4d4d4d;}'+
-      'body.providence.nightMode .sidebar-module-message-info span{ color: rgba(255,255,255,0.6);}'+
-      'body.providence.nightMode .sidebar-module-header{background: rgba(0,0,0,0.5); width: 100%; box-shadow: 0px 5px 10px 0px rgb(0 0 0 / 20%); border-bottom: 1px solid #2d2d2d;color: #fff;}'+
-      'body.providence.nightMode .sidebar-module-message-content{color: #2d2d2d; background: #fefefe;}'+
-      'body.providence.nightMode .sidebar-module-footer{background: rgba(0,0,0,0.5);}'+
+      'body.providence.nightMode .sidebar-module{background: #414141; box-shadow: 1px 1px 1px #656565; color: #fff}' +
+      'body.providence.nightMode .sidebar-module-message-info{ background: #4d4d4d;}' +
+      'body.providence.nightMode .sidebar-module-message-info span{ color: rgba(255,255,255,0.6);}' +
+      'body.providence.nightMode .sidebar-module-header{background: rgba(0,0,0,0.5); width: 100%; box-shadow: 0px 5px 10px 0px rgb(0 0 0 / 20%); border-bottom: 1px solid #2d2d2d;color: #fff;}' +
+      'body.providence.nightMode .sidebar-module-message-content{color: #2d2d2d; background: #fefefe;}' +
+      'body.providence.nightMode .sidebar-module-footer{background: rgba(0,0,0,0.5);}' +
 
 
       '</style>');
 
 
    if (localStorage.getItem("nightMode") == "true")
-     $(".providence").addClass("nightMode");
+      $(".providence").addClass("nightMode");
 
-    $("#header .tot_dropdown .tot_droplist ul").first().prepend('<li class="nightModeToggle"><a href="#">Toggle Night Mode</a></li>');
-     $(".nightModeToggle").on('click', function(){
+   $("#header .tot_dropdown .tot_droplist ul").first().prepend('<li class="nightModeToggle"><a href="#">Toggle Night Mode</a></li>');
+   $(".nightModeToggle").on('click', function () {
       $(".providence").toggleClass("nightMode");
       localStorage.setItem('nightMode', $(".providence").hasClass("nightMode"));
-    });
+   });
 
    //Chat changes
-   $(".open-chat").on("click", function() {
+   $(".open-chat").on("click", function () {
 
       //Wait for the chat to initialize (2s)
       setTimeout(() => {
 
-        var advisorId = $(".recent-chats").find("li.active a").first().attr("data-advisor_id") || $("#open-chat").data("advisor_id");
+         var advisorId = $(".recent-chats").find("li.active a").first().attr("data-advisor_id") || $("#open-chat").data("advisor_id");
 
          //When the chat gets opened, display saved message
          if (localStorage.getItem('savedChatMsg') && localStorage.getItem('savedChatMsg') != 'null' && localStorage.getItem('savedChatMsg') != 'undefined') {
@@ -229,12 +234,12 @@ $(function() {
          }
 
          //When the chat gets closed, save the message
-         $(".close-chat").on("click", function() {
+         $(".close-chat").on("click", function () {
             localStorage.setItem('savedChatMsg', $($("#chatMessage").find(".fr-element")).html());
          });
 
          //When message is sent remove from saved message
-         $(".chat-tools").find(".send-message").on('click', function() {
+         $(".chat-tools").find(".send-message").on('click', function () {
             localStorage.setItem('savedChatMsg', null);
             $("#loadLastMessage").hide();
          });
@@ -243,7 +248,7 @@ $(function() {
          $(".chat-wrapper .tot_tip").after('<a target="_blank" href="/manage/advisor/' + advisorId + '" class="tot_tip bottom view-profile-chat" data-content="View Profile" style="position: absolute;top: 0;right: 60px;height: 20px;width: 20px;margin: 25px 20px;z-index: 1;color: #909090;font-size: 1.1em;"><i class="fas fa-user"></i></a>');
 
          // IF the chat is changed, grab the new advisor id and update the icon's link
-         $(".recent-chats, .all-chats").find("li").off().on("click", function(e) {
+         $(".recent-chats, .all-chats").find("li").off().on("click", function (e) {
             var advisorClickedId = $(this).find("a").first().attr("data-advisor_id");
             $(".view-profile-chat")[0].href = '/manage/advisor/' + advisorClickedId;
             setTimeout(() => {
@@ -276,7 +281,7 @@ $(function() {
       //Create string with tags
       let tags = "";
       if (advisor && advisor.settings && advisor.settings.broker_tags)
-         advisor.settings.broker_tags.forEach(function(e) {
+         advisor.settings.broker_tags.forEach(function (e) {
             tags += "<br>" + e.name;
          });
 
@@ -290,46 +295,46 @@ $(function() {
       //Load Notes
       let notesLoaded = false;
       $("#advisor-details").prepend('<div class="sidebar-module advisor-notes" tabindex="0" ><div class="sidebar-module-icon"><i class="far fa-pencil-alt"></i><span>Notes</span></div><div class="sidebar-module-wrapper"><div class="sidebar-module-header">Website Notes</div><div class="sidebar-module-body"><div class="sidebar-module-message"><div class="sidebar-module-message-content" style="color: #9a9a9a; border-radius: 10px; "><textarea style="width: 100%;height: 100%;padding: 5px;" class="updateNotes-textarea" placeholder="Loading Notes..."></textarea></div></div></div><div class="sidebar-module-footer"><button class="btn updateNotes-button" style="display: none">Save</button></div></div></div>')
-      $(".advisor-notes").on('click', function(){loadNotes()});
+      $(".advisor-notes").on('click', function () { loadNotes() });
       $(".updateNotes-textarea").on("keyup", delay(() => $(".updateNotes-button").show(), 1000));
 
       let statusesLoaded = false;
       $("#advisor-details").prepend('<div class="sidebar-module advisor-statuses" tabindex="0" ><div class="sidebar-module-icon"><i class="far fa-comments-alt"></i><span>Status</span></div><div class="sidebar-module-wrapper"><div class="sidebar-module-header">Website Status</div><div class="sidebar-module-body"><div class="sidebar-module-message statusPlaceholder"><div class="sidebar-module-message-content" style=" padding: 20px; color: #9a9a9a; border-radius: 10px; text-align:center">Loading Statuses...</div></div></div><div class="sidebar-module-footer"><textarea class="addStatus-input" type="text" placeholder="Add a status"></textarea><button class="btn addStatus-button">Send</button></div></div></div>')
-      $(".advisor-statuses").on('click', function(){loadStatuses()});
+      $(".advisor-statuses").on('click', function () { loadStatuses() });
 
       //Notes
-      $(".updateNotes-button").on('click', function(event){
-        $(".updateNotes-button").text("Updating Notes...");
-        updateNotes(advisorId, $(".updateNotes-textarea").val())
-        .then(data =>{
-          $(".updateNotes-button").text("Notes Updated!");
-          setTimeout(function(){
-            $(".updateNotes-button").text("Save");
-            $(".updateNotes-button").hide();
-          }, 1500);
-        })
-        .catch(err => {
-          $(".updateNotes-button").text("Unable to update notes!");
-          setTimeout(function(){
-            $(".updateNotes-button").text("Save");
-          }, 1500);
-        });
+      $(".updateNotes-button").on('click', function (event) {
+         $(".updateNotes-button").text("Updating Notes...");
+         updateNotes(advisorId, $(".updateNotes-textarea").val())
+            .then(data => {
+               $(".updateNotes-button").text("Notes Updated!");
+               setTimeout(function () {
+                  $(".updateNotes-button").text("Save");
+                  $(".updateNotes-button").hide();
+               }, 1500);
+            })
+            .catch(err => {
+               $(".updateNotes-button").text("Unable to update notes!");
+               setTimeout(function () {
+                  $(".updateNotes-button").text("Save");
+               }, 1500);
+            });
       });
 
-      function loadNotes(){
-        if(notesLoaded)
-          return;
+      function loadNotes() {
+         if (notesLoaded)
+            return;
 
-        getNotes(advisorId)
-        .then(notes => {
-          notesLoaded = true;
-          $(".updateNotes-textarea")[0].placeholder = "There are no notes for this website.\nClick here to add some.";
-          if(notes)
-            $(".updateNotes-textarea").val(notes.message)
-          })
-          .catch(err => {
-            $(".updateNotes-textarea")[0].placeholder = "Unable to load notes.";
-          });
+         getNotes(advisorId)
+            .then(notes => {
+               notesLoaded = true;
+               $(".updateNotes-textarea")[0].placeholder = "There are no notes for this website.\nClick here to add some.";
+               if (notes)
+                  $(".updateNotes-textarea").val(notes.message)
+            })
+            .catch(err => {
+               $(".updateNotes-textarea")[0].placeholder = "Unable to load notes.";
+            });
       }
 
       // Statuses
@@ -338,135 +343,135 @@ $(function() {
       //       $(".addStatus-button").click();
       // });
 
-      $(".addStatus-button").on('click', function(event){
-        let officer = $("#header").find(".display-name + small").text();
-        let message = $(".addStatus-input").val();
-        let now = new Date();
-        addStatus(advisorId, officer, message)
-          .then(data => {
-            $(".statusPlaceholder").remove();
-            $(".addStatus-input").val("");
-            let date = now;
-            let term = date.getHours() >= 12 ? 'pm' : 'am';
-            date = date.getMonth() + '/' + date.getDate() + '/' + date.getFullYear() + ' - ' + ((date.getHours() % 12) || 12) + ':' + (date.getMinutes() < 10 ? '0' : '') +date.getMinutes() +term;
-            $(".sidebar-module.advisor-statuses .sidebar-module-body").append('<div class="sidebar-module-message"><div class="sidebar-module-message-icon"><i class="fas fa-trash-alt"></i></div><div class="sidebar-module-message-info"><span class="sidebar-module-message-name">'+officer+'</span><span class="sidebar-module-message-time" data-time="'+now.getTime()+'">'+date+'</span></div><div class="sidebar-module-message-content">'+message+'</div></div>');
-            $(".sidebar-module.advisor-statuses .sidebar-module-body").scrollTop(function() { return this.scrollHeight; });
-            $(".sidebar-module-message-icon").off().on('click', function(e){
-              let confirmation = confirm("Are you sure you want to delete this status?");
-              if(confirmation == true){
-                let messageModule = $(this).parent();
-                let timeStamp = messageModule.find("[data-time]").data("time");
-                delStatus(advisorId, timeStamp)
-                .then(data =>{
-                  messageModule.remove();
-                })
-                .catch(err =>{
-                  alert("Unable to delete status.");
-                })
-              }
+      $(".addStatus-button").on('click', function (event) {
+         let officer = $("#header").find(".display-name + small").text();
+         let message = $(".addStatus-input").val();
+         let now = new Date();
+         addStatus(advisorId, officer, message)
+            .then(data => {
+               $(".statusPlaceholder").remove();
+               $(".addStatus-input").val("");
+               let date = now;
+               let term = date.getHours() >= 12 ? 'pm' : 'am';
+               date = date.getMonth() + '/' + date.getDate() + '/' + date.getFullYear() + ' - ' + ((date.getHours() % 12) || 12) + ':' + (date.getMinutes() < 10 ? '0' : '') + date.getMinutes() + term;
+               $(".sidebar-module.advisor-statuses .sidebar-module-body").append('<div class="sidebar-module-message"><div class="sidebar-module-message-icon"><i class="fas fa-trash-alt"></i></div><div class="sidebar-module-message-info"><span class="sidebar-module-message-name">' + officer + '</span><span class="sidebar-module-message-time" data-time="' + now.getTime() + '">' + date + '</span></div><div class="sidebar-module-message-content">' + message + '</div></div>');
+               $(".sidebar-module.advisor-statuses .sidebar-module-body").scrollTop(function () { return this.scrollHeight; });
+               $(".sidebar-module-message-icon").off().on('click', function (e) {
+                  let confirmation = confirm("Are you sure you want to delete this status?");
+                  if (confirmation == true) {
+                     let messageModule = $(this).parent();
+                     let timeStamp = messageModule.find("[data-time]").data("time");
+                     delStatus(advisorId, timeStamp)
+                        .then(data => {
+                           messageModule.remove();
+                        })
+                        .catch(err => {
+                           alert("Unable to delete status.");
+                        })
+                  }
+               });
+            }).catch(err => {
+               alert("Unable to add Status")
             });
-          }).catch(err => {
-            alert("Unable to add Status")
-          });
       });
 
-      function loadStatuses(){
-        if(statusesLoaded){
-          $(".sidebar-module.advisor-statuses .sidebar-module-body").scrollTop(function() { return this.scrollHeight; });
-          return;
-        }
+      function loadStatuses() {
+         if (statusesLoaded) {
+            $(".sidebar-module.advisor-statuses .sidebar-module-body").scrollTop(function () { return this.scrollHeight; });
+            return;
+         }
 
-        getStatuses(advisorId)
-        .then( statuses => {
-          statusesLoaded = true;
-          if(statuses.length > 0){
-            $(".sidebar-module.advisor-statuses .sidebar-module-body").empty();
-            statuses.sort(function(i1, i2){
-              if(i1.timestamp > i2) return -1;
-              else return 1;
-            }).forEach(item => {
-              let date = new Date(item.timestamp);
-              let term = date.getHours() >= 12 ? 'pm' : 'am';
-              date = date.getMonth()+1 + '/' + date.getDate() + '/' + date.getFullYear() + ' - ' + ((date.getHours() % 12) || 12) + ':' + (date.getMinutes() < 10 ? '0' : '') +date.getMinutes() +term;
-              $(".sidebar-module.advisor-statuses .sidebar-module-body").append('<div class="sidebar-module-message"><div class="sidebar-module-message-icon"><i class="fas fa-trash-alt"></i></div><div class="sidebar-module-message-info"><span class="sidebar-module-message-name">'+item.officer+'</span><span class="sidebar-module-message-time" data-time="'+item.timestamp+'">'+date+'</span></div><div class="sidebar-module-message-content">'+item.message+'</div></div>');
+         getStatuses(advisorId)
+            .then(statuses => {
+               statusesLoaded = true;
+               if (statuses.length > 0) {
+                  $(".sidebar-module.advisor-statuses .sidebar-module-body").empty();
+                  statuses.sort(function (i1, i2) {
+                     if (i1.timestamp > i2) return -1;
+                     else return 1;
+                  }).forEach(item => {
+                     let date = new Date(item.timestamp);
+                     let term = date.getHours() >= 12 ? 'pm' : 'am';
+                     date = date.getMonth() + 1 + '/' + date.getDate() + '/' + date.getFullYear() + ' - ' + ((date.getHours() % 12) || 12) + ':' + (date.getMinutes() < 10 ? '0' : '') + date.getMinutes() + term;
+                     $(".sidebar-module.advisor-statuses .sidebar-module-body").append('<div class="sidebar-module-message"><div class="sidebar-module-message-icon"><i class="fas fa-trash-alt"></i></div><div class="sidebar-module-message-info"><span class="sidebar-module-message-name">' + item.officer + '</span><span class="sidebar-module-message-time" data-time="' + item.timestamp + '">' + date + '</span></div><div class="sidebar-module-message-content">' + item.message + '</div></div>');
+                  });
+                  $(".sidebar-module.advisor-statuses .sidebar-module-body").scrollTop(function () { return this.scrollHeight; });
+                  $(".sidebar-module-message-icon").off().on('click', function (e) {
+                     let confirmation = confirm("Are you sure you want to delete this status?");
+                     if (confirmation == true) {
+                        let messageModule = $(this).parent();
+                        let timeStamp = messageModule.find("[data-time]").data("time");
+                        delStatus(advisorId, timeStamp)
+                           .then(data => {
+                              messageModule.remove();
+                           })
+                           .catch(err => {
+                              alert("Unable to delete status.");
+                           })
+                     }
+                  });
+               } else
+                  $(".sidebar-module.advisor-statuses .sidebar-module-message-content").html("There are no statuses for this website.");
             });
-            $(".sidebar-module.advisor-statuses .sidebar-module-body").scrollTop(function() { return this.scrollHeight; });
-            $(".sidebar-module-message-icon").off().on('click', function(e){
-              let confirmation = confirm("Are you sure you want to delete this status?");
-              if(confirmation == true){
-                let messageModule = $(this).parent();
-                let timeStamp = messageModule.find("[data-time]").data("time");
-                delStatus(advisorId, timeStamp)
-                .then(data =>{
-                  messageModule.remove();
-                })
-                .catch(err =>{
-                  alert("Unable to delete status.");
-                })
-              }
-            });
-          }else
-            $(".sidebar-module.advisor-statuses .sidebar-module-message-content").html("There are no statuses for this website.");
-        });
       }
 
       //Scroll down if needed
-      setTimeout(function(){
+      setTimeout(function () {
 
-      if(localStorage.getItem("lastReviewed")){
-        let lastReviewed = JSON.parse(localStorage.getItem("lastReviewed"));
-        if(lastReviewed && lastReviewed.id == advisorId){
-          // $(".changes-header").append('<a class="backToLastBtn btn btn--action-default-outlined" style="background-color: rgba(0,0,0,0);color: #888">Back to last item</a>');
-          // $(".backToLastBtn").on('click', function(){
-            localStorage.setItem("lastReviewed", null);
-            $([document.documentElement, document.body]).animate({
-              scrollTop: $(".title:contains("+lastReviewed.title+")").offset().top-120
-            }, 1000);
-          // });
-        }else
-          localStorage.setItem("lastReviewed", null);
-      }
-    },2000);
+         if (localStorage.getItem("lastReviewed")) {
+            let lastReviewed = JSON.parse(localStorage.getItem("lastReviewed"));
+            if (lastReviewed && lastReviewed.id == advisorId) {
+               // $(".changes-header").append('<a class="backToLastBtn btn btn--action-default-outlined" style="background-color: rgba(0,0,0,0);color: #888">Back to last item</a>');
+               // $(".backToLastBtn").on('click', function(){
+               localStorage.setItem("lastReviewed", null);
+               $([document.documentElement, document.body]).animate({
+                  scrollTop: $(".title:contains(" + lastReviewed.title + ")").offset().top - 120
+               }, 1000);
+               // });
+            } else
+               localStorage.setItem("lastReviewed", null);
+         }
+      }, 2000);
 
       if (localStorage.getItem('IsSiteForward') == "true") {
          $(".changes-header .btn-group").append('<a href="#" class="btn pill btn--action-approve" onclick="approveAll()">Approve All</a><a href="#" class="btn pill btn--action-review" onclick="addNoteToAll()">Add Note to All</a>');
       }
 
       //Add pending review count
-      $(".approved-count").after('<div class="approved-count pending-count"><span class="active">'+$(".review-item:not(.approved-status):not(.rejected-status)").length+'</span> Pending Changes</div>');
+      $(".approved-count").after('<div class="approved-count pending-count"><span class="active">' + $(".review-item:not(.approved-status):not(.rejected-status)").length + '</span> Pending Changes</div>');
 
       //Update pending review count on approve/reject click
-      $('.btn--action-approve, .btn--action-reject').on('click', function(){
-        $(".pending-count span").html($(".review-item:not(.approved-status):not(.rejected-status)").length);
+      $('.btn--action-approve, .btn--action-reject').on('click', function () {
+         $(".pending-count span").html($(".review-item:not(.approved-status):not(.rejected-status)").length);
       })
 
-      $('.btn--action-default.revision-note, .btn--action-reject').on('click', function(){
-        let scrollBackTo = $(this);
+      $('.btn--action-default.revision-note, .btn--action-reject').on('click', function () {
+         let scrollBackTo = $(this);
 
-         setTimeout(delay( e => {
+         setTimeout(delay(e => {
 
-          //Add notes & scroll back down when save is clicked
-          $('.settings-wrapper .btn.primary.btn-lg.save, .settings-wrapper .btn.btn-text.cancel').on("click", function(){
+            //Add notes & scroll back down when save is clicked
+            $('.settings-wrapper .btn.primary.btn-lg.save, .settings-wrapper .btn.btn-text.cancel').on("click", function () {
 
-            //Wait 2 seconds
-            setTimeout(delay( e => {
-              updateAllReviewItemNotes();
-              $([document.documentElement, document.body]).animate({
-                scrollTop: scrollBackTo.offset().top-120
-              }, 1000);
-            }), 1500);
-          });
-        }), 2000);
+               //Wait 2 seconds
+               setTimeout(delay(e => {
+                  updateAllReviewItemNotes();
+                  $([document.documentElement, document.body]).animate({
+                     scrollTop: scrollBackTo.offset().top - 120
+                  }, 1000);
+               }), 1500);
+            });
+         }), 2000);
       });
 
       //When archives are opened
-      $(".open-archives").on("click", function() {
+      $(".open-archives").on("click", function () {
 
          //Wait 2 seconds
          setTimeout(() => {
 
             // For each archive item adjust the styling
-            $(".archive-item").each(function() {
+            $(".archive-item").each(function () {
                $(this).css("flex-flow", "row wrap");
                $(this).find(".archive-actions")[0].style = 'position: absolute; top: 20px; right: 20px;';
 
@@ -488,7 +493,7 @@ $(function() {
             }
 
             function getNotes(url) {
-               return new Promise(function(resolve) {
+               return new Promise(function (resolve) {
 
                   //Read the note from the page
                   $.get(url).done(data => {
@@ -508,26 +513,26 @@ $(function() {
       });
 
 
-     updateAllReviewItemNotes();
+      updateAllReviewItemNotes();
 
-      function updateAllReviewItemNotes(){
-        // For all approved/rejected items get the review information
-        $(".review-item").each(async function(i, e) {
-           let $e = $(e);
-           let reviewId = $e.find(".review-actions").find(".revision-note").data("id");
+      function updateAllReviewItemNotes() {
+         // For all approved/rejected items get the review information
+         $(".review-item").each(async function (i, e) {
+            let $e = $(e);
+            let reviewId = $e.find(".review-actions").find(".revision-note").data("id");
 
-           //If a review id was found, get the review
-           if (reviewId) {
-              displayReviewer(baseUrl+'manage/revisions/' + advisorId + '/' + reviewId, $e, function() {
-                 if (!$e.hasClass("approved-status") && !$e.hasClass("rejected-status"))
-                    $e.find(".review-item-preview").find(".approvedByNote").text("");
-                });
-             }
-        });
+            //If a review id was found, get the review
+            if (reviewId) {
+               displayReviewer(baseUrl + 'manage/revisions/' + advisorId + '/' + reviewId, $e, function () {
+                  if (!$e.hasClass("approved-status") && !$e.hasClass("rejected-status"))
+                     $e.find(".review-item-preview").find(".approvedByNote").text("");
+               });
+            }
+         });
       }
 
       //For each review item check if it's a link
-      $(".review-item").each(function(i, e) {
+      $(".review-item").each(function (i, e) {
          if ($(e).find(".review-actions a")[0].innerHTML == "View Link" || $(e).find(".review-actions a")[0].innerHTML == "Review Link") {
             let link = $(e).find(".review-url").text();
             let review = $(e).find(".review-actions a")[0];
@@ -535,18 +540,18 @@ $(function() {
             //Indicate if the link is External or Internal
             if (link.indexOf("http") >= 0)
                review.innerHTML = "Visit External Link";
-            else if (link.indexOf("#") >= 0){
-                review.innerHTML = "Visit Section Link";
-                review.href = review.href.replace('twentyoverten.com/manage/advisor/', '');
+            else if (link.indexOf("#") >= 0) {
+               review.innerHTML = "Visit Section Link";
+               review.href = review.href.replace('twentyoverten.com/manage/advisor/', '');
             }
-            else{
-              review.innerHTML = "Navigation Link";
-              review.removeAttribute("href");
-              review.style="cursor: no-drop";
-              review.classList.add("approve-item");
-              review.classList.add("active");
-              review.title = "Just a navigation link, has no content.";
-             }
+            else {
+               review.innerHTML = "Navigation Link";
+               review.removeAttribute("href");
+               review.style = "cursor: no-drop";
+               review.classList.add("approve-item");
+               review.classList.add("active");
+               review.title = "Just a navigation link, has no content.";
+            }
          }
       });
    }
@@ -563,8 +568,8 @@ $(function() {
       if (email) {
          var prefixs = ["siteforwardprogram+", "digitaladvisorprogram+"];
          prefixs.forEach(prefix => {
-           if (email.indexOf(prefix) == 0)
-              email = email.substr(prefix.length, email.length);
+            if (email.indexOf(prefix) == 0)
+               email = email.substr(prefix.length, email.length);
          });
 
          // Wait 2 seconds after the page loads to ensure the revisions load
@@ -578,11 +583,11 @@ $(function() {
       $(".providence--page-title").after('<a class="btn primary btn--action-review" id="reportorize-btn" style="    position: fixed; z-index:100; bottom: 20px;  right: 20px;">Reportorize It</a>');
 
       //When DataTable gets drawn
-      $('#revisions-list').on("page.dt", function(){
-          $("#reportorize-btn")[0].text = "Reportorize It";
+      $('#revisions-list').on("page.dt", function () {
+         $("#reportorize-btn")[0].text = "Reportorize It";
       });
 
-      $("#reportorize-btn").on("click", function() {
+      $("#reportorize-btn").on("click", function () {
          $("#revisions-list_filter").hide();
          $(".reports-toolbar").hide();
          if (this.text == "Copy Table") {
@@ -606,34 +611,34 @@ $(function() {
                   range.select();
                }
             }
-         } else if (this.text == "Loading...") {}
-          else {
+         } else if (this.text == "Loading...") { }
+         else {
             let $tableHeader = $(".dataTable").find("thead");
-            if($tableHeader.find("th:contains(Email)").length == 0){
-              $($tableHeader.find("th")[0]).after('<th>Email</th>');
-              $($tableHeader.find("th")[1]).after('<th>Tags</th>');
-              $($tableHeader.find("th")[2]).after('<th>Domain</th>');
-              $($tableHeader.find("th")[4]).after('<th style="min-width:250px">Page Title</th>');
-              $($tableHeader.find("th")[5]).after('<th style="min-width:500px">Note</th>');
-              $($tableHeader.find("th")[6]).after('<th style="min-width:500px">Rejections</th>');
-              $($tableHeader.find("th")[11]).remove();
+            if ($tableHeader.find("th:contains(Email)").length == 0) {
+               $($tableHeader.find("th")[0]).after('<th>Email</th>');
+               $($tableHeader.find("th")[1]).after('<th>Tags</th>');
+               $($tableHeader.find("th")[2]).after('<th>Domain</th>');
+               $($tableHeader.find("th")[4]).after('<th style="min-width:250px">Page Title</th>');
+               $($tableHeader.find("th")[5]).after('<th style="min-width:500px">Note</th>');
+               $($tableHeader.find("th")[6]).after('<th style="min-width:500px">Rejections</th>');
+               $($tableHeader.find("th")[11]).remove();
             }
 
-            $(".dataTable").find("tbody").find("tr").each(function(i) {
+            $(".dataTable").find("tbody").find("tr").each(function (i) {
                let $row = $(this);
                let $columns = $row.find("td");
                let data = $(".dataTable").DataTable().row(i).data();
 
-               let advisorId  = data.advisor._id,
-                   reviewId   = data._id,
-                   email      = data.advisor.email,
-                   domain     = data.site.settings.domains[0],
-                   pageTitle  = data.meta && data.meta.name ? data.meta.name + (data.title ? '<span class="revisions-page-title"> (' + data.title +')</span>': '' ) :  data.title ? data.title : '',
-                   notes      = data.internal_notes ? data.internal_notes.replace(/<\/[^>]*>?/gm, '</span>').replace(/<[^>]*>?/gm, '<span class="revisions-notes-note">') : '',
-                   rejections = data.notes ? data.notes.replace(/<\/[^>]*>?/gm, '</span>').replace(/<[^>]*>?/gm, '<span class="revisions-notes-note">') : '';
+               let advisorId = data.advisor._id,
+                  reviewId = data._id,
+                  email = data.advisor.email,
+                  domain = data.site.settings.domains[0],
+                  pageTitle = data.meta && data.meta.name ? data.meta.name + (data.title ? '<span class="revisions-page-title"> (' + data.title + ')</span>' : '') : data.title ? data.title : '',
+                  notes = data.internal_notes ? data.internal_notes.replace(/<\/[^>]*>?/gm, '</span>').replace(/<[^>]*>?/gm, '<span class="revisions-notes-note">') : '',
+                  rejections = data.notes ? data.notes.replace(/<\/[^>]*>?/gm, '</span>').replace(/<[^>]*>?/gm, '<span class="revisions-notes-note">') : '';
 
                let allTags = "";
-               data.advisor.settings.broker_tags.forEach( i=> allTags += "<span class='revisions-tags-tag'>"+i.name + ", </span>");
+               data.advisor.settings.broker_tags.forEach(i => allTags += "<span class='revisions-tags-tag'>" + i.name + ", </span>");
                allTags = allTags.substr(0, allTags.length - 2);
 
                $($row.find("td")[0]).after('<td class="revisions-email">' + email + '</td>');
@@ -655,7 +660,7 @@ $(function() {
 
             var btn = this;
             btn.text = "Loading...";
-            setTimeout(function() {
+            setTimeout(function () {
                btn.text = "Copy Table";
             }, 1000);
          }
@@ -677,10 +682,10 @@ $(function() {
       if ($(".review-tools").find('a[href="#approve"].active').length > 0 || $(".review-tools").find('a[href="#reject"].active').length > 0) {
          $(".review-tools").append('<a href="' + window.location.href.replace('review', 'revisions') + '" class="btn pill secondary btn-sm primary btn--action-review" target="_blank">View Revision</a>');
 
-        // Doesn't fit nicely
-        // displayReviewer(baseUrl+'manage/revisions/' + advisorId + '/' + reviewId, $(".review-title"));
+         // Doesn't fit nicely
+         // displayReviewer(baseUrl+'manage/revisions/' + advisorId + '/' + reviewId, $(".review-title"));
       }
-      localStorage.setItem("lastReviewed", JSON.stringify({id:advisorId, title: $(".title")[0].childNodes[1].nodeValue.trim()}));
+      localStorage.setItem("lastReviewed", JSON.stringify({ id: advisorId, title: $(".title")[0].childNodes[1].nodeValue.trim() }));
 
 
       // //Is blog post
@@ -707,14 +712,14 @@ $(function() {
       //Create string with tags
       let tags = "";
       if (advisor && advisor.settings && advisor.settings.broker_tags)
-         advisor.settings.broker_tags.forEach(function(e) {
+         advisor.settings.broker_tags.forEach(function (e) {
             tags += "<br>" + e.name;
          });
 
       //Add tags
       $(".advisor-tags").html(tags.substr(4, tags.length));
       if (advisor && advisor.email)
-      $(".advisor-quick-links").append('<a href="/manage/revisions?email=' + encodeURIComponent(advisor.email) + '" class="btn pill secondary btn--action-default" style="max-width: unset">View Revisions</a>');
+         $(".advisor-quick-links").append('<a href="/manage/revisions?email=' + encodeURIComponent(advisor.email) + '" class="btn pill secondary btn--action-default" style="max-width: unset">View Revisions</a>');
 
    }
 
@@ -791,9 +796,9 @@ $(function() {
 
             //Add nodes to table
             table.append(nodes);
-            nodes.forEach(function(e, i) {
-              let row = $(table.find("tr")[i+1]);
-              row.prepend('<td>' + (i+1) + '.</td>');
+            nodes.forEach(function (e, i) {
+               let row = $(table.find("tr")[i + 1]);
+               row.prepend('<td>' + (i + 1) + '.</td>');
             });
             table.find("td").css("border", "none");
 
@@ -813,14 +818,14 @@ $(function() {
             let newRows = [];
 
             //Perform filter
-            rows.forEach(function(rowItem) {
+            rows.forEach(function (rowItem) {
                function matches(item, search, invert) {
                   let match =
-                    (item.data().title.toLowerCase().indexOf(search.toLowerCase()) >= 0) ||
-                    (item.data()._id.toLowerCase().indexOf(search.toLowerCase()) >= 0) ||
-                    (item.data().categories && hasCategory(search.toLowerCase(), item.data())) ||
-                    (item.data().availability && item.data().availability.toLowerCase().indexOf(search.toLowerCase()) >= 0)
-                    ;
+                     (item.data().title.toLowerCase().indexOf(search.toLowerCase()) >= 0) ||
+                     (item.data()._id.toLowerCase().indexOf(search.toLowerCase()) >= 0) ||
+                     (item.data().categories && hasCategory(search.toLowerCase(), item.data())) ||
+                     (item.data().availability && item.data().availability.toLowerCase().indexOf(search.toLowerCase()) >= 0)
+                     ;
 
                   function hasCategory(tag, item) {
                      if (item && item.categories)
@@ -842,7 +847,7 @@ $(function() {
                let searchTerms = search.split("|");
                let match = false;
 
-               searchTerms.forEach(function(term) {
+               searchTerms.forEach(function (term) {
                   term = term.trim();
                   let invert = term.indexOf("!") === 0;
                   if (invert)
@@ -863,11 +868,11 @@ $(function() {
 
          //Gather rows
          let rows = [];
-         $('.dataTable').DataTable().rows().every(function() {
+         $('.dataTable').DataTable().rows().every(function () {
             rows.push(this);
          });
          //Apply filter to current rows(recursion.... sort of...)
-         searchList.forEach(function(e) {
+         searchList.forEach(function (e) {
             let search = e.trim();
 
             //Apply filter/search
@@ -896,11 +901,11 @@ $(function() {
    else {
 
       //Auto open all advisors
-      setTimeout(function(){
-        if(!$("#showAllAdvisors").hasClass("active")){
-          $("#showAllAdvisors").click();
-          console.log("showing all");
-        }
+      setTimeout(function () {
+         if (!$("#showAllAdvisors").hasClass("active")) {
+            $("#showAllAdvisors").click();
+            console.log("showing all");
+         }
       }, 500);
       //
       // $("#showMyAdvisors").after('<a href="#" id="showMyTeam">My Team</a>');
@@ -934,7 +939,7 @@ $(function() {
       //
       // });
 
-      $(".providence-overview--nav a").on('click', function() {
+      $(".providence-overview--nav a").on('click', function () {
          if ($("#search-advisor").length && $("#search-advisor-btn").length) {
             $('#search-advisor').val("");
             $(".search-bar table").empty();
@@ -955,16 +960,16 @@ $(function() {
          '<table class="table" style="margin: .5rem 0; width: 100%"></table>' +
          '</div>');
 
-         // //Add team filters
-         // $(".providence-overview--list").prepend(
-         //   '<div class="team-filter-row">'+
-         //     '<a href="#" class="team-filter active" id="team-filter-all">All</a>'+
-         //     '<a href="#" class="team-filter" id="team-filter-sf">SiteForward</a>'+
-         //     '<a href="#" class="team-filter" id="team-filter-mls">MLS Compliance</a>'+
-         //     '<a href="#" class="team-filter" id="team-filter-msi">MSI Compliance</a>'+
-         //     '<a href="#" class="team-filter" id="team-filter-hold">On Hold</a>'+
-         //   '</div>'
-         // );
+      // //Add team filters
+      // $(".providence-overview--list").prepend(
+      //   '<div class="team-filter-row">'+
+      //     '<a href="#" class="team-filter active" id="team-filter-all">All</a>'+
+      //     '<a href="#" class="team-filter" id="team-filter-sf">SiteForward</a>'+
+      //     '<a href="#" class="team-filter" id="team-filter-mls">MLS Compliance</a>'+
+      //     '<a href="#" class="team-filter" id="team-filter-msi">MSI Compliance</a>'+
+      //     '<a href="#" class="team-filter" id="team-filter-hold">On Hold</a>'+
+      //   '</div>'
+      // );
 
       $("#advisorsList_length").find("option").last().after('<option value="200">200</option><option value="500">500</option><option value="999999">All</option>');
 
@@ -1015,8 +1020,8 @@ $(function() {
 
             //Inform if no nodes are found
             if (searchTerm.toLowerCase() == "?") {
-              table.empty();
-              table.append('<tr><td><h1>Searching can be done by Name, Email, Tags, Status, or Officer.</h1> <table style="width: 100%"><tr><th>Expressions</th><th>Results</th><th>Example</th></tr> <tr><td>|</td><td>OR</td><td>Published|Submitted</td></tr> <tr><td>,</td><td>AND</td><td>Published,SiteForward</td></tr> <tr><td>!</td><td>NOT</td><td>!Published</td></tr></table><h1>There are some extra searching as well</h1><table style="width: 100%"><tr> <th>Search</th> <th>Results</th> <th>Example</th> </tr> <tr> <td>published</td> <td>Shows all published sites</td> <td></td> </tr> <tr> <td>submitted</td> <td>Shows all submitted sites</td> <td></td> </tr> <tr> <td>approved</td> <td>Shows all approved sites</td> <td></td> </tr> <tr> <td>pending review</td> <td>Shows all sites needing revisions</td> <td></td> </tr> <tr> <td>revisions needed</td> <td>Shows all published sites</td> <td></td> </tr> <tr> <td>rejected</td> <td>Shows all rejected sites</td> <td></td> </tr> <tr> <td colspan="3"></td> </tr> <tr> <td>is_siteforward</td> <td>Shows all sites assigned to SiteForward</td> <td></td> </tr> <tr> <td>is_compliance</td> <td>Shows all sites assigned to Compliance</td> <td></td> </tr> <tr> <td>is_mlssalescompliance</td> <td>Shows all sites assigned to MLS Sales Communication</td> <td></td> </tr> <tr> <td>is_marketconductcompliance</td> <td>Shows all sites assigned to Market Conduct</td> <td></td> </tr> <tr> <td>is_onhold</td> <td>Shows all sites on hold</td> <td></td> </tr> <tr> <td colspan="3"></td> </tr> <tr> <td>created_at:&lt;year&gt;/[month]/[day]</td> <td>Shows sites created at that time</td> <td>created_at:2019/08</td> </tr> <tr> <td>updated_at:&lt;year&gt;/[month]/[day]</td> <td>Shows sites updated at that time</td> <td>created_at:2019/08/01</td> </tr> <tr> <td>published_at:&lt;year&gt;/[month]/[day]</td> <td>Shows sites published at that time</td> <td>created_at:2020</td> </tr> <tr> <td>submitted_at:&lt;year&gt;/[month]/[day]</td> <td>Shows sites submitted at that time</td> <td>created_at:2020/01</td> </tr> <tr> <td colspan="3"></td> </tr> <tr> <td>#</td> <td>Shows the number of sites that match</td> <td>#Published</td> </tr> <tr> <td>*</td> <td>Shows all sites that match regardless of number</td> <td>*Published</td> </tr>');
+               table.empty();
+               table.append('<tr><td><h1>Searching can be done by Name, Email, Tags, Status, or Officer.</h1> <table style="width: 100%"><tr><th>Expressions</th><th>Results</th><th>Example</th></tr> <tr><td>|</td><td>OR</td><td>Published|Submitted</td></tr> <tr><td>,</td><td>AND</td><td>Published,SiteForward</td></tr> <tr><td>!</td><td>NOT</td><td>!Published</td></tr></table><h1>There are some extra searching as well</h1><table style="width: 100%"><tr> <th>Search</th> <th>Results</th> <th>Example</th> </tr> <tr> <td>published</td> <td>Shows all published sites</td> <td></td> </tr> <tr> <td>submitted</td> <td>Shows all submitted sites</td> <td></td> </tr> <tr> <td>approved</td> <td>Shows all approved sites</td> <td></td> </tr> <tr> <td>pending review</td> <td>Shows all sites needing revisions</td> <td></td> </tr> <tr> <td>revisions needed</td> <td>Shows all published sites</td> <td></td> </tr> <tr> <td>rejected</td> <td>Shows all rejected sites</td> <td></td> </tr> <tr> <td colspan="3"></td> </tr> <tr> <td>is_siteforward</td> <td>Shows all sites assigned to SiteForward</td> <td></td> </tr> <tr> <td>is_compliance</td> <td>Shows all sites assigned to Compliance</td> <td></td> </tr> <tr> <td>is_mlssalescompliance</td> <td>Shows all sites assigned to MLS Sales Communication</td> <td></td> </tr> <tr> <td>is_marketconductcompliance</td> <td>Shows all sites assigned to Market Conduct</td> <td></td> </tr> <tr> <td>is_onhold</td> <td>Shows all sites on hold</td> <td></td> </tr> <tr> <td colspan="3"></td> </tr> <tr> <td>created_at:&lt;year&gt;/[month]/[day]</td> <td>Shows sites created at that time</td> <td>created_at:2019/08</td> </tr> <tr> <td>updated_at:&lt;year&gt;/[month]/[day]</td> <td>Shows sites updated at that time</td> <td>created_at:2019/08/01</td> </tr> <tr> <td>published_at:&lt;year&gt;/[month]/[day]</td> <td>Shows sites published at that time</td> <td>created_at:2020</td> </tr> <tr> <td>submitted_at:&lt;year&gt;/[month]/[day]</td> <td>Shows sites submitted at that time</td> <td>created_at:2020/01</td> </tr> <tr> <td colspan="3"></td> </tr> <tr> <td>#</td> <td>Shows the number of sites that match</td> <td>#Published</td> </tr> <tr> <td>*</td> <td>Shows all sites that match regardless of number</td> <td>*Published</td> </tr>');
             } else if (nodes.length === 0) {
                table.append('<tr><td colspan="7">No results found</td></tr>');
             }
@@ -1029,9 +1034,9 @@ $(function() {
 
                //Add nodes to table
                table.append(nodes);
-               nodes.forEach(function(e, i) {
-                  let row = $(table.find("tr")[i+1]);
-                  row.prepend('<td>' + (i+1) + '.</td>');
+               nodes.forEach(function (e, i) {
+                  let row = $(table.find("tr")[i + 1]);
+                  row.prepend('<td>' + (i + 1) + '.</td>');
                });
                table.find("td").css("border", "none");
 
@@ -1052,21 +1057,21 @@ $(function() {
 
       //When DataTable gets drawn
       $('#advisorsList').on("draw.dt", delay(e => {
-        if(
-          //$(".team-filter.active").text().indexOf("All") >= 0 &&
-           $("#showAllAdvisors").hasClass("active")){
+         if (
+            //$(".team-filter.active").text().indexOf("All") >= 0 &&
+            $("#showAllAdvisors").hasClass("active")) {
 
-             $(".providence-overview--list").addClass("loadedAll");
+            $(".providence-overview--list").addClass("loadedAll");
 
-              updateAdvisorInfo();
-         // tableData = $(".dataTable").DataTable().data();
-       }
+            updateAdvisorInfo();
+            // tableData = $(".dataTable").DataTable().data();
+         }
 
-       updateList();
-       updateCustomEvents();
-       updateOfficerList();
-       updateSlider();
-       sort();
+         updateList();
+         updateCustomEvents();
+         updateOfficerList();
+         updateSlider();
+         sort();
       }, 750));
 
       //Filter warning
@@ -1084,7 +1089,7 @@ $(function() {
             let newRows = [];
 
             //Perform filter
-            rows.forEach(function(rowItem) {
+            rows.forEach(function (rowItem) {
                function matches(item, search, invert) {
                   search = search.replace("&", "&amp;").toLowerCase();
                   let match = item.data().display_name.toLowerCase().indexOf(search.toLowerCase()) >= 0 ||
@@ -1099,7 +1104,7 @@ $(function() {
                      (search.indexOf("submitted_at:") >= 0 && matchesDate(search.toLowerCase().substring(search.indexOf(":") + 1), "submitted_at", item.data())) ||
                      hasTag(search, item.data()) ||
                      hasStatus(search, item.data()) ||
-                     ("advisor revisions needed".indexOf(search) >=0 && hasStatus("review completed", item.data())) ||
+                     ("advisor revisions needed".indexOf(search) >= 0 && hasStatus("review completed", item.data())) ||
                      getOfficerName(item.data().officer_id).toLowerCase().indexOf(search) >= 0 ||
                      ("is_siteforward".indexOf(search) >= 0 && isSiteForward(item.data().officer_id)) ||
                      ("is_compliance".indexOf(search) >= 0 && isCompliance(item.data().officer_id)) ||
@@ -1117,10 +1122,10 @@ $(function() {
 
                function isRandysList(item) {
                   return (
-                      (isSiteForward(item.officer_id) && hasStatus("review completed", item))
-                        || isCompliance(item.officer_id) && (hasStatus("editing", item)
+                     (isSiteForward(item.officer_id) && hasStatus("review completed", item))
+                     || isCompliance(item.officer_id) && (hasStatus("editing", item)
                         || hasStatus("review completed", item)))
-                    || isOnHold(item.officer_id);
+                     || isOnHold(item.officer_id);
                }
 
                let searchTerms = search.split("|");
@@ -1129,7 +1134,7 @@ $(function() {
                   match = isRandysList(rowItem.data());
                else {
 
-                  searchTerms.forEach(function(term) {
+                  searchTerms.forEach(function (term) {
                      term = term.trim();
                      let invert = term.indexOf("!") === 0;
                      if (invert)
@@ -1151,12 +1156,12 @@ $(function() {
 
          //Gather rows
          let rows = [];
-         $('#advisorsList').DataTable().rows().every(function() {
+         $('#advisorsList').DataTable().rows().every(function () {
             rows.push(this);
          });
 
          //Apply filter to current rows(recursion.... sort of...)
-         searchList.forEach(function(e) {
+         searchList.forEach(function (e) {
             let search = e.trim();
 
 
@@ -1218,39 +1223,39 @@ $(function() {
 
          //Sort advisor slide list
          $(".advisor-card").sort((a, b) => {
-               a = $(a);
-               b = $(b);
+            a = $(a);
+            b = $(b);
 
-               //Get advisor name from cards
-              let nameA = a.data("name"),
-                nameB = b.data("name");
+            //Get advisor name from cards
+            let nameA = a.data("name"),
+               nameB = b.data("name");
 
-               //Load advisor info from DataTable
-              let infoA = getAdvisorInfo(nameA),
-                infoB = getAdvisorInfo(nameB);
+            //Load advisor info from DataTable
+            let infoA = getAdvisorInfo(nameA),
+               infoB = getAdvisorInfo(nameB);
 
-             //Get current times for both cards in minutes
-             let timeA = getTime(a.find(".submitted").text()),
-                timeB = getTime(b.find(".submitted").text());
+            //Get current times for both cards in minutes
+            let timeA = getTime(a.find(".submitted").text()),
+               timeB = getTime(b.find(".submitted").text());
 
-              // Check if either card is a construction page
-              let isConstructionA = hasTag("Construction", infoA),
-                isConstructionB = hasTag("Construction", infoB);
-                
-              //Construction Pages come first
-              if (isConstructionA && !isConstructionB)
-                return -1;
-              else if (isConstructionB && !isConstructionA)
-                return 1;
+            // Check if either card is a construction page
+            let isConstructionA = hasTag("Construction", infoA),
+               isConstructionB = hasTag("Construction", infoB);
 
-               //Compare time
-               return (timeA < timeB) ? 1 : (timeA > timeB) ? -1 : 0;
-               // return 0;
+            //Construction Pages come first
+            if (isConstructionA && !isConstructionB)
+               return -1;
+            else if (isConstructionB && !isConstructionA)
+               return 1;
 
-            })
+            //Compare time
+            return (timeA < timeB) ? 1 : (timeA > timeB) ? -1 : 0;
+            // return 0;
+
+         })
 
             //Add each element back in the new order
-            .each(function() {
+            .each(function () {
                $(".providence-pending--list").append(this)
             });
 
@@ -1258,7 +1263,7 @@ $(function() {
 
       //Add OptGroups to officer select
       function updateOfficerList() {
-         $(".form-item--control.assigned_officer").each(function(fi, fe) {
+         $(".form-item--control.assigned_officer").each(function (fi, fe) {
 
             if (!$(fe).hasClass("optGroupsAdded")) {
 
@@ -1269,7 +1274,7 @@ $(function() {
                   'Market Conduct Compliance': [],
                   'Other': []
                };
-               $(fe).find("option").each(function(i, e) {
+               $(fe).find("option").each(function (i, e) {
 
                   let id = e.value.substr(e.value.indexOf('|') + 1);
 
@@ -1281,24 +1286,24 @@ $(function() {
                      officers['Market Conduct Compliance'].push($(this));
                   } else if (isMiscellaneous(id)) {
                      officers['Miscellaneous'].push($(this));
-                  } else{
+                  } else {
                      officers['Other'].push($(this));
                   }
                });
                for (let [key, value] of Object.entries(officers)) {
-                 if(key != "Other" || (key == "Other" && officers["Other"].length > 0)){
-                   let group = '<optgroup style="padding-top: 4px;" label="' + key + '">';
-                    value.forEach(function(item) {
-                      let id = item[0].value.substr(item[0].value.indexOf('|') + 1);
+                  if (key != "Other" || (key == "Other" && officers["Other"].length > 0)) {
+                     let group = '<optgroup style="padding-top: 4px;" label="' + key + '">';
+                     value.forEach(function (item) {
+                        let id = item[0].value.substr(item[0].value.indexOf('|') + 1);
 
-                      if(isNotActive(id))
-                        item = item.css("color", "#888");
+                        if (isNotActive(id))
+                           item = item.css("color", "#888");
 
-                       group += item[0].outerHTML;
-                      item.remove();
-                    });
-                    $(this).append(group);
-                 }
+                        group += item[0].outerHTML;
+                        item.remove();
+                     });
+                     $(this).append(group);
+                  }
                }
                $(fe).addClass("optGroupsAdded");
             }
@@ -1308,30 +1313,30 @@ $(function() {
 });
 
 function manageChatRejections(advisorId) {
-  console.log(advisorId)
-  getRejections(advisorId)
-  .then(rejections => {
-      $(".rejection-notice").each(function(){
-        let rejectionItem = rejections.find(item => {return item.rejectionId == $(this).data("id")}) || []
-        $(this).find(".rejected-item").each(function(i, rejectionWrapper) {
-          console.log(rejectionItem);
-          let isCompleted = rejectionItem?.rejection ? rejectionItem.rejection[i] : false;
-          $(this).prepend('<input class="rejection-completed"' + (isCompleted ? 'checked=true' : '') + ' type="checkbox">');
-        })
-      });
-      $(".rejection-completed").off().on("change", function(){
-        let index = Array.prototype.indexOf.call(this.parentNode.parentNode.children, this.parentNode);
-        let rejectionId = $(this).parent().parent().parent().parent().data("id");
-        let rejectionArray = [];
-        $(this).parent().parent().find(".rejected-item").each(function(e, item){
-          rejectionArray.push($(item).find(".rejection-completed")[0].checked ? true : false);
-        });
-        updateRejection(advisorId, rejectionId, rejectionArray);
+   console.log(advisorId)
+   getRejections(advisorId)
+      .then(rejections => {
+         $(".rejection-notice").each(function () {
+            let rejectionItem = rejections.find(item => { return item.rejectionId == $(this).data("id") }) || []
+            $(this).find(".rejected-item").each(function (i, rejectionWrapper) {
+               console.log(rejectionItem);
+               let isCompleted = rejectionItem?.rejection ? rejectionItem.rejection[i] : false;
+               $(this).prepend('<input class="rejection-completed"' + (isCompleted ? 'checked=true' : '') + ' type="checkbox">');
+            })
+         });
+         $(".rejection-completed").off().on("change", function () {
+            let index = Array.prototype.indexOf.call(this.parentNode.parentNode.children, this.parentNode);
+            let rejectionId = $(this).parent().parent().parent().parent().data("id");
+            let rejectionArray = [];
+            $(this).parent().parent().find(".rejected-item").each(function (e, item) {
+               rejectionArray.push($(item).find(".rejection-completed")[0].checked ? true : false);
+            });
+            updateRejection(advisorId, rejectionId, rejectionArray);
+         })
       })
-  })
-  .catch(err =>{
-    console.log(err);
-  });
+      .catch(err => {
+         console.log(err);
+      });
 }
 
 function approveAll() {
@@ -1341,10 +1346,10 @@ function approveAll() {
 function addNoteToAll() {
    var notes = $(".revision-note");
    noteIndex = -1;
-   var note = prompt("Add your note", );
-   if(note != null)
-    addNote(function() {
-        location.reload();
+   var note = prompt("Add your note",);
+   if (note != null)
+      addNote(function () {
+         location.reload();
       });
 
    function addNote(cb) {
@@ -1360,14 +1365,14 @@ function addNoteToAll() {
       e.click();
 
       var overlay = $("#revision-note-overlay");
-      waitForStyle(true, overlay, "display", "block", function() {
-         waitForClass(false, overlay, "velocity-animating", function() {
-            setTimeout(function() {
+      waitForStyle(true, overlay, "display", "block", function () {
+         waitForClass(false, overlay, "velocity-animating", function () {
+            setTimeout(function () {
                overlay.find(".fr-element.fr-view").html(note);
                overlay.find(".save").click();
-               waitForClass(true, overlay, "velocity-animating", function() {
-                  waitForClass(false, overlay, "velocity-animating", function() {
-                     waitForStyle(true, overlay, "display", "none", function() {
+               waitForClass(true, overlay, "velocity-animating", function () {
+                  waitForClass(false, overlay, "velocity-animating", function () {
+                     waitForStyle(true, overlay, "display", "none", function () {
                         cb();
                      });
                   });
@@ -1383,14 +1388,14 @@ function matchesDate(date, key, advisor) {
    date = isList ? date.split("/") : date;
 
    let year = isList ? date[0] : date,
-       month = null,
-       day = null;
+      month = null,
+      day = null;
 
-   if(isList){
-      if(date.length >= 2)
-        month = date[1];
-     if(date.length == 3)
-       day = date[2];
+   if (isList) {
+      if (date.length >= 2)
+         month = date[1];
+      if (date.length == 3)
+         day = date[2];
    }
 
    if (day) day = parseInt(day) - 1;
@@ -1407,12 +1412,12 @@ function matchesDate(date, key, advisor) {
 
 //Update list of advisor info, allows being able to see full list when not showing in table
 function updateAdvisorInfo() {
-  advisorInfo = [];
+   advisorInfo = [];
    $('#advisorsList').DataTable().rows().data().each((e, i) => {
       // if (!advisorInfo.some(function(e2) {
       //       return e.display_name === e2.display_name;
       //    })) {
-         advisorInfo.push(e);
+      advisorInfo.push(e);
       // } else {
       //    advisorInfo[i - 1] = e;
       // }
@@ -1422,14 +1427,14 @@ function updateAdvisorInfo() {
 
 //Get current advisor info from displayName(Exact match)
 function getAdvisorInfo(displayName) {
-   return advisorInfo.find(function(e) {
+   return advisorInfo.find(function (e) {
       return displayName === e.display_name;
    });
 }
 
 //Get current advisor info from id(Exact match)
 function getAdvisorInfoByID(id) {
-   return advisorInfo.find(function(e) {
+   return advisorInfo.find(function (e) {
       return id === e._id;
    });
 }
@@ -1476,8 +1481,8 @@ function notPublished(advisor) {
 
 //Get their live domain
 function getLiveDomain(id) {
-   return new Promise(function(resolve) {
-      $.get(baseUrl+"manage/advisor/" + id).done(data => {
+   return new Promise(function (resolve) {
+      $.get(baseUrl + "manage/advisor/" + id).done(data => {
          let $data = $(data);
          let a = $data.find('a[data-content="View Live Site"]');
          let link = a && a.length > 0 ? a[0].href : null;
@@ -1499,17 +1504,17 @@ async function displayReviewer(url, container, cb) {
    let review = await getReviewer(url);
    if (review && review[0]) {
       let reviewText = '<div class="review-item-preview"><div >';
-      reviewText += '<p class="approvedByNote" style="font-size: 12px;'+(review[2] == "Rejected" ? 'color: #c2001e;' : 'color: #007750;')+'">' + review[2] + ' By: ' + review[1] + ' - ' + review[0] + '</p>';
+      reviewText += '<p class="approvedByNote" style="font-size: 12px;' + (review[2] == "Rejected" ? 'color: #c2001e;' : 'color: #007750;') + '">' + review[2] + ' By: ' + review[1] + ' - ' + review[0] + '</p>';
       reviewText += '</div>';
       reviewText += '<div>';
-      reviewText += '<p class="note" style="font-size: 12px;">' + review[3] + '</p>';
+      reviewText += '<div class="note" style="font-size: 12px;">' + review[3] + '</div>';
       reviewText += '</div></div>';
       container.find(".review-item-preview").remove();
       container.append(reviewText);
       if (cb) cb();
    }
    async function getReviewer(url) {
-      return new Promise(function(resolve) {
+      return new Promise(function (resolve) {
          $.get(url).done(data => {
             let $data = $(data);
             let review = [];
@@ -1523,31 +1528,20 @@ async function displayReviewer(url, container, cb) {
             //Get Compliance Notes
             $msg = $data.find('.is-compliance-notes')[0];
             if ($msg) {
-              msgText += '<span class="review-item-note">';
-               msgText += '<strong>Notes:</strong><br><span>';
-               getChildren($msg);
-               msgText += '</span></span>';
+               msgText += '<div class="review-item-note">';
+               msgText += '<h4><strong>Notes:</strong></h4>';
+               Array.from($msg.children).forEach(i => msgText += i.outerHTML)
+               msgText += '</div>';
             }
 
             //Get Rejection Notes
             $msg = $data.find('.is-rejection-notes')[0];
             if ($msg) {
-              msgText += (msgText.length > 0 ? '<br>' : '');
-              msgText += '<span class="review-item-note-rejection">';
-              msgText += '<strong>Rejections:</strong><br><span>';
-              getChildren($msg);
-              msgText += '</span></span>';
-            }
-
-            function getChildren(node) {
-               if ((!node.children || node.children.length <= 1) && node.innerHTML) {
-                  msgText += node.textContent + "<br>";
-               }
-               node = node.firstChild;
-               while (node) {
-                  getChildren(node);
-                  node = node.nextSibling;
-               }
+               msgText += (msgText.length > 0 ? '<br>' : '');
+               msgText += '<div class="review-item-note-rejection">';
+               msgText += '<h4><strong>Rejections:</strong></h4>';
+               Array.from($msg.children).forEach(i => msgText += i.outerHTML)
+               msgText += '</div>';
             }
 
             review.push(msgText);
@@ -1571,19 +1565,19 @@ function getOfficerName(id) {
 }
 
 function updateSlideCardCount() {
-  console.log("Updating slider card count");
+   console.log("Updating slider card count");
 
-  //{Name, Items, Pending Changes, Total Changes}
+   //{Name, Items, Pending Changes, Total Changes}
    var reviewers = [
       ["All In Review", 0, 0, 0]
    ];
    var tags = [
-   ["Normal Reviews", 0,'-'],
-   ["Construction", 0,'-'],
-   ["Migrating", 0,'-'],
-   ["Brand New", 0,'-'],
-   ["Redesign", 0,'-']
- ];
+      ["Normal Reviews", 0, '-'],
+      ["Construction", 0, '-'],
+      ["Migrating", 0, '-'],
+      ["Brand New", 0, '-'],
+      ["Redesign", 0, '-']
+   ];
 
    $(".advisor-card").each((i, e) => {
       var reviewName = $(e).data("officer");
@@ -1591,18 +1585,18 @@ function updateSlideCardCount() {
       var isMigrating = $(e).data("importanttags").indexOf("Migrating") >= 0;
       var isBrandNew = $(e).data("importanttags").indexOf("Brand New") >= 0;
       var isRedesign = $(e).data("importanttags").indexOf("Redesign") >= 0;
- 
-      if(isConstruction)
-        tags[1][1] = tags[1][1]+1;
-      if(isMigrating)
-         tags[2][1] = tags[2][1]+1;
-      else if(isBrandNew)
-         tags[3][1] = tags[3][1]+1;
-      else if(isRedesign)
-         tags[4][1] = tags[4][1]+1;
+
+      if (isConstruction)
+         tags[1][1] = tags[1][1] + 1;
+      if (isMigrating)
+         tags[2][1] = tags[2][1] + 1;
+      else if (isBrandNew)
+         tags[3][1] = tags[3][1] + 1;
+      else if (isRedesign)
+         tags[4][1] = tags[4][1] + 1;
       else
-        tags[0][1] = tags[0][1]+1;
-      
+         tags[0][1] = tags[0][1] + 1;
+
       var found = 0;
       reviewers.forEach((e, i) => {
          if (e[0].indexOf(reviewName) >= 0) {
@@ -1617,17 +1611,17 @@ function updateSlideCardCount() {
       reviewers[0][1] = reviewers[0][1] + 1;
 
       if ($(e).find(".card-changes").length > 0) {
-       var changes = $(e).data("pending");
-       var approvals = $(e).data("approvals");
-       var rejections = $(e).data("rejections");
+         var changes = $(e).data("pending");
+         var approvals = $(e).data("approvals");
+         var rejections = $(e).data("rejections");
 
-       changes = parseInt(changes);
-       approvals = parseInt(approvals);
-       rejections = parseInt(rejections);
-       reviewers[0][2] = reviewers[0][2] + changes;
-       reviewers[0][3] = reviewers[0][3] + approvals + rejections + changes;
-       reviewers[found][2] = reviewers[found][2] + changes;
-       reviewers[found][3] = reviewers[found][3] + approvals + rejections + changes;
+         changes = parseInt(changes);
+         approvals = parseInt(approvals);
+         rejections = parseInt(rejections);
+         reviewers[0][2] = reviewers[0][2] + changes;
+         reviewers[0][3] = reviewers[0][3] + approvals + rejections + changes;
+         reviewers[found][2] = reviewers[found][2] + changes;
+         reviewers[found][3] = reviewers[found][3] + approvals + rejections + changes;
       }
    });
    var reviewersText = '<table style="width: 100%; text-align:left">';
@@ -1635,31 +1629,31 @@ function updateSlideCardCount() {
    reviewersText += '<tr><td colspan="3" style="padding-bottom: 5px"></td></tr>';
 
    reviewers.forEach((e, i) => {
-     if(e[1] != 0){
-       if(i == 0){
-        reviewersText += '<tr class="active">';
-        reviewersText += '<td><a href="#" class="filter-cards">' + e[0] + '</a></td><td style="text-align:right">' + (reviewers[1][1] != 0 ? '<span style="color:#5e5e5e">(' + e[1] + ')</span>':'') + (e[1]-reviewers[1][1]) + '</td><td style="text-align:right"> ' + (reviewers[1][1] != 0 ? '<span style="color:#5e5e5e">(' +  e[2] + ')</span>':'') + (e[2]-reviewers[1][2]) + '</td>';
-       }else{
-        reviewersText += '<tr>';
-        reviewersText += '<td><a href="#" class="filter-cards">' + e[0] + '</a></td><td style="text-align:right">' + e[1] + '</td><td style="text-align:right"> ' + e[2] + '</td>';
-       }
-      reviewersText += '</tr>';
-      if(i == 0)
-        reviewersText += '<tr><td colspan="3" style="padding-bottom: 5px"></td></tr><tr class="seperator"><td colspan="3" style="padding-bottom: 5px"></td></tr>';
+      if (e[1] != 0) {
+         if (i == 0) {
+            reviewersText += '<tr class="active">';
+            reviewersText += '<td><a href="#" class="filter-cards">' + e[0] + '</a></td><td style="text-align:right">' + (reviewers[1][1] != 0 ? '<span style="color:#5e5e5e">(' + e[1] + ')</span>' : '') + (e[1] - reviewers[1][1]) + '</td><td style="text-align:right"> ' + (reviewers[1][1] != 0 ? '<span style="color:#5e5e5e">(' + e[2] + ')</span>' : '') + (e[2] - reviewers[1][2]) + '</td>';
+         } else {
+            reviewersText += '<tr>';
+            reviewersText += '<td><a href="#" class="filter-cards">' + e[0] + '</a></td><td style="text-align:right">' + e[1] + '</td><td style="text-align:right"> ' + e[2] + '</td>';
+         }
+         reviewersText += '</tr>';
+         if (i == 0)
+            reviewersText += '<tr><td colspan="3" style="padding-bottom: 5px"></td></tr><tr class="seperator"><td colspan="3" style="padding-bottom: 5px"></td></tr>';
       }
    });
 
-    reviewersText += '<tr><td colspan="3" style="padding-bottom: 5px"></td></tr><tr class="seperator"><td colspan="3" style="padding-bottom: 5px"></td></tr>';
-    tags.forEach((e, i) => {
-      if(e[1] != 0){
-       reviewersText += '<tr>';
-       reviewersText += '<td><a href="#" class="filter-cards">' + e[0] + '</a></td><td style="text-align:right">' + e[1] + '</td><td style="text-align:right"> ' + e[2] + '</td>';
-     }
+   reviewersText += '<tr><td colspan="3" style="padding-bottom: 5px"></td></tr><tr class="seperator"><td colspan="3" style="padding-bottom: 5px"></td></tr>';
+   tags.forEach((e, i) => {
+      if (e[1] != 0) {
+         reviewersText += '<tr>';
+         reviewersText += '<td><a href="#" class="filter-cards">' + e[0] + '</a></td><td style="text-align:right">' + e[1] + '</td><td style="text-align:right"> ' + e[2] + '</td>';
+      }
    });
    reviewersText += '</table>';
    $(".providence-pending--title").html('<h2>Pending Reviews</h2> <div class="review-filter">' + reviewersText + '</div>');
 
-   $(".filter-cards").off().on("click", function() {
+   $(".filter-cards").off().on("click", function () {
       var filterName = this.innerHTML;
       $(".review-filter .active").removeClass("active");
       $(this).parent().parent().addClass("active");
@@ -1670,13 +1664,13 @@ function updateSlideCardCount() {
          $(this).parent().parent().addClass("active");
       } else {
          $(".advisor-card").hide();
-         $(".advisor-card").filter(function() {
+         $(".advisor-card").filter(function () {
             return $(this).data("officer").indexOf(filterName) >= 0 || $(this).data("tags").indexOf(filterName) >= 0 ||
-            (filterName == "Normal Reviews" && 
-               $(this).data("importanttags").indexOf('Brand New') == -1 &&
-               $(this).data("importanttags").indexOf('Migrating') == -1 &&
-               $(this).data("importanttags").indexOf('Construction') == -1 &&
-               $(this).data("importanttags").indexOf('Redesign') == -1
+               (filterName == "Normal Reviews" &&
+                  $(this).data("importanttags").indexOf('Brand New') == -1 &&
+                  $(this).data("importanttags").indexOf('Migrating') == -1 &&
+                  $(this).data("importanttags").indexOf('Construction') == -1 &&
+                  $(this).data("importanttags").indexOf('Redesign') == -1
                );
          }).show();
       }
@@ -1709,8 +1703,8 @@ function updateSlider() {
 
       //Get the HTML page and query for review items
       function getRevisions(id) {
-         return new Promise(function(resolve) {
-            $.get(baseUrl+"manage/advisor/" + id).done(data => {
+         return new Promise(function (resolve) {
+            $.get(baseUrl + "manage/advisor/" + id).done(data => {
                let $data = $(data);
                let approved = $data.find(".review-item.approved-status").length,
                   rejected = $data.find(".review-item.rejected-status").length,
@@ -1721,19 +1715,19 @@ function updateSlider() {
          });
       }
    }
-   $(".advisor-card").each(function(i,card) {
+   $(".advisor-card").each(function (i, card) {
 
-     //Edit card
-     if (!$(this).find('.card-status').length) {
-        $(this).find('.card-content').prepend('<div class="card-status"></div>');
-        $(this).find(".submitted").appendTo($(this).find('.card-status'));
-        $(this).find(".card-changes").appendTo($(this).find('.card-status'));
-     }
-     if (!$(this).find('.card-title').length) {
-        $(this).prepend('<div class="card-title" ></div>');
-        $(this).find(".advisor-profile").appendTo($(this).find('.card-title'));
-        $(this).find("h4").appendTo($(this).find('.card-title'));
-     }
+      //Edit card
+      if (!$(this).find('.card-status').length) {
+         $(this).find('.card-content').prepend('<div class="card-status"></div>');
+         $(this).find(".submitted").appendTo($(this).find('.card-status'));
+         $(this).find(".card-changes").appendTo($(this).find('.card-status'));
+      }
+      if (!$(this).find('.card-title').length) {
+         $(this).prepend('<div class="card-title" ></div>');
+         $(this).find(".advisor-profile").appendTo($(this).find('.card-title'));
+         $(this).find("h4").appendTo($(this).find('.card-title'));
+      }
 
       //Find the card's name and row in table
       let name = $(this).find(".card-title h4").text();
@@ -1753,7 +1747,7 @@ function updateSlider() {
 
       //Find who's assigned to the current card
       let assigned = info ? getOfficerName(info.officer_id) : "";
-     
+
       // Important Tags List
       let importantTagsList = [
          "Migrating",
@@ -1773,20 +1767,20 @@ function updateSlider() {
       if (info && info.settings && info.settings.broker_tags) {
          info.settings.broker_tags.forEach(allTag => {
             allTag = allTag.name
-            if(allTag.indexOf("Tier") >= 0)
+            if (allTag.indexOf("Tier") >= 0)
                tier = "Tier: " + allTag.substr(5);
-            else if(importantTagsList.some(impTag => allTag.indexOf(impTag) >= 0))
+            else if (importantTagsList.some(impTag => allTag.indexOf(impTag) >= 0))
                importantTagsString += allTag + ", "
-            else if(!importantTagsList.some(impTag => allTag.indexOf(impTag) >= 0))
+            else if (!importantTagsList.some(impTag => allTag.indexOf(impTag) >= 0))
                nonImportantTagsString += allTag + ", "
-            
+
             allTagsString += allTag + ", "
          })
       }
 
       if (importantTagsString.length > 0)
          importantTagsString = importantTagsString.substr(0, importantTagsString.length - 2);
-         
+
       if (nonImportantTagsString.length > 0)
          nonImportantTagsString = nonImportantTagsString.substr(0, nonImportantTagsString.length - 2);
 
@@ -1813,14 +1807,14 @@ function updateSlider() {
             $(this).find(".card-action").append('<a href="#messages" style="margin-left: 5px;flex-grow:1" class="btn pill primary btn--action-review open-chat-extension" data-advisor_id="' + info._id + '" data-cover="Open Chat">Open Chat</a>');
          }
 
-         updateRevisions($(this), info._id, delay( e => updateSlideCardCount()), 1000);
+         updateRevisions($(this), info._id, delay(e => updateSlideCardCount()), 1000);
       }
    });
 }
 
 function updateCustomEvents() {
    //Add the Open Chat button click listener
-   $(".open-chat-extension").off().on('click', function() {
+   $(".open-chat-extension").off().on('click', function () {
       let btn = this;
 
       //Open the chat sidebar
@@ -1839,7 +1833,7 @@ function updateList(container) {
       container = "#advisorsList";
 
    //Add "Open Chat" link to all rows
-   $(container).find(".tot_droplist").each(function() {
+   $(container).find(".tot_droplist").each(function () {
       let list = $($(this).find("ul"));
 
       //Only add if not already added
