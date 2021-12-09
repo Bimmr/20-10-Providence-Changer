@@ -89,8 +89,15 @@ $(function() {
     'body.app.nightMode .chat-wrapper .chat-header .chat-title::after {background-image: linear-gradient(to right, rgba(255,255,255,0) 0%, #2d2d2d 30%, #2d2d2d 100%);}'+
     'body.app.nightMode .fr-box.fr-basic .fr-wrapper, body.app.nightMode .fr-toolbar {background-color: #2d2d2d}'+
     'body.app.nightMode .basic p {color: #efefef}'+
-    'body.app.nightMode .fr-toolbar .fr-command.fr-btn {color: #efefef}'+
 
+    'body.app.nightMode .fr-toolbar{color: #efefef}'+
+    'body.app.nightMode .fr-command.fr-btn+.fr-dropdown-menu{ background: #2d2d2d}'+
+    'body.app.nightMode .fr-command.fr-btn+.fr-dropdown-menu .fr-dropdown-wrapper .fr-dropdown-content ul.fr-dropdown-list li a.fr-active{background: #3a3a3a}'+
+    'body.app.nightMode .fr-toolbar .fr-command.fr-btn {color: #efefef}'+
+    'body.app.nightMode .fr-toolbar .fr-command.fr-btn.fr-dropdown.fr-active, body.app.nightMode .fr-popup .fr-command.fr-btn.fr-dropdown.fr-active, body.app.nightMode .fr-modal .fr-command.fr-btn.fr-dropdown.fr-active{background: #3a3a3a}'+
+    'body.app.nightMode .fr-desktop .fr-command:hover:not(.fr-table-cell), body.app.nightMode .fr-desktop .fr-command:focus:not(.fr-table-cell), body.app.nightMode .fr-desktop .fr-command.fr-btn-hover:not(.fr-table-cell), body.app.nightMode .fr-desktop .fr-command.fr-expanded:not(.fr-table-cell){background: #3a3a3a}'+
+    'body.app.nightMode .fr-toolbar .fr-command.fr-btn.fr-dropdown:after, body.app.nightMode .fr-popup .fr-command.fr-btn.fr-dropdown:after, body.app.nightMode .fr-modal .fr-command.fr-btn.fr-dropdown:after{border-left: 4px solid transparent; border-right: 4px solid transparent; border-top: 4px solid #efefef;}'+
+    'body.app.nightMode .fr-toolbar .fr-command.fr-btn.fr-dropdown.fr-active:after, body.app.nightMode .fr-popup .fr-command.fr-btn.fr-dropdown.fr-active:after, body.app.nightMode .fr-modal .fr-command.fr-btn.fr-dropdown.fr-active:after{border-top: 0; border-bottom: 4px solid #efefef;}'+
     'body.app.nightMode .profile-photo-form {background-color: #212121}'+
     'body.app.nightMode #brokercheck-overlay .tab-nav a.active, body.app.nightMode #account-settings-overlay .tab-nav a{color: #888}'+
     'body.app.nightMode #brokercheck-overlay .tab-nav a.active, body.app.nightMode #account-settings-overlay .tab-nav a.active{color: #efefef}'+
