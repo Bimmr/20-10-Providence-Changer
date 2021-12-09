@@ -80,6 +80,7 @@ $(function() {
 
     'body.app.nightMode #uploads-library {background-color: #2d2d2d}'+
     'body.app.nightMode .library-wrapper .library-sidebar {background: #21212180;}'+
+    'body.app.nightMode .filter-uploads li.active a { background: #3a3a3a; color: #efefef; }'+
     'body.app.nightMode .filter-uploads a:hover {color: #efefef;}'+
     'body.app.nightMode .assisted-overlay{background-color: #2d2d2d;}'+
     'body.app.nightMode .checkbox-group{background: #272727;}'+
@@ -108,7 +109,8 @@ $(function() {
     'body.app.nightMode .settings-content, body.app.nightMode p.secondary{color: #efefef}'+
     'body.app.nightMode .chat-content .chat-messages .message {background-color: #4c4c4c;}'+
     'body.app.nightMode .fr-box.fr-basic .fr-element{color: #efefef}'+
-    'body.app.nightMode .chat-content .chat-messages .message.broker, body.app.nightMode .chat-content .chat-messages .message.rejection-notice.broker .message-content .rejection-wrapper {background-color: #ddd}'+
+    'body.app.nightMode .chat-content .chat-messages .message.broker, body.app.nightMode .chat-content .chat-messages .message.rejection-notice.broker .message-content .rejection-wrapper {background-color: #efefef}'+
+    'body.app.nightMode .chat-content .chat-messages .message.rejection-notice.broker .message-content .rejection-wrapper{border: 2px solid #efefef}'+
 
     'body.app.nightMode .basic h1, body.app.nightMode .basic h2, body.app.nightMode .basic h3, body.app.nightMode .basic h4, body.app.nightMode .basic h5, body.app.nightMode .basic h6 { color: #efefef !important;}'+
     'body.app.nightMode .content-item .article-categories {color: rgba(255,255,255,0.8);}'+
