@@ -1588,7 +1588,7 @@ function updateSlideCardCount() {
 
       if (isConstruction)
          tags[1][1] = tags[1][1] + 1;
-      if (isMigrating)
+      else if (isMigrating)
          tags[2][1] = tags[2][1] + 1;
       else if (isBrandNew)
          tags[3][1] = tags[3][1] + 1;
@@ -1630,16 +1630,10 @@ function updateSlideCardCount() {
 
    reviewers.forEach((e, i) => {
       if (e[1] != 0) {
-         if (i == 0) {
-            reviewersText += '<tr class="active">';
-            reviewersText += '<td><a href="#" class="filter-cards">' + e[0] + '</a></td><td style="text-align:right">' + (reviewers[1][1] != 0 ? '<span style="color:#5e5e5e">(' + e[1] + ')</span>' : '') + (e[1] - reviewers[1][1]) + '</td><td style="text-align:right"> ' + (reviewers[1][1] != 0 ? '<span style="color:#5e5e5e">(' + e[2] + ')</span>' : '') + (e[2] - reviewers[1][2]) + '</td>';
-         } else {
-            reviewersText += '<tr>';
-            reviewersText += '<td><a href="#" class="filter-cards">' + e[0] + '</a></td><td style="text-align:right">' + e[1] + '</td><td style="text-align:right"> ' + e[2] + '</td>';
-         }
-         reviewersText += '</tr>';
+         reviewersText += '<tr '+( i == 0 ? 'class="active"' : '')+'><td><a href="#" class="filter-cards">' + e[0] + '</a></td><td style="text-align:right">' + e[1] + '</td><td style="text-align:right"> ' + e[2] + '</td></tr>';
+         //Add underline to all in review line
          if (i == 0)
-            reviewersText += '<tr><td colspan="3" style="padding-bottom: 5px"></td></tr><tr class="seperator"><td colspan="3" style="padding-bottom: 5px"></td></tr>';
+               reviewersText += '<tr><td colspan="3" style="padding-bottom: 5px"></td></tr><tr class="seperator"><td colspan="3" style="padding-bottom: 5px"></td></tr>';
       }
    });
 
