@@ -1576,7 +1576,8 @@ function updateSlideCardCount() {
       ["Construction", 0, '-'],
       ["Migrating", 0, '-'],
       ["Brand New", 0, '-'],
-      ["Redesign", 0, '-']
+      ["Redesign", 0, '-'],
+      ["Post-Review", 0, '-']
    ];
 
    $(".advisor-card").each((i, e) => {
@@ -1585,6 +1586,7 @@ function updateSlideCardCount() {
       var isMigrating = $(e).data("importanttags").indexOf("Migrating") >= 0;
       var isBrandNew = $(e).data("importanttags").indexOf("Brand New") >= 0;
       var isRedesign = $(e).data("importanttags").indexOf("Redesign") >= 0;
+      var isPostReview = $(e).data("importanttags").indexOf("Post-Review") >= 0;
 
       if (isConstruction)
          tags[1][1] = tags[1][1] + 1;
@@ -1596,6 +1598,10 @@ function updateSlideCardCount() {
          tags[4][1] = tags[4][1] + 1;
       else
          tags[0][1] = tags[0][1] + 1;
+      
+      //Show duplicate in post-review (Post-Reviews will always be brand new as well)
+      if (isPostReview)
+         tags[5][1] = tags[5][1] + 1;
 
       var found = 0;
       reviewers.forEach((e, i) => {
@@ -1664,7 +1670,8 @@ function updateSlideCardCount() {
                   $(this).data("importanttags").indexOf('Brand New') == -1 &&
                   $(this).data("importanttags").indexOf('Migrating') == -1 &&
                   $(this).data("importanttags").indexOf('Construction') == -1 &&
-                  $(this).data("importanttags").indexOf('Redesign') == -1
+                  $(this).data("importanttags").indexOf('Redesign') == -1 &&
+                  $(this).data("importanttags").indexOf('PostReview') == -1
                );
          }).show();
       }
@@ -1746,6 +1753,7 @@ function updateSlider() {
       let importantTagsList = [
          "Migrating",
          "Brand New",
+         "Post-Review",
          "Redesign",
          "Construction",
          "Dealer OBA",

@@ -1,3 +1,5 @@
+1.6.3
+- Added Post-Review to Tag Filters
 1.6.2
 - More Nightmode fixes for chat, froala editor, and uploads
 - Removed seperator for reviews pending
