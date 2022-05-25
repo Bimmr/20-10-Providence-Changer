@@ -149,6 +149,17 @@ $(function () {
       '.sidebar-module.advisor-notes .sidebar-module-message-content textarea{ color: #2b2b2b}' +
       '.sidebar-module.advisor-notes .updateNotes-button{width: 100%}' +
 
+      //Chat
+      '.chat-search{ position: absolute; top: 4px; right: 4px; }'+
+      '.chat-search-icon{ color: #626262; font-size: 0.75em; position: relative; }'+
+      '.chat-search-input-wrapper{transition: all 0.3s; position: absolute; top: -50px; right: 0px; width: 250px; background: white; padding: 10px; border-radius: 10px; border: 1px solid #cccccc; box-shadow: 1px 1px 1px #3a3a3a; z-index: 99; }'+
+      '.chat-search:focus-within .chat-search-input-wrapper{ top: 0px; }'+
+      '.chat-search-input-wrapper input{ width: 200px; }'+
+      '.chat-search-input-search { position: absolute; top: 0; right: 0; width: 30px; height: 100%; background: rgba(0,0,0,0.3); font-size: 1.3em; border-radius: 1px 10px 10px 1px; display: flex; flex-flow: column nowrap; justify-content: center; align-items: center;}'+
+      '.chat-search-input-search:hover{ cursor: pointer; }'+
+      '.chat-search-input-search i { color: #6c6c6c; }'+
+      '.chat-search-results{font-size: 0.5em; color: #c20000}'+
+
 
       //Night Themed
       'body.providence.nightMode h1{color: #efefef}' +
@@ -206,6 +217,7 @@ $(function () {
       'body.providence.nightMode .sidebar-module-message-content{color: #2d2d2d; background: #fefefe;}' +
       'body.providence.nightMode .sidebar-module-footer{background: rgba(0,0,0,0.5);}' +
 
+      //TODO: Add Dark mode for chat?
 
       '</style>');
 
@@ -247,7 +259,7 @@ $(function () {
          //Get currently opened chat's advisor id, and add the icon
          $(".chat-wrapper .tot_tip").after('<a target="_blank" href="/manage/advisor/' + advisorId + '" class="tot_tip bottom view-profile-chat" data-content="View Profile" style="position: absolute;top: 0;right: 60px;height: 20px;width: 20px;margin: 25px 20px;z-index: 1;color: #909090;font-size: 1.1em;"><i class="fas fa-user"></i></a>');
 
-         // IF the chat is changed, grab the new advisor id and update the icon's link
+         // If the chat is changed, grab the new advisor id and update the icon's link
          $(".recent-chats, .all-chats").find("li").off().on("click", function (e) {
             var advisorClickedId = $(this).find("a").first().attr("data-advisor_id");
             $(".view-profile-chat")[0].href = '/manage/advisor/' + advisorClickedId;
@@ -260,6 +272,29 @@ $(function () {
          setTimeout(() => {
             manageChatRejections(advisorId);
          }, 1000);
+
+
+         // Add search icon
+         $(".chat-users-list-wrapper").append('<a href="#" class="chat-search" > <i class="fas fa-search chat-search-icon"></i> <div class="chat-search-input-wrapper"> <input type="text" placeholder="Search Name"> <div class="chat-search-input-search"> <i class="fas fa-search"></i><div class="chat-search-results"></div> </div> </div> </a>')
+         $(".chat-search-input-wrapper input").off().on("keyup", delay(e=>{
+            let searchName = $(".chat-search-input-wrapper input").val()
+            if(searchName.length >= 3)
+               $(".chat-search-input-search i").click()
+            else
+               $(".chat-search-results").html("")
+               
+         }, 500))
+         $(".chat-search-input-search i").off().on("click", function(){
+            let searchName = $(".chat-search-input-wrapper input").val().toLowerCase()
+            let results = $(".chat-users-list-wrapper .user").filter((i,el) => el.getAttribute("data-content").toLowerCase().indexOf(searchName) >=0)
+            if(results.length == 1)
+               results.find("a").first().click()
+            
+            $(".chat-search-results").html(results.length)
+            if(searchName.length == 0 || results.length == 1)
+               $(".chat-search-results").html("")
+         })
+
       }, 3000);
    });
 
