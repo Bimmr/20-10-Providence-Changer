@@ -1,4 +1,5 @@
 1.6.4
+- Updated to Manifest V3, added AWS SDK to JS
 - Added search to chats
 - Moved team members around
 1.6.3

@@ -12,7 +12,7 @@ function injectModule(file, node) {
     s.setAttribute('src', file);
     th.appendChild(s);
 }
-injectScript( 'https://sdk.amazonaws.com/js/aws-sdk-2.892.0.min.js', 'body');
-injectScript( chrome.extension.getURL('/js/utils.js'), 'body');
-injectScript( chrome.extension.getURL('/js/db.js'), 'body');
-injectScript( chrome.extension.getURL('/providence/injected.js'), 'body');
+injectScript( chrome.runtime.getURL('/js/aws-sdk-2.892.0.min.js'), 'body');
+injectScript( chrome.runtime.getURL('/js/utils.js'), 'body');
+injectScript( chrome.runtime.getURL('/js/db.js'), 'body');
+injectScript( chrome.runtime.getURL('/providence/injected.js'), 'body');

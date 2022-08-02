@@ -1,49 +1,54 @@
 {
-
   "name": "Providence Changer",
-  "version": "1.6.3",
-
-  "description": "Providence Changes",
+  "version": "1.6.4",
+  "short_name": "Providence Changer",
+  "description": "TwentyOverTen Providence Changes",
+  "manifest_version": 3,
   "icons": {
     "128": "icon/SiteForwardFAv.png"
   },
   "content_scripts": [
     {
-        "matches":[
-          "https://app.twentyoverten.com/manage",
-          "https://app.twentyoverten.com/manage#",
-          "https://app.twentyoverten.com/manage/advisor*",
-          "https://app.twentyoverten.com/manage/revisions*",
-          "https://app.twentyoverten.com/manage/review*",
-          "https://app.twentyoverten.com/manage/content*"
-        ],
-        "all_frames": false,
-        "js": [
-            "/js/utils.js",
-            "/js/db.js",
-            "/providence/onLoad.js"
-        ]
+      "matches": [
+        "https://app.twentyoverten.com/manage",
+        "https://app.twentyoverten.com/manage#",
+        "https://app.twentyoverten.com/manage/advisor*",
+        "https://app.twentyoverten.com/manage/revisions*",
+        "https://app.twentyoverten.com/manage/review*",
+        "https://app.twentyoverten.com/manage/content*"
+      ],
+      "all_frames": false,
+      "js": [
+        "/js/utils.js",
+        "/js/aws-sdk-2.892.0.min.js",
+        "/js/db.js",
+        "/providence/onLoad.js"
+      ]
     },
     {
-        "matches":[
-          "https://app.twentyoverten.com/edit",
-          "https://app.twentyoverten.com/publish"
-        ],
-        "js": [
-            "/js/utils.js",
-            "/js/db.js",
-            "/edit/onLoad.js"
-        ]
+      "matches": [
+        "https://app.twentyoverten.com/edit",
+        "https://app.twentyoverten.com/publish"
+      ],
+      "js": [
+        "/js/utils.js",
+        "/js/aws-sdk-2.892.0.min.js",
+        "/js/db.js",
+        "/edit/onLoad.js"
+      ]
     }
-],
-"web_accessible_resources": [
-    "/providence/injected.js",
-    "/js/utils.js",
-    "/js/db.js",
-    "/edit/injected.js"
   ],
-
-  "short_name": "Providence Changer",
-
-  "manifest_version": 2
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "/providence/injected.js",
+        "/js/utils.js",
+        "/js/db.js",
+        "/edit/injected.js"
+      ],
+      "matches": [
+        "https://app.twentyoverten.com/*"
+      ]
+    }
+  ]
 }
