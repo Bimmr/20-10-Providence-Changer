@@ -1,5 +1,6 @@
 1.6.4
 - Added search to chats
+- Moved team members around
 1.6.3
 - Added Post-Review to Tag Filters
 1.6.2
