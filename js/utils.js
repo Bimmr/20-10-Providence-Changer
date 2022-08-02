@@ -7,7 +7,6 @@ let sfAccounts = [
 ];
 let mlsAccounts = [
   '5b7a252c87b3513edc0b86bb', // Debbie
-  '5b7a254b87b3513edc0b86bc', // John
   '5d1391aa7c86f50a97009f18', // Rachel
   '5e82312ab7479c3245b2f88e', // Summer
   '5e82314cb7479c3245b2f891', // Suzanne
@@ -28,7 +27,8 @@ let miscAccounts = [
 let notActive = [
   '5cab89722de8d2305492b333', // Kat
   '5b9490ea0420c067d6b37637', // Josee
-  '5f7f00c82820196e420db6bc'  // Paul
+  '5f7f00c82820196e420db6bc',  // Paul
+  '5b7a254b87b3513edc0b86bc', // John
 ];
 
 let isSiteForward = function(id){
