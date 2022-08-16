@@ -22,13 +22,14 @@ let miscAccounts = [
   '5dd2f8e3d3547e4c268d5c42', // SFP - On Hold
   '5e822faab7479c3245b2f75a', // Compliance Follow up
   '5c6efe623b265776d89b0638', // Under Construction
+  '62fbcef1ad43191d020cc850', // Lorena
   'all' // Under Construction
 ];
 let notActive = [
   '5cab89722de8d2305492b333', // Kat
   '5b9490ea0420c067d6b37637', // Josee
-  '5f7f00c82820196e420db6bc',  // Paul
-  '5b7a254b87b3513edc0b86bc', // John
+  '5f7f00c82820196e420db6bc', // Paul - (Deleted)
+  '5b7a254b87b3513edc0b86bc', // John - (Deleted)
 ];
 
 let isSiteForward = function(id){

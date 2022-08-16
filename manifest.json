@@ -44,7 +44,8 @@
         "/providence/injected.js",
         "/js/utils.js",
         "/js/db.js",
-        "/edit/injected.js"
+        "/edit/injected.js",
+        "/js/aws-sdk-2.892.0.min.js"
       ],
       "matches": [
         "https://app.twentyoverten.com/*"

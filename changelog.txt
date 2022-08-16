@@ -1,3 +1,7 @@
+1.6.5
+- Moved addition team members
+- Fixed AWS SDK not being accessible
+- Added new MLS Sales Communication team member
 1.6.4
 - Updated to Manifest V3, had to add AWS SDK to JS (Which increased extension size by 10x )
 - Added search to chats
