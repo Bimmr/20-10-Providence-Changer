@@ -11,6 +11,7 @@ let mlsAccounts = [
   '5e82312ab7479c3245b2f88e', // Summer
   '5e82314cb7479c3245b2f891', // Suzanne
   '6053855b7d9f5556ecc9e33b', // Julien
+  '62fbcef1ad43191d020cc850', // Lorena
   '5b6b0812c7b3f042604e253c'  // MLS Sales Communication
 ];
 let msiAccounts = [
@@ -22,7 +23,6 @@ let miscAccounts = [
   '5dd2f8e3d3547e4c268d5c42', // SFP - On Hold
   '5e822faab7479c3245b2f75a', // Compliance Follow up
   '5c6efe623b265776d89b0638', // Under Construction
-  '62fbcef1ad43191d020cc850', // Lorena
   'all' // Under Construction
 ];
 let notActive = [
