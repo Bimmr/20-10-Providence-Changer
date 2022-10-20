@@ -3,6 +3,7 @@ let sfAccounts = [
   '5b44a4121ee2f32880ef9485',  // Mandy
   '5b71d892138837295d1d88d5',  // Randy
   '5ed534b953c1441f7930abfa',  // Zain
+  '63515d1ca14d730aa357ebeb',  // Kayla
 //'5fd3d2192456636b40e14528',  // Staging Officer Account
 ];
 let mlsAccounts = [
