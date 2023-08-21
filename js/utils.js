@@ -1,6 +1,5 @@
 let sfAccounts = [
   '5b6b0b38c7b3f042604e254c',  // SiteForward
-  '5b44a4121ee2f32880ef9485',  // Mandy
   '5b71d892138837295d1d88d5',  // Randy
   '5ed534b953c1441f7930abfa',  // Zain
   '63515d1ca14d730aa357ebeb',  // Kayla
@@ -9,7 +8,6 @@ let sfAccounts = [
 let mlsAccounts = [
   '5b7a252c87b3513edc0b86bb', // Debbie
   '5d1391aa7c86f50a97009f18', // Rachel
-  '5e82312ab7479c3245b2f88e', // Summer
   '5e82314cb7479c3245b2f891', // Suzanne
   '6053855b7d9f5556ecc9e33b', // Julien
   '62fbcef1ad43191d020cc850', // Lorena
@@ -27,10 +25,12 @@ let miscAccounts = [
   'all' // Under Construction
 ];
 let notActive = [
+  '5e82312ab7479c3245b2f88e', // Summer
   '5cab89722de8d2305492b333', // Kat
   '5b9490ea0420c067d6b37637', // Josee
   '5f7f00c82820196e420db6bc', // Paul - (Deleted)
   '5b7a254b87b3513edc0b86bc', // John - (Deleted)
+  '5b44a4121ee2f32880ef9485', // Mandy
 ];
 
 let isSiteForward = function(id){

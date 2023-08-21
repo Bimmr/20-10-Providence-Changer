@@ -1331,8 +1331,10 @@ $(function () {
                      value.forEach(function (item) {
                         let id = item[0].value.substr(item[0].value.indexOf('|') + 1);
 
-                        if (isNotActive(id))
+                        if (isNotActive(id)){
                            item = item.css("color", "#888");
+                           item[0].disabled = "true"
+                        }
 
                         group += item[0].outerHTML;
                         item.remove();

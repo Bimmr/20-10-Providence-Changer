@@ -1,3 +1,7 @@
+1.6.6
+- Moved Summer to notActive
+- Moved Mandy to notActive
+- Disabled Other team options
 1.6.5.2
 - Added Kayla to SF team
 1.6.5.1
