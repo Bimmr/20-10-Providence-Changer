@@ -1,3 +1,5 @@
+1.6.7
+- Added date as attribute to has-date column
 1.6.6
 - Moved Summer to notActive
 - Moved Mandy to notActive

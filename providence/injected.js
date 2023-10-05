@@ -1068,7 +1068,9 @@ $(function () {
             else if (showAll || nodes.length <= 100) {
 
                //Add nodes to table
-               table.append(nodes);
+               let tbody = $("<tbody></tbody>")
+               tbody.append(nodes)
+               table.append(tbody);
                nodes.forEach(function (e, i) {
                   let row = $(table.find("tr")[i + 1]);
                   row.prepend('<td>' + (i + 1) + '.</td>');
@@ -1872,41 +1874,51 @@ function updateList(container) {
       container = "#advisorsList";
 
    //Add "Open Chat" link to all rows
-   $(container).find(".tot_droplist").each(function () {
+   $(container).find("tbody tr").each(function (i,e) {
+      e = $(e);
       let list = $($(this).find("ul"));
 
       //Only add if not already added
       if (list.children().length < 6) {
 
+         
+
+
          //Get ID
-         let id = list.children(":first").find("a")[0].href;
-         id = id.split("/")[id.split("/").length - 1];
+         id = list.children(":first").find("a")[0]?.href;
+            id = id.split("/")[id.split("/").length - 1];
 
-         list.find('a').first().prop("target", "_blank");
-         list.append('<li><a href="#messages" class="open-chat-extension" data-advisor_id="' + id + '">Open Chat</a></li>');
+            list.find('a').first().prop("target", "_blank");
+            list.append('<li><a href="#messages" class="open-chat-extension" data-advisor_id="' + id + '">Open Chat</a></li>');
 
-         //Add link to view website without needing to login/view profile
-         let info = getAdvisorInfoByID(id);
-         if (info && info.email)
-            list.append('<li><a href="/manage/revisions?email=' + encodeURIComponent(info.email) + '" target="_blank" class="" data-advisor_id="' + id + '">View Revisions</a></li>');
-         if (info && info.site)
-            list.append('<li><a href="https://' + info.site.settings.subdomain + '.app.twentyoverten.com" class="" target="_blank" data-advisor_id="' + id + '">View Preview Website</a></li>');
-         if (info)
-            addLiveURLToDroplist(list, info);
+            //Add link to view website without needing to login/view profile
+            let info = getAdvisorInfoByID(id);
+            if (info && info.email)
+               list.append('<li><a href="/manage/revisions?email=' + encodeURIComponent(info.email) + '" target="_blank" class="" data-advisor_id="' + id + '">View Revisions</a></li>');
+            if (info && info.site)
+               list.append('<li><a href="https://' + info.site.settings.subdomain + '.app.twentyoverten.com" class="" target="_blank" data-advisor_id="' + id + '">View Preview Website</a></li>');
+            if (info)
+               addLiveURLToDroplist(list, info);
+               
+            //Add a "Not Published" status if the site is approved/editing but not published
+            if (notPublished(info)) {
+               let state = e.find(".has-state");
+               state.append('<p style="font-size: .75em;color: #1fe9ae;text-align: center;margin: 5px 0 0 0; font-family: \'Anonymous Pro\', Courier, monospace;">Not Published</p>');
+            }
+            if (info && info.submitted_date){
+               let date = e.find(".has-date")
+               date[0].setAttribute("data-date", info.submitted_date)
+            }
 
-         //Add a "Not Published" status if the site is approved/editing but not published
-         if (notPublished(info)) {
-            let state = list.parent().parent().parent().parent().find(".has-state");
-            state.append('<p style="font-size: .75em;color: #1fe9ae;text-align: center;margin: 5px 0 0 0; font-family: \'Anonymous Pro\', Courier, monospace;">Not Published</p>');
-         }
-         //   //Add a note saying when it was reviwed
-         //- Not sure if theres a way to get the time of it's last rejection. I can get the rejection ID from the chat, or the revisions page. but I can't get a list of them
-         //   if (hasStatus("review completed", info)) {
-         //     let state = list.parent().parent().parent().parent().find(".has-state");
-         //     let reviewDate = new Date(Date.parse(info.site.updated_at));
-         //     reviewDate = reviewDate.toString().substring(0, reviewDate.toString().indexOf(':')-3);
-         //     state.append('<p style="font-size: .75em;color: #1fe9ae;text-align: center;margin: 5px 0 0 0; font-family: \'Anonymous Pro\', Courier, monospace;">Reviewed: '+ reviewDate+'</p>');
-         //   }
+                     
+            //   //Add a note saying when it was reviwed
+            //- Not sure if theres a way to get the time of it's last rejection. I can get the rejection ID from the chat, or the revisions page. but I can't get a list of them
+            //   if (hasStatus("review completed", info)) {
+            //     let state = row.find(".has-state");
+            //     let reviewDate = new Date(Date.parse(info.site.updated_at));
+            //     reviewDate = reviewDate.toString().substring(0, reviewDate.toString().indexOf(':')-3);
+            //     state.append('<p style="font-size: .75em;color: #1fe9ae;text-align: center;margin: 5px 0 0 0; font-family: \'Anonymous Pro\', Courier, monospace;">Reviewed: '+ reviewDate+'</p>');
+            //   }
       }
    });
 }
