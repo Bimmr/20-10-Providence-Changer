@@ -14,8 +14,7 @@ let mlsAccounts = [
   '5b6b0812c7b3f042604e253c'  // MLS Sales Communication
 ];
 let msiAccounts = [
-  '5b7a258c87b3513edc0b86be', // Janet
-  '5b7a25ac9f5388026d43d977', // Sandy
+  '652804a80912586687b76f45', // Susie Rafael
   '5b6b08c8fc61b959e4b69d79'  // Market Conduct Compliance
 ];
 let miscAccounts = [
@@ -31,6 +30,8 @@ let notActive = [
   '5f7f00c82820196e420db6bc', // Paul - (Deleted)
   '5b7a254b87b3513edc0b86bc', // John - (Deleted)
   '5b44a4121ee2f32880ef9485', // Mandy
+  '5b7a258c87b3513edc0b86be', // Janet
+  '5b7a25ac9f5388026d43d977', // Sandy
 ];
 
 let isSiteForward = function(id){
