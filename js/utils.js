@@ -1,7 +1,6 @@
 let sfAccounts = [
   '5b6b0b38c7b3f042604e254c',  // SiteForward
   '5b71d892138837295d1d88d5',  // Randy
-  '5ed534b953c1441f7930abfa',  // Zain
   '63515d1ca14d730aa357ebeb',  // Kayla
 //'5fd3d2192456636b40e14528',  // Staging Officer Account
 ];
@@ -30,6 +29,7 @@ let notActive = [
   '5f7f00c82820196e420db6bc', // Paul - (Deleted)
   '5b7a254b87b3513edc0b86bc', // John - (Deleted)
   '5b44a4121ee2f32880ef9485', // Mandy
+  '5ed534b953c1441f7930abfa', // Zain
   '5b7a258c87b3513edc0b86be', // Janet
   '5b7a25ac9f5388026d43d977', // Sandy
 ];
