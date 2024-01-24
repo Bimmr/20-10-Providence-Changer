@@ -870,7 +870,7 @@ $(function () {
                   function hasCategory(tag, item) {
                      if (item && item.categories)
                         return item ? item.categories.some(e => {
-                           return e.name.toLowerCase().indexOf(tag.toLowerCase()) >= 0;
+                           return e.name && e.name.toLowerCase().indexOf(tag.toLowerCase()) >= 0;
                         }) : false;
                      return false;
                   }

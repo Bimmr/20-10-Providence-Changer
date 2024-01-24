@@ -1,6 +1,8 @@
+1.6.9
+- Added saftey check for no categories on custom articles
 1.6.8
 - Fixed empty reviews
-- Removed Zain from SiteForward team
+- Moved Zain to notActive
 1.6.7
 - Added date as attribute to has-date column
 - Removed Janet and Sandy
