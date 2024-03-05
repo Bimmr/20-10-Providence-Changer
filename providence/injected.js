@@ -472,7 +472,7 @@ $(function () {
          $(".changes-header .btn-group").append('<a href="#" class="btn pill btn--action-approve" onclick="approveAll()">Approve All</a><a href="#" class="btn pill btn--action-review" onclick="addNoteToAll()">Add Note to All</a>');
       }
 
-      if($(".changes-list")[0].children.length == 0){
+      if($(".changes-list")[0]?.children.length == 0){
          $("body.providence .review-submission").css("bottom", "100px")
          $(".changes-list").append("<h3>Something was put into draft mode</h3><p>This is a bug in the platform and shouldn't have come in for review.</p>")
       }
