@@ -1,3 +1,6 @@
+1.7.0
+- Updated team members
+- Fixed bug with reading revisions
 1.6.9
 - Added saftey check for no categories on custom articles
 1.6.8
