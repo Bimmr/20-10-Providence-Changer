@@ -10,10 +10,17 @@ let mlsAccounts = [
   '5d1391aa7c86f50a97009f18', // Rachel
   '6053855b7d9f5556ecc9e33b', // Julien
   '62fbcef1ad43191d020cc850', // Lorena
+  '5b6b0812c7b3f042604e253c', // MLS Sales Communication
+
+  '65ea1c6032bf8ae915a5c1e4', // Vivian N Li
   '65e74a3be0ccd8ae08e43cf4', // Vinayaka Pai
   '65e74a2ae0ccd8ae08e43ce9', // Sneh Srivastava
   '65e74a14e0ccd8ae08e43cd8', // Jayrajsinh Gohil
-  '5b6b0812c7b3f042604e253c'  // MLS Sales Communication
+  '65ea1ce732bf8ae915a5c326', // Katherine Garvida
+  '65ea1cd532bf8ae915a5c31e', // Rishi Jaitly
+  '65ea1cc232bf8ae915a5c312', // Nancy Leblancn
+  '65ea1cae32bf8ae915a5c306', // Anmol Trehan
+  '65ea1c7d32bf8ae915a5c2ea', // Serena Xiao
 ];
 let msiAccounts = [
   '652804a80912586687b76f45', // Susie Rafael

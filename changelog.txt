@@ -1,3 +1,5 @@
+1.7.0.1
+- Added new MLS Support team members
 1.7.0
 - Updated team members
 - Fixed bug with reading revisions
