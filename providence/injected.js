@@ -1884,10 +1884,7 @@ function updateList(container) {
       let list = $($(this).find("ul"));
 
       //Only add if not already added
-      if (list.children().length < 6) {
-
-         
-
+      if (list.length>0 && list.children().length < 6) {
 
          //Get ID
          id = list.children(":first").find("a")[0]?.href;
