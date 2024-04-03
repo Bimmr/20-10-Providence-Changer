@@ -6,6 +6,21 @@ let tableData;
 
 $(function () {
 
+   let attempts = 0,
+       loaded = setInterval(function(){
+         if(attempts++>40){
+            alert("Unable to load Extension, please reload the page to try enabling the extension again.")
+            clearInterval(loaded)
+         }
+         
+         if(typeof isSiteForward == "function")
+            clearInterval(loaded)
+         else
+            console.log(`Providence Changer Loading attempt ${attempts}`)
+   }, 50)
+   console.log("Providence Changer Loaded")
+
+   
    //Load advisor list from storage
    if (localStorage.getItem("advisorList") != null)
       advisorInfo = JSON.parse(localStorage.getItem('advisorList'));

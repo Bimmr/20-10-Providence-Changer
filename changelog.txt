@@ -1,3 +1,5 @@
+1.7.2
+- Trys to wait for other injected scripts to be ready before running the main injected script
 1.7.1
 - Fixed error when advisor table loading
 1.7.0.1
