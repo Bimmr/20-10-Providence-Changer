@@ -1,7 +1,6 @@
 var isEditing = false;
 $(function() {
 
-
   let attempts = 0,
   loaded = setInterval(function(){
     if(attempts++>40){
@@ -9,14 +8,17 @@ $(function() {
        clearInterval(loaded)
     }
     
-    if(typeof isSiteForward == "function")
-       clearInterval(loaded)
+    if(typeof isSiteForward == "function"){
+      clearInterval(loaded) 
+      console.log("Providence Changer Loaded")
+      ready()
+    }
     else
        console.log(`Providence Changer Loading attempt ${attempts}`)
   }, 50)
-  console.log("Providence Changer Loaded")
-  
 
+})
+function ready(){
   $("body").append(
     "<style>" +
     //Show active tab
@@ -244,7 +246,7 @@ $(function() {
       });
     }, 2000);
   });
-});
+}
 
 function getOnlyText(e) {
   return e.clone() //clone the element

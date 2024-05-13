@@ -1,3 +1,9 @@
+1.7.4
+- Removed 1 MLS team member
+- No longer shows not active officers
+1.7.3
+- Removed 3 MLS team members, added 2 new
+- Attempt 2 on waiting for other injected scripts to be ready before running main script
 1.7.2
 - Trys to wait for other injected scripts to be ready before running the main injected script
 1.7.1

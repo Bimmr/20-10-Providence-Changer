@@ -3,24 +3,26 @@ let baseUrl = "https://app.twentyoverten.com/"
 
 let advisorInfo = [];
 let tableData;
-
-$(function () {
+$(function() {
 
    let attempts = 0,
-       loaded = setInterval(function(){
-         if(attempts++>40){
-            alert("Unable to load Extension, please reload the page to try enabling the extension again.")
-            clearInterval(loaded)
-         }
-         
-         if(typeof isSiteForward == "function")
-            clearInterval(loaded)
-         else
-            console.log(`Providence Changer Loading attempt ${attempts}`)
+   loaded = setInterval(function(){
+     if(attempts++>40){
+        alert("Unable to load Extension, please reload the page to try enabling the extension again.")
+        clearInterval(loaded)
+     }
+     
+     if(typeof isSiteForward == "function"){
+       clearInterval(loaded) 
+       console.log("Providence Changer Loaded")
+       ready()
+     }
+     else
+        console.log(`Providence Changer Loading attempt ${attempts}`)
    }, 50)
-   console.log("Providence Changer Loaded")
-
-   
+ 
+ })
+ function ready(){
    //Load advisor list from storage
    if (localStorage.getItem("advisorList") != null)
       advisorInfo = JSON.parse(localStorage.getItem('advisorList'));
@@ -1353,12 +1355,9 @@ $(function () {
                      value.forEach(function (item) {
                         let id = item[0].value.substr(item[0].value.indexOf('|') + 1);
 
-                        if (isNotActive(id)){
-                           item = item.css("color", "#888");
-                           item[0].disabled = "true"
+                        if (!isNotActive(id)){
+                           group += item[0].outerHTML;
                         }
-
-                        group += item[0].outerHTML;
                         item.remove();
                      });
                      $(this).append(group);
@@ -1369,7 +1368,7 @@ $(function () {
          });
       }
    }
-});
+}
 
 function manageChatRejections(advisorId) {
    console.log(advisorId)
