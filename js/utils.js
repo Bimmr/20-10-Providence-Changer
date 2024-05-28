@@ -11,7 +11,6 @@ let mlsAccounts = [
   '62fbcef1ad43191d020cc850', // Lorena
   '5b6b0812c7b3f042604e253c', // MLS Sales Communication
 
-  '65ea1c6032bf8ae915a5c1e4', // Vivian N Li
   '65e74a3be0ccd8ae08e43cf4', // Vinayaka Pai
   '65e74a2ae0ccd8ae08e43ce9', // Sneh Srivastava
   '65e74a14e0ccd8ae08e43cd8', // Jayrajsinh Gohil
@@ -43,6 +42,7 @@ let notActive = [
   '5b7a25ac9f5388026d43d977', // Sandy
   '5e82314cb7479c3245b2f891', // Suzanne
   '5d1391aa7c86f50a97009f18', // Rachel
+  '65ea1c6032bf8ae915a5c1e4', // Vivian N Li
 ];
 
 let isSiteForward = function(id){
