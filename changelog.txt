@@ -1,3 +1,5 @@
+1.7.5
+- Updated staff on MLS Team
 1.7.4.1
 - Removed a MLS team member
 1.7.4
