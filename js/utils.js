@@ -9,6 +9,7 @@ let mlsAccounts = [
   '5b7a252c87b3513edc0b86bb', // Debbie
   '6053855b7d9f5556ecc9e33b', // Julien
   '62fbcef1ad43191d020cc850', // Lorena
+  '66b2337b018d3ef81ab93714', // Christina Bettencourt
   '666af5e9d0e2294ebf33556e', // Michael Esposito
   '5b6b0812c7b3f042604e253c', // MLS Sales Communication
 
@@ -16,6 +17,9 @@ let mlsAccounts = [
   '65ea1c7d32bf8ae915a5c2ea', // Serena Xiao
   '66326c5dcd47b3d689ce8834', // Marvin Sanchez
   '66326c1fcd47b3d689ce87f2', // Sam Lenuel Jamen
+
+  '66c342a60c1b4b313fb7bc25', // Mark Sebastian
+  '66b2339f018d3ef81ab9373c', // Nasrin Hedayat
 ];
 let msiAccounts = [
   '652804a80912586687b76f45', // Susie Rafael
