@@ -2,7 +2,6 @@ let sfAccounts = [
   '5b6b0b38c7b3f042604e254c',  // SiteForward
   '5b71d892138837295d1d88d5',  // Randy
   '63515d1ca14d730aa357ebeb',  // Kayla
-  '6553c0a6848a3e2bc422f413' // Chris Mendoza
 //'5fd3d2192456636b40e14528',  // Staging Officer Account
 ];
 let mlsAccounts = [

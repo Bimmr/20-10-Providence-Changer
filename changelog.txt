@@ -1,5 +1,6 @@
 1.7.6
 - Added Nasrin & Mark to MLS team
+- Removed Chris
 1.7.5
 - Updated staff on MLS Team
 1.7.4.1
