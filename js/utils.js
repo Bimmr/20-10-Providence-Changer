@@ -1,7 +1,12 @@
+let teamAccounts = [
+  '5b6b0b38c7b3f042604e254c', // SiteForward
+  '5b6b0812c7b3f042604e253c', // MLS Sales Communication
+  '5b6b08c8fc61b959e4b69d79'  // Market Conduct Compliance
+]
 let sfAccounts = [
-  '5b6b0b38c7b3f042604e254c',  // SiteForward
   '5b71d892138837295d1d88d5',  // Randy
   '63515d1ca14d730aa357ebeb',  // Kayla
+  '6685700e7ab7518b2fdec363',  // Laurel Benzaquen
 //'5fd3d2192456636b40e14528',  // Staging Officer Account
 ];
 let mlsAccounts = [
@@ -10,7 +15,6 @@ let mlsAccounts = [
   '62fbcef1ad43191d020cc850', // Lorena
   '66b2337b018d3ef81ab93714', // Christina Bettencourt
   '666af5e9d0e2294ebf33556e', // Michael Esposito
-  '5b6b0812c7b3f042604e253c', // MLS Sales Communication
 
   '65ea1ce732bf8ae915a5c326', // Katherine Garvida
   '65ea1c7d32bf8ae915a5c2ea', // Serena Xiao
@@ -22,7 +26,7 @@ let mlsAccounts = [
 ];
 let msiAccounts = [
   '652804a80912586687b76f45', // Susie Rafael
-  '5b6b08c8fc61b959e4b69d79'  // Market Conduct Compliance
+  '66e853abcbfcb64e1c719b11',  //Navneet Kaur Sekhon
 ];
 let miscAccounts = [
   '5dd2f8e3d3547e4c268d5c42', // SFP - On Hold
@@ -44,10 +48,17 @@ let notActive = [
   '5e82314cb7479c3245b2f891', // Suzanne
   '5d1391aa7c86f50a97009f18', // Rachel
   '65ea1c6032bf8ae915a5c1e4', // Vivian N Li
-];
+]
+
+let allAccountList = function(){
+  return [...sfAccounts, ...teamAccounts, ...mlsAccounts, ...msiAccounts]
+}
 
 let isSiteForward = function(id){
   return sfAccounts.some( i => i == id);
+}
+let isTeam = function(id){
+  return teamAccounts.some( i => i == id);
 }
 let isCompliance = function(id){
   return mlsAccounts.some( i => i == id) || msiAccounts.some( i => i == id);

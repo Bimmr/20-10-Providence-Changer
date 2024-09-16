@@ -1327,32 +1327,39 @@ $(function() {
             if (!$(fe).hasClass("optGroupsAdded")) {
 
                let officers = {
-                  'Miscellaneous': [],
+                  'Teams': [],
                   'SiteForward': [],
                   'MLS Sales Communication': [],
                   'Market Conduct Compliance': [],
+                  'Miscellaneous': [],
                   'Other': []
                };
                $(fe).find("option").each(function (i, e) {
 
                   let id = e.value.substr(e.value.indexOf('|') + 1);
+                  let option = $(this)
+                  option[0].setAttribute("data-id", id)
 
-                  if (isSiteForward(id)) {
-                     officers['SiteForward'].push($(this));
-                  } else if (isMLSSalesCompliance(id)) {
-                     officers['MLS Sales Communication'].push($(this));
-                  } else if (isMarketConductCompliance(id)) {
-                     officers['Market Conduct Compliance'].push($(this));
-                  } else if (isMiscellaneous(id)) {
-                     officers['Miscellaneous'].push($(this));
-                  } else {
-                     officers['Other'].push($(this));
-                  }
+                  if (isTeam(id)) 
+                     officers['Teams'].push(option)
+                  else if (isSiteForward(id)) 
+                     officers['SiteForward'].push(option);
+                  else if (isMLSSalesCompliance(id)) 
+                     officers['MLS Sales Communication'].push(option);
+                  else if (isMarketConductCompliance(id)) 
+                     officers['Market Conduct Compliance'].push(option);
+                  else if (isMiscellaneous(id)) 
+                     officers['Miscellaneous'].push(option);
+                  else 
+                     officers['Other'].push(option);
                });
+
                for (let [key, value] of Object.entries(officers)) {
                   if (key != "Other" || (key == "Other" && officers["Other"].length > 0)) {
                      let group = '<optgroup style="padding-top: 4px;" label="' + key + '">';
-                     value.forEach(function (item) {
+
+                     // Loop through a sorted list (Sorts based on ID index of each group)
+                     value.sort((a,b)=> allAccountList().indexOf(a[0].getAttribute("data-id")) - allAccountList().indexOf(b[0].getAttribute("data-id"))).forEach(function (item) {
                         let id = item[0].value.substr(item[0].value.indexOf('|') + 1);
 
                         if (!isNotActive(id)){

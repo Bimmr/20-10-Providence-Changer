@@ -1,3 +1,8 @@
+1.7.7
+- Adjust team members
+- Created a new group for Teams
+- Added new Market Conduct member
+- Sorts team list
 1.7.6
 - Added Nasrin & Mark to MLS team
 - Removed Chris
