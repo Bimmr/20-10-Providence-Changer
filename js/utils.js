@@ -1,7 +1,7 @@
 let teamAccounts = [
   '5b6b0b38c7b3f042604e254c', // SiteForward
   '5b6b0812c7b3f042604e253c', // MLS Sales Communication
-  '5b6b08c8fc61b959e4b69d79'  // Market Conduct Compliance
+  '5b6b08c8fc61b959e4b69d79'  // Insurance Compliance
 ]
 let sfAccounts = [
   '5b71d892138837295d1d88d5',  // Randy
@@ -66,7 +66,7 @@ let isCompliance = function(id){
 let isMLSSalesCompliance = function(id){
   return mlsAccounts.some( i => i == id);
 }
-let isMarketConductCompliance = function(id){
+let isMSICompliance = function(id){
   return msiAccounts.some( i => i == id);
 }
 let isMiscellaneous = function(id){

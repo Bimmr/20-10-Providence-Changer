@@ -599,7 +599,7 @@ $(function() {
                review.innerHTML = "Visit External Link";
             else if (link.indexOf("#") >= 0) {
                review.innerHTML = "Visit Section Link";
-               review.href = review.href.replace('twentyoverten.com/manage/advisor/', '');
+               review.href = review.href.replace('app.twentyoverten.com/manage/advisor/', '');
             }
             else {
                review.innerHTML = "Navigation Link";
@@ -985,8 +985,8 @@ $(function() {
       //       teamCheckFunction = isSiteForward;
       //     if(isMLSSalesCompliance(window.loggedInUser))
       //       teamCheckFunction = isMLSSalesCompliance;
-      //     if(isMarketConductCompliance(window.loggedInUser))
-      //       teamCheckFunction = isMarketConductCompliance;
+      //     if(isMSICompliance(window.loggedInUser))
+      //       teamCheckFunction = isMSICompliance;
       //     $
       //     let table = $(".dataTable").DataTable();
       //     let data = table.rows().data().filter(function(e){return isSiteForward(e.officer_id)});
@@ -1078,7 +1078,7 @@ $(function() {
             //Inform if no nodes are found
             if (searchTerm.toLowerCase() == "?") {
                table.empty();
-               table.append('<tr><td><h1>Searching can be done by Name, Email, Tags, Status, or Officer.</h1> <table style="width: 100%"><tr><th>Expressions</th><th>Results</th><th>Example</th></tr> <tr><td>|</td><td>OR</td><td>Published|Submitted</td></tr> <tr><td>,</td><td>AND</td><td>Published,SiteForward</td></tr> <tr><td>!</td><td>NOT</td><td>!Published</td></tr></table><h1>There are some extra searching as well</h1><table style="width: 100%"><tr> <th>Search</th> <th>Results</th> <th>Example</th> </tr> <tr> <td>published</td> <td>Shows all published sites</td> <td></td> </tr> <tr> <td>submitted</td> <td>Shows all submitted sites</td> <td></td> </tr> <tr> <td>approved</td> <td>Shows all approved sites</td> <td></td> </tr> <tr> <td>pending review</td> <td>Shows all sites needing revisions</td> <td></td> </tr> <tr> <td>revisions needed</td> <td>Shows all published sites</td> <td></td> </tr> <tr> <td>rejected</td> <td>Shows all rejected sites</td> <td></td> </tr> <tr> <td colspan="3"></td> </tr> <tr> <td>is_siteforward</td> <td>Shows all sites assigned to SiteForward</td> <td></td> </tr> <tr> <td>is_compliance</td> <td>Shows all sites assigned to Compliance</td> <td></td> </tr> <tr> <td>is_mlssalescompliance</td> <td>Shows all sites assigned to MLS Sales Communication</td> <td></td> </tr> <tr> <td>is_marketconductcompliance</td> <td>Shows all sites assigned to Market Conduct</td> <td></td> </tr> <tr> <td>is_onhold</td> <td>Shows all sites on hold</td> <td></td> </tr> <tr> <td colspan="3"></td> </tr> <tr> <td>created_at:&lt;year&gt;/[month]/[day]</td> <td>Shows sites created at that time</td> <td>created_at:2019/08</td> </tr> <tr> <td>updated_at:&lt;year&gt;/[month]/[day]</td> <td>Shows sites updated at that time</td> <td>created_at:2019/08/01</td> </tr> <tr> <td>published_at:&lt;year&gt;/[month]/[day]</td> <td>Shows sites published at that time</td> <td>created_at:2020</td> </tr> <tr> <td>submitted_at:&lt;year&gt;/[month]/[day]</td> <td>Shows sites submitted at that time</td> <td>created_at:2020/01</td> </tr> <tr> <td colspan="3"></td> </tr> <tr> <td>#</td> <td>Shows the number of sites that match</td> <td>#Published</td> </tr> <tr> <td>*</td> <td>Shows all sites that match regardless of number</td> <td>*Published</td> </tr>');
+               table.append('<tr><td><h1>Searching can be done by Name, Email, Tags, Status, or Officer.</h1> <table style="width: 100%"><tr><th>Expressions</th><th>Results</th><th>Example</th></tr> <tr><td>|</td><td>OR</td><td>Published|Submitted</td></tr> <tr><td>,</td><td>AND</td><td>Published,SiteForward</td></tr> <tr><td>!</td><td>NOT</td><td>!Published</td></tr></table><h1>There are some extra searching as well</h1><table style="width: 100%"><tr> <th>Search</th> <th>Results</th> <th>Example</th> </tr> <tr> <td>published</td> <td>Shows all published sites</td> <td></td> </tr> <tr> <td>submitted</td> <td>Shows all submitted sites</td> <td></td> </tr> <tr> <td>approved</td> <td>Shows all approved sites</td> <td></td> </tr> <tr> <td>pending review</td> <td>Shows all sites needing revisions</td> <td></td> </tr> <tr> <td>revisions needed</td> <td>Shows all published sites</td> <td></td> </tr> <tr> <td>rejected</td> <td>Shows all rejected sites</td> <td></td> </tr> <tr> <td colspan="3"></td> </tr> <tr> <td>is_siteforward</td> <td>Shows all sites assigned to SiteForward</td> <td></td> </tr> <tr> <td>is_compliance</td> <td>Shows all sites assigned to Compliance</td> <td></td> </tr> <tr> <td>is_mlssalescompliance</td> <td>Shows all sites assigned to MLS Sales Communication</td> <td></td> </tr> <tr> <td>is_msicompliance</td> <td>Shows all sites assigned to Insurance Compliance</td> <td></td> </tr> <tr> <td>is_onhold</td> <td>Shows all sites on hold</td> <td></td> </tr> <tr> <td colspan="3"></td> </tr> <tr> <td>created_at:&lt;year&gt;/[month]/[day]</td> <td>Shows sites created at that time</td> <td>created_at:2019/08</td> </tr> <tr> <td>updated_at:&lt;year&gt;/[month]/[day]</td> <td>Shows sites updated at that time</td> <td>created_at:2019/08/01</td> </tr> <tr> <td>published_at:&lt;year&gt;/[month]/[day]</td> <td>Shows sites published at that time</td> <td>created_at:2020</td> </tr> <tr> <td>submitted_at:&lt;year&gt;/[month]/[day]</td> <td>Shows sites submitted at that time</td> <td>created_at:2020/01</td> </tr> <tr> <td colspan="3"></td> </tr> <tr> <td>#</td> <td>Shows the number of sites that match</td> <td>#Published</td> </tr> <tr> <td>*</td> <td>Shows all sites that match regardless of number</td> <td>*Published</td> </tr>');
             } else if (nodes.length === 0) {
                table.append('<tr><td colspan="7">No results found</td></tr>');
             }
@@ -1168,7 +1168,7 @@ $(function() {
                      ("is_siteforward".indexOf(search) >= 0 && isSiteForward(item.data().officer_id)) ||
                      ("is_compliance".indexOf(search) >= 0 && isCompliance(item.data().officer_id)) ||
                      ("is_mlssalescompliance".indexOf(search) >= 0 && isMLSSalesCompliance(item.data().officer_id)) ||
-                     ("is_marketconductcompliance".indexOf(search) >= 0 && isMarketConductCompliance(item.data().officer_id)) ||
+                     ("is_msicompliance".indexOf(search) >= 0 && isMSICompliance(item.data().officer_id)) ||
                      ("is_onhold".indexOf(search) >= 0 && isOnHold(item.data().officer_id));
 
                   if (invert && !match)
@@ -1330,7 +1330,7 @@ $(function() {
                   'Teams': [],
                   'SiteForward': [],
                   'MLS Sales Communication': [],
-                  'Market Conduct Compliance': [],
+                  'Insurance Compliance': [],
                   'Miscellaneous': [],
                   'Other': []
                };
@@ -1346,8 +1346,8 @@ $(function() {
                      officers['SiteForward'].push(option);
                   else if (isMLSSalesCompliance(id)) 
                      officers['MLS Sales Communication'].push(option);
-                  else if (isMarketConductCompliance(id)) 
-                     officers['Market Conduct Compliance'].push(option);
+                  else if (isMSICompliance(id)) 
+                     officers['Insurance Compliance'].push(option);
                   else if (isMiscellaneous(id)) 
                      officers['Miscellaneous'].push(option);
                   else 
