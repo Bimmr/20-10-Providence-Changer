@@ -167,9 +167,9 @@ $(function() {
       '.sidebar-module.advisor-notes .updateNotes-button{width: 100%}' +
 
       //Chat
-      '.chat-search{ position: absolute; top: 4px; right: 4px; }'+
+      '.chat-search{ position: absolute; top: 6px; right: 3px; }'+
       '.chat-search-icon{ color: #626262; font-size: 0.75em; position: relative; }'+
-      '.chat-search-input-wrapper{transition: all 0.3s; position: absolute; top: -50px; right: 0px; width: 250px; background: white; padding: 10px; border-radius: 10px; border: 1px solid #cccccc; box-shadow: 1px 1px 1px #3a3a3a; z-index: 99; }'+
+      '.chat-search-input-wrapper{transition: all 0.3s; position: absolute; top: -75px; right: 0px; width: 250px; background: white; padding: 10px; border-radius: 10px; border: 1px solid #cccccc; box-shadow: 1px 1px 1px #3a3a3a; z-index: 99; }'+
       '.chat-search:focus-within .chat-search-input-wrapper{ top: 0px; }'+
       '.chat-search-input-wrapper input{ width: 200px; }'+
       '.chat-search-input-search { position: absolute; top: 0; right: 0; width: 30px; height: 100%; background: rgba(0,0,0,0.3); font-size: 1.3em; border-radius: 1px 10px 10px 1px; display: flex; flex-flow: column nowrap; justify-content: center; align-items: center;}'+
@@ -251,10 +251,25 @@ $(function() {
    //Chat changes
    $(".open-chat").on("click", function () {
 
-      //Wait for the chat to initialize (2s)
-      setTimeout(() => {
+      //Wait for the chat to initialize
+      let attempts = 0, waiting = setInterval(() => {
 
-         var advisorId = $(".recent-chats").find("li.active a").first().attr("data-advisor_id") || $("#open-chat").data("advisor_id");
+         if(attempts++>100)
+            clearInterval(waiting)
+
+         if(!document.querySelector("body").classList.contains("chat-open"))
+            return
+         
+
+         // Get what chat to open
+         let openID = document.querySelector("#open-chat").getAttribute("data-advisor_id")
+         if(openID)
+            document.querySelector('.chat-users-list-wrapper ul [data-advisor_id="' + openID + '"]').click()
+
+         // Get advisor ID by what it says to open, whats currently active, or if in profile page - what the 2nd open chat button says
+         var advisorId = openID || document.querySelector(".recent-chats li.active a")?.getAttribute("data-advisor_id") || document.querySelectorAll(".open-chat")[1]?.getAttribute("data-advisor_id")
+        
+         manageChatRejections(advisorId)
 
          //When the chat gets opened, display saved message
          if (localStorage.getItem('savedChatMsg') && localStorage.getItem('savedChatMsg') != 'null' && localStorage.getItem('savedChatMsg') != 'undefined') {
@@ -285,12 +300,6 @@ $(function() {
             }, 1000);
          });
 
-         //Wait for the chat to initialize
-         setTimeout(() => {
-            manageChatRejections(advisorId);
-         }, 1000);
-
-
          // Add search icon
          $(".chat-users-list-wrapper").append('<a href="#" class="chat-search" > <i class="fas fa-search chat-search-icon"></i> <div class="chat-search-input-wrapper"> <input type="text" placeholder="Search Name"> <div class="chat-search-input-search"> <i class="fas fa-search"></i><div class="chat-search-results"></div> </div> </div> </a>')
          $(".chat-search-input-wrapper input").off().on("keyup", delay(e=>{
@@ -311,8 +320,9 @@ $(function() {
             if(searchName.length == 0 || results.length == 1)
                $(".chat-search-results").html("")
          })
-
-      }, 3000);
+         setTimeout(()=>document.querySelector("#open-chat").removeAttribute("data-advisor_id"), 50)
+         clearInterval(waiting)
+      }, 50);
    });
 
    //Get the URL Parts
@@ -525,7 +535,15 @@ $(function() {
       $(".open-archives").on("click", function () {
 
          //Wait 2 seconds
-         setTimeout(() => {
+         let attempts = 0, waiting = setInterval(()=> {
+
+            if(attempts++ > 50){
+               clearInterval(waiting)
+               alert("Unable to load Archives.\nThis is a known bug, to fix it please log in as the account then refresh this page or view the archives in the website engine.")
+            }
+
+            if(document.querySelector("#archives-overlay").classList.contains("loading"))
+               return
 
             // For each archive item adjust the styling
             $(".archive-item").each(function () {
@@ -566,7 +584,9 @@ $(function() {
                   });
                });
             }
-         }, 2000);
+            
+         clearInterval(waiting)
+         }, 50);
       });
 
 
@@ -961,7 +981,6 @@ $(function() {
       setTimeout(function () {
          if (!$("#showAllAdvisors").hasClass("active")) {
             $("#showAllAdvisors").click();
-            console.log("showing all");
          }
       }, 500);
       //
@@ -1350,7 +1369,7 @@ $(function() {
                      officers['Insurance Compliance'].push(option);
                   else if (isMiscellaneous(id)) 
                      officers['Miscellaneous'].push(option);
-                  else 
+                  else if(!isNotAssignable(id))
                      officers['Other'].push(option);
                });
 
@@ -1370,7 +1389,22 @@ $(function() {
                      $(this).append(group);
                   }
                }
+               //Remove any that are not assignable
+               fe.querySelectorAll(":scope > option").forEach(e=>e.remove())
+               fe.querySelectorAll("optgroup").forEach(e=>e.children.length == 0 ? e.remove() : "")
+
                $(fe).addClass("optGroupsAdded");
+               //Remove assignees based on tags
+               let tags = fe.parentNode.parentNode.parentNode.querySelector(".advisor-tags").textContent
+               if(tags.indexOf("IIROC") == -1 && tags.indexOf("MFDA") == -1){ // No Dealer tags, hide MLS as an assignee
+                  fe.querySelectorAll("optgroup")[0].querySelectorAll("option")[1].style.display="none"
+                  fe.querySelectorAll("optgroup")[2].style.display="none"
+               }
+               if(tags.indexOf("Insurance: None") >= 0){ // Has no insurance, hide MSI as an assignee
+                  fe.querySelectorAll("optgroup")[0].querySelectorAll("option")[2].style.display="none"
+                  fe.querySelectorAll("optgroup")[3].style.display="none"
+               }
+               
             }
          });
       }
@@ -1378,17 +1412,13 @@ $(function() {
 }
 
 function manageChatRejections(advisorId) {
-   console.log(advisorId)
-   getRejections(advisorId)
-      .then(rejections => {
-         $(".rejection-notice").each(function () {
-            let rejectionItem = rejections.find(item => { return item.rejectionId == $(this).data("id") }) || []
-            $(this).find(".rejected-item").each(function (i, rejectionWrapper) {
-               console.log(rejectionItem);
-               let isCompleted = rejectionItem?.rejection ? rejectionItem.rejection[i] : false;
-               $(this).prepend('<input class="rejection-completed"' + (isCompleted ? 'checked=true' : '') + ' type="checkbox">');
-            })
-         });
+   getRejections(advisorId).then(rejections => {
+      $(".rejection-notice").each(function () { 
+         let rejectionItem = rejections.find(item => { return item.rejectionId == $(this).data("id") }) || []
+         $(this).find(".rejected-item").each(function (i, rejectionWrapper) {
+            let isCompleted = rejectionItem?.rejection ? rejectionItem.rejection[i] : false;
+            $(this).prepend('<input class="rejection-completed"' + (isCompleted ? 'checked=true' : '') + ' type="checkbox">');
+         })
          $(".rejection-completed").off().on("change", function () {
             let index = Array.prototype.indexOf.call(this.parentNode.parentNode.children, this.parentNode);
             let rejectionId = $(this).parent().parent().parent().parent().data("id");
@@ -1399,9 +1429,11 @@ function manageChatRejections(advisorId) {
             updateRejection(advisorId, rejectionId, rejectionArray);
          })
       })
-      .catch(err => {
-         console.log(err);
-      });
+   })
+   .catch((err, id) => {
+      console.log("Error getting "+id)
+      console.log(err);
+   });
 }
 
 function approveAll() {
@@ -1630,7 +1662,6 @@ function getOfficerName(id) {
 }
 
 function updateSlideCardCount() {
-   console.log("Updating slider card count");
 
    //{Name, Items, Pending Changes, Total Changes}
    var reviewers = [
@@ -1885,13 +1916,9 @@ function updateCustomEvents() {
       let btn = this;
 
       //Open the chat sidebar
-      $("#open-chat")[0].click();
-
-      //Open the proper chat tab after 2 seconds(Gives time for chat window to open)
-      setTimeout(() => {
-         let chat = $('.chat-users-list-wrapper ul').find('[data-advisor_id="' + $(btn).data("advisor_id") + '"]');
-         chat[0].click();
-      }, 2000);
+      let open_chat = document.querySelector("#open-chat")
+      open_chat.setAttribute("advisor_id", $(btn).data("data-advisor_id"))
+      open_chat.click()
    });
 }
 
@@ -1934,8 +1961,8 @@ function updateList(container) {
             }
 
                      
-            //   //Add a note saying when it was reviwed
-            //- Not sure if theres a way to get the time of it's last rejection. I can get the rejection ID from the chat, or the revisions page. but I can't get a list of them
+              //Add a note saying when it was reviwed
+              // - Not sure if theres a way to get the time of it's last rejection. I can get the rejection ID from the chat, or the revisions page. but I can't get a list of them
             //   if (hasStatus("review completed", info)) {
             //     let state = row.find(".has-state");
             //     let reviewDate = new Date(Date.parse(info.site.updated_at));

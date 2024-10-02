@@ -8,7 +8,7 @@ let sfAccounts = [
   '63515d1ca14d730aa357ebeb',  // Kayla
   '6685700e7ab7518b2fdec363',  // Laurel Benzaquen
 //'5fd3d2192456636b40e14528',  // Staging Officer Account
-];
+]
 let mlsAccounts = [
   '5b7a252c87b3513edc0b86bb', // Debbie
   '6053855b7d9f5556ecc9e33b', // Julien
@@ -23,18 +23,20 @@ let mlsAccounts = [
 
   '66c342a60c1b4b313fb7bc25', // Mark Sebastian
   '66b2339f018d3ef81ab9373c', // Nasrin Hedayat
-];
+]
 let msiAccounts = [
   '652804a80912586687b76f45', // Susie Rafael
   '66e853abcbfcb64e1c719b11',  //Navneet Kaur Sekhon
-];
+]
 let miscAccounts = [
   '5dd2f8e3d3547e4c268d5c42', // SFP - On Hold
   '5e822faab7479c3245b2f75a', // Compliance Follow up
   '5c6efe623b265776d89b0638', // Under Construction
   'all' // Under Construction
-];
-
+]
+let notAssignable = [
+  '656f37c186f67a09a847f8e1', // GWAM Web Publishing Team
+]
 let notActive = [
   '5e82312ab7479c3245b2f88e', // Summer
   '5cab89722de8d2305492b333', // Kat
@@ -74,6 +76,9 @@ let isMiscellaneous = function(id){
 }
 let isOnHold = function(id){
   return id == miscAccounts[0] || id == miscAccounts[1];
+}
+let isNotAssignable = function(id){
+    return notAssignable.some( i => i == id);
 }
 let isNotActive = function(id){
     return notActive.some( i => i == id);

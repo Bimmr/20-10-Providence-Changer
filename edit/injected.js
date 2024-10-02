@@ -200,16 +200,17 @@ function ready(){
 
   //When the chat opens
   $(".open-chat, #open-chat").on("click", () => {
-    //Wait for the chat to initialize
-    setTimeout(() => {
-
+    let waiting = setInterval(()=> {
+      // Wait for chat to be ready
+      if(document.querySelector(".chat-wrapper").classList.contains("loading"))
+        return
+       
       let advisorId = window.loggedInUser;
       getRejections(advisorId)
       .then(rejections => {
           $(".rejection-notice").each(function(){
             let rejectionItem = rejections.find(item => {return item.rejectionId == $(this).data("id")}) || []
             $(this).find(".rejected-item").each(function(i, rejectionWrapper) {
-              console.log(rejectionItem);
               let isCompleted = rejectionItem?.rejection ? rejectionItem.rejection[i] : false;
               $(this).prepend('<input class="rejection-completed"' + (isCompleted ? 'checked=true' : '') + ' type="checkbox">');
             })
@@ -244,8 +245,63 @@ function ready(){
         localStorage.setItem('savedChatMsg', null);
         $("#loadLastMessage").hide();
       });
-    }, 2000);
+      clearInterval(waiting)
+    }, 5);
   });
+
+  //When archives are opened
+  $(".open-archives").on("click", function () {
+
+    //Wait 2 seconds
+    let waiting = setInterval(()=> {
+
+
+       if(document.querySelector("#archives-overlay").classList.contains("loading"))
+          return
+
+       // For each archive item adjust the styling
+       $(".archive-item").each(function () {
+          $(this).css("flex-flow", "row wrap");
+          $(this).find(".archive-actions")[0].style = 'position: absolute; top: 20px; right: 20px;';
+
+          //Load the archive note
+          let url = $(this).find(".btn-group").children().first()[0].href;
+          updateNotes(this, url);
+       });
+
+       async function updateNotes(item, url) {
+
+          //Get the notes
+          let notes = await getNotes(url);
+
+          //Add the notes, and the styling
+          if (notes) {
+             $(item).append('<div class="compliance-notes" style="font-size: 14px; width: 100%;">' + notes + '</div>');
+             $(item).find("span.small").css("font-size", "12px");
+          }
+       }
+
+       function getNotes(url) {
+          return new Promise(function (resolve) {
+
+             //Read the note from the page
+             $.get(url).done(data => {
+                let $data = $(data);
+
+                //Try to get the notes
+                let notes = $data.find(".is-compliance-notes").html();
+
+                //Get the notes if it wasn't found the previous way
+                if (!notes)
+                   notes = '<span class="small">Approved By: ' + $($data.find('.print-timestamp-title + span')[2]).html() + '</span>';
+                resolve(notes);
+             });
+          });
+       }
+       
+    clearInterval(waiting)
+    }, 50);
+ });
 }
 
 function getOnlyText(e) {

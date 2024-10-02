@@ -1,3 +1,10 @@
+1.7.9
+- Optimized chat rejections
+- Optimized archive notes
+- Can view archive notes in website engine
+- Filters assignees based on tags
+- New non assignable group
+- Hides empty assignable groups
 1.7.8
 - Fixed bug with section links under other pages
 - Renamed insurance team
