@@ -1,3 +1,10 @@
+1.8.0
+- Shows both french and english in review preview
+- Added a darkness toggle to review preview
+1.7.9.1
+- Fixes chat opening
+- Remembers last advisor chat opened
+- Only grab chat rejections if the chat hasn't changed in 1 second
 1.7.9
 - Optimized chat rejections
 - Optimized archive notes

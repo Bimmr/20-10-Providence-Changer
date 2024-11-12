@@ -32,6 +32,9 @@ $(function() {
 
    $("head").append('<style>' +
 
+      // Misc
+      'body.providence #header{z-index: 10}'+
+
       // Float the page navigation
       '.dataTables_paginate,.table-length {position: sticky;bottom: 0; padding: 10px;left: 0;right: 0;}' +
       '.dataTables_paginate {width: 750px;margin: 0 auto; z-index:3}' +
@@ -84,7 +87,7 @@ $(function() {
       // Format rejection box
       '.rejection-completed{position: absolute; top: 3.75rem; right:3rem;}' +
 
-      //Format review notes'
+      // Format review notes
       '.review-item-preview .note p{margin-bottom: 3px}'+
       '.review-item-preview .note ul{list-style: inside}'+
       '.review-item-note-rejection{color:#c2001e;}' +
@@ -96,10 +99,10 @@ $(function() {
       '.review-item.rejected-status .review-item__status{background-color: #F8E5E5; border-radius: 14px 0 0 14px;}' +
       'body.providence .review-submission .approved-count.pending-count span.active {color: #717171}' +
 
-      //Filter warning
+      // Filter warning
       '.filter-warning{background-color: #522626; width: 100%; text-align: center; display: block; position: fixed; color: #fff;}' +
 
-      //Team filters
+      // Team filters
       '.providence-overview--list:not(.loadedAll) .team-filter-row{display: none}' +
       '.team-filter-row {margin-bottom: 10px;}' +
       '.team-filter {padding: 5px 10px; color: #626262;transition: all 0.15s linear;}' +
@@ -118,10 +121,10 @@ $(function() {
 
       'body.providence #providence-wrapper .search-bar table.table td{vertical-align:middle;}' +
 
-      //Providence list quick links
+      // Providence list quick links
       'body.providence #advisor-details .advisor-quick-links > a{margin: 5px 15px;}' +
 
-      //Revision table - Reportorize
+      // Revision table - Reportorize
       'body.providence #revisions-list.reportorized td .advisor-profile{display: none}' +
       'body.providence #revisions-list.reportorized td .advisor-profile+span{padding-left: 0; overflow-hidden}' +
       'body.providence #revisions-list.reportorized td.revisions-page .revisions-page-title{font-size: .75em;}' +
@@ -133,7 +136,7 @@ $(function() {
 
       '.details-wrapper{max-height: calc(100% - 50px); overflow-y: auto;}' +
 
-      //Advisor notes
+      // Advisor notes
       '#advisor-details{overflow: unset !important}' +
       '.sidebar-module, .sidebar-module *{ transition: 0.5s top, 0.5s right, 0.5s width, 0.5s height}' +
       '.sidebar-module{cursor: pointer; overflow: hidden; position: absolute; top: 0px; right: -25px; background: #f9f9f9; width: 25px; height: 90px; box-shadow: 1px 1px 1px #bdbdbd; color: #9c9c9c; border-radius: 0 5px 5px 0;}' +
@@ -166,7 +169,7 @@ $(function() {
       '.sidebar-module.advisor-notes .sidebar-module-message-content textarea{ color: #2b2b2b}' +
       '.sidebar-module.advisor-notes .updateNotes-button{width: 100%}' +
 
-      //Chat
+      // Chat
       '.chat-search{ position: absolute; top: 6px; right: 3px; }'+
       '.chat-search-icon{ color: #626262; font-size: 0.75em; position: relative; }'+
       '.chat-search-input-wrapper{transition: all 0.3s; position: absolute; top: -75px; right: 0px; width: 250px; background: white; padding: 10px; border-radius: 10px; border: 1px solid #cccccc; box-shadow: 1px 1px 1px #3a3a3a; z-index: 99; }'+
@@ -176,9 +179,19 @@ $(function() {
       '.chat-search-input-search:hover{ cursor: pointer; }'+
       '.chat-search-input-search i { color: #6c6c6c; }'+
       '.chat-search-results{font-size: 0.5em; color: #c20000}'+
+      
+      // Language toggle in review
+      '#review-item .change-item div[data-lang]{display: block !important; position: relative;}'+
+      '#review-item .change-item div[data-lang]:before{content: ""; position: absolute; border: 1px dashed #7a7a7a; width: 100%; height: 100%;}'+
+      '#review-item .change-item div[data-lang]:after{content: "Content for " attr(data-lang);position:absolute;top: 0;left:0;border:1px dashed #333; border-radius: 5px; opacity: 0.5;padding: 0 5px;font-size: 12px; font-weight: normal;}'+
 
+      // Colour Helper
+      '#review-item .change-item{transition: background .3s}'+
+      '#review-item .change-item.darken{background: #111}'+
+      '#review-item .dark-toggle{position: absolute; top: 75px; left: 0; height: 20px; width: 20px; background: #f4f4f4; border-radius: 0 0 30% 0; display: flex; font-size: .75em; justify-content: center; align-items: center; cursor: pointer;}'+
+      
 
-      //Night Themed
+      // Night Themed
       'body.providence.nightMode h1{color: #efefef}' +
       'body.providence.nightMode .settings-wrapper h1, body.providence.nightMode .archives-wrapper .archives-header h1{color: #2d2d2d}' +
 
@@ -234,7 +247,10 @@ $(function() {
       'body.providence.nightMode .sidebar-module-message-content{color: #2d2d2d; background: #fefefe;}' +
       'body.providence.nightMode .sidebar-module-footer{background: rgba(0,0,0,0.5);}' +
 
+      'body.providence.nightMode #review-item .dark-toggle{ background: #2d2d2d}'+
+      
       //TODO: Add Dark mode for chat?
+
 
       '</style>');
 
@@ -250,6 +266,7 @@ $(function() {
 
    //Chat changes
    $(".open-chat").on("click", function () {
+      let gathering_rejections = null
 
       //Wait for the chat to initialize
       let attempts = 0, waiting = setInterval(() => {
@@ -260,7 +277,6 @@ $(function() {
          if(!document.querySelector("body").classList.contains("chat-open"))
             return
          
-
          // Get what chat to open
          let openID = document.querySelector("#open-chat").getAttribute("data-advisor_id")
          if(openID)
@@ -269,7 +285,12 @@ $(function() {
          // Get advisor ID by what it says to open, whats currently active, or if in profile page - what the 2nd open chat button says
          var advisorId = openID || document.querySelector(".recent-chats li.active a")?.getAttribute("data-advisor_id") || document.querySelectorAll(".open-chat")[1]?.getAttribute("data-advisor_id")
         
-         manageChatRejections(advisorId)
+         //Wait 1 second to gather rejections
+         if(gathering_rejections)
+            clearTimeout(gathering_rejections)
+         gathering_rejections = setTimeout(() => {
+            manageChatRejections(advisorId);
+         }, 1000);
 
          //When the chat gets opened, display saved message
          if (localStorage.getItem('savedChatMsg') && localStorage.getItem('savedChatMsg') != 'null' && localStorage.getItem('savedChatMsg') != 'undefined') {
@@ -295,7 +316,11 @@ $(function() {
          $(".recent-chats, .all-chats").find("li").off().on("click", function (e) {
             var advisorClickedId = $(this).find("a").first().attr("data-advisor_id");
             $(".view-profile-chat")[0].href = '/manage/advisor/' + advisorClickedId;
-            setTimeout(() => {
+            
+            //Wait 1 second to gather rejections
+            if(gathering_rejections)
+               clearTimeout(gathering_rejections)
+            gathering_rejections = setTimeout(() => {
                manageChatRejections(advisorClickedId);
             }, 1000);
          });
@@ -313,14 +338,19 @@ $(function() {
          $(".chat-search-input-search i").off().on("click", function(){
             let searchName = $(".chat-search-input-wrapper input").val().toLowerCase()
             let results = $(".chat-users-list-wrapper .user").filter((i,el) => el.getAttribute("data-content").toLowerCase().indexOf(searchName) >=0)
-            if(results.length == 1)
+            if(results.length == 1){
                results.find("a").first().click()
+            }
             
             $(".chat-search-results").html(results.length)
             if(searchName.length == 0 || results.length == 1)
                $(".chat-search-results").html("")
          })
-         setTimeout(()=>document.querySelector("#open-chat").removeAttribute("data-advisor_id"), 50)
+
+         // Clicking Chat list icons sets advisor id attribute
+         document.querySelectorAll(".chat-users-list-wrapper .user a").forEach(e=>e.addEventListener("click", ()=>
+            document.querySelector("#open-chat").setAttribute("data-advisor_id", e.getAttribute("data-advisor_id"))
+         ))
          clearInterval(waiting)
       }, 50);
    });
@@ -779,6 +809,15 @@ $(function() {
       //        }
       //   });
       // });
+
+
+      $(".review-header").append('<div class="dark-toggle" title="Toggle page preview darkness"><i class="fas fa-moon"></i></div>')
+      $(".dark-toggle").on("click", function(){
+         let i = $(this).find("i")
+         i.toggleClass("fa-moon")
+         i.toggleClass("fa-sun")
+         $(".change-item").toggleClass("darken")
+      })
 
 
       $($(".details-wrapper").find("header")).append('<p class="secondary center advisor-tags"></p>');
@@ -1908,16 +1947,16 @@ function updateSlider() {
          updateRevisions($(this), info._id, delay(e => updateSlideCardCount()), 1000);
       }
    });
+   updateCustomEvents()
 }
 
 function updateCustomEvents() {
    //Add the Open Chat button click listener
    $(".open-chat-extension").off().on('click', function () {
-      let btn = this;
 
       //Open the chat sidebar
       let open_chat = document.querySelector("#open-chat")
-      open_chat.setAttribute("advisor_id", $(btn).data("data-advisor_id"))
+      open_chat.setAttribute("data-advisor_id", this.getAttribute("data-advisor_id"))
       open_chat.click()
    });
 }
