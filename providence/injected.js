@@ -429,12 +429,6 @@ $(function() {
             });
       }
 
-      // Statuses
-      // $(".addStatus-input").on('keyup', function(event){
-      //   if((event.keyCode ? event.keyCode : event.which) == '13')
-      //       $(".addStatus-button").click();
-      // });
-
       $(".addStatus-button").on('click', function (event) {
          let officer = $("#header").find(".display-name + small").text();
          let message = $(".addStatus-input").val();
@@ -513,13 +507,10 @@ $(function() {
          if (localStorage.getItem("lastReviewed")) {
             let lastReviewed = JSON.parse(localStorage.getItem("lastReviewed"));
             if (lastReviewed && lastReviewed.id == advisorId) {
-               // $(".changes-header").append('<a class="backToLastBtn btn btn--action-default-outlined" style="background-color: rgba(0,0,0,0);color: #888">Back to last item</a>');
-               // $(".backToLastBtn").on('click', function(){
                localStorage.setItem("lastReviewed", null);
                $([document.documentElement, document.body]).animate({
                   scrollTop: $(".title:contains(" + lastReviewed.title + ")").offset().top - 120
                }, 1000);
-               // });
             } else
                localStorage.setItem("lastReviewed", null);
          }
@@ -628,7 +619,9 @@ $(function() {
             let $e = $(e);
             let reviewId = $e.find(".review-actions").find(".revision-note").data("id");
 
-            //If a review id was found, get the review
+            //TODO: Use revision api
+
+            //If a review id was found, get the review - need to do this way as revision API doesn't return officer info
             if (reviewId) {
                displayReviewer(baseUrl + 'manage/revisions/' + advisorId + '/' + reviewId, $e, function () {
                   if (!$e.hasClass("approved-status") && !$e.hasClass("rejected-status"))
@@ -776,67 +769,144 @@ $(function() {
 
    }
 
-   // Revieing a review item page
+   // Reviewing a review item page
    else if (urlParts.length > 4 && urlParts[4].indexOf("review") == 0) {
-      let advisorId = urlParts[urlParts.length - 2];
-      let reviewId = urlParts[urlParts.length - 1];
+     let advisorId = urlParts[urlParts.length - 2];
+     let reviewId = urlParts[urlParts.length - 1];
+     let revisionId = document
+       .querySelector(".btn--action-reject.reject-item")
+       .getAttribute("data-id");
 
-      //Remove any trailing parts of the URL
-      if (reviewId[reviewId.length - 1] == '#')
-         reviewId = reviewId.substr(0, reviewId.length - 1);
+     //Remove any trailing parts of the URL
+     if (reviewId[reviewId.length - 1] == "#")
+       reviewId = reviewId.substr(0, reviewId.length - 1);
 
-      //Add "View Revision" button and revision notes to the review tools navigation
-      if ($(".review-tools").find('a[href="#approve"].active').length > 0 || $(".review-tools").find('a[href="#reject"].active').length > 0) {
-         $(".review-tools").append('<a href="' + window.location.href.replace('review', 'revisions') + '" class="btn pill secondary btn-sm primary btn--action-review" target="_blank">View Revision</a>');
-
-         // Doesn't fit nicely
-         // displayReviewer(baseUrl+'manage/revisions/' + advisorId + '/' + reviewId, $(".review-title"));
-      }
-      localStorage.setItem("lastReviewed", JSON.stringify({ id: advisorId, title: $(".title")[0].childNodes[1].nodeValue.trim() }));
-
-
-      // //Is blog post
-      // if($(".title .meta").length > 0){
-      //   var title = $(".title")[0].childNodes[1].nodeValue;
-      //
-      //   $.get(baseUrl+'manage/content/custom', function(){
-      //      $(".dataTable").DataTable().rows(function(idx,data,node){
-      //        if(data.title == title){
-      //          var id = findID;
-      //          $.get(baseUrl+'api/content/compliance/'+id, function(){
-      //
-      //          });
-      //        }
-      //   });
-      // });
+     //Add a simple add notes option
+     $(".review-tools").append('<button class="btn btn--action-default revision-note" data-id="'+revisionId+'">Add Notes</button>')
+     $(".revision-note").on("click", ()=>{
+      var note = prompt("Add your note")
+      if(note != null)
+         $.ajax({
+            method: 'PUT',
+            dataType: 'json',
+            cache: false,
+            data: {"internal_notes": note},
+            url: "https://app.twentyoverten.com/api/revisions/"+revisionId,
+            success: function(){console.log("success")},
+            error: function(){console.log("fail")}
+          });
+     })
 
 
-      $(".review-header").append('<div class="dark-toggle" title="Toggle page preview darkness"><i class="fas fa-moon"></i></div>')
-      $(".dark-toggle").on("click", function(){
-         let i = $(this).find("i")
-         i.toggleClass("fa-moon")
-         i.toggleClass("fa-sun")
-         $(".change-item").toggleClass("darken")
+     //Add "View Revision" button and revision notes to the review tools navigation
+     if (
+       $(".review-tools").find('a[href="#approve"].active').length > 0 ||
+       $(".review-tools").find('a[href="#reject"].active').length > 0
+     ) {
+       $(".review-tools").append(
+         '<a href="' +
+           window.location.href.replace("review", "revisions") +
+           '" class="btn pill secondary btn-sm primary btn--action-review" target="_blank">View Revision</a>'
+       );
+
+       // Doesn't fit nicely
+       // displayReviewer(baseUrl+'manage/revisions/' + advisorId + '/' + reviewId, $(".review-title"));
+     }
+     localStorage.setItem(
+       "lastReviewed",
+       JSON.stringify({
+         id: advisorId,
+         title: $(".title")[0].childNodes[1].nodeValue.trim(),
+       })
+     );
+
+
+     //Check if item in review is content
+     checkIfContent(revisionId).then(result =>{
+      if(!result.is_content) return
+      let who = !result.is_provided ? (result.is_custom ? "SiteForward" : "Edited Custom") : "Vendor"
+      document.querySelector(".post-info").setAttribute("data-content", `${who} Provided Content`)
+      let icon_classes = document.querySelector(".post-info .icon").classList
+      icon_classes.remove("icon-file-unknown")
+      if(result.is_custom || result.is_provided)
+         icon_classes.add("icon-copy")
+      else 
+         icon_classes.add("icon-new-change")
+     })
+
+     async function checkIfContent(revisionId){
+      //Get the current review item
+      let current_item = await fetch(
+         "https://app.twentyoverten.com/api/revisions/" + revisionId
+       )
+       current_item = await current_item.json()
+
+       //Check if the current review item is content (uploaded to content bucket somewhere)
+       let is_content = current_item.content_id
+
+      return new Promise(resolve =>{ 
+         if(current_item.location != "post" || !is_content) return resolve({is_content: false})
+            $(".title").append(`<span class="mini-change tot_tip right post-info" data-content="Checking"><span class="icon icon-file-unknown"></span></span>`)
+
+         //Check both bukets
+         let is_custom = isContent(current_item, "https://app.twentyoverten.com/api/content/broker")
+         let is_provided = isContent(current_item, "https://app.twentyoverten.com/api/content")
+
+         Promise.all([is_custom, is_provided]).then(values=> resolve({is_content: true, is_custom: values[0], is_provided: values[1]}))
+       })
+
+     }
+
+     async function isContent(current_item, url) {
+      
+       let custom_content_list = await fetch(url)
+       custom_content_list = await custom_content_list.json();
+
+       //Check list of all content in bucket to see if title and content match
+       return new Promise(function (resolve) {
+         custom_content_list.content.forEach((blog) => {
+            if (blog.title == current_item.title && blog.html == current_item.content){ 
+               resolve(true)
+            }
+         })
+         resolve(false)
       })
+     }
 
+     // Add Dark toggle button
+     $(".review-header").append(
+       '<div class="dark-toggle" title="Toggle page preview darkness"><i class="fas fa-moon"></i></div>'
+     );
+     $(".dark-toggle").on("click", function () {
+       let i = $(this).find("i");
+       i.toggleClass("fa-moon");
+       i.toggleClass("fa-sun");
+       $(".change-item").toggleClass("darken");
+     });
 
-      $($(".details-wrapper").find("header")).append('<p class="secondary center advisor-tags"></p>');
+     // Add the tags on the left
+     $($(".details-wrapper").find("header")).append(
+       '<p class="secondary center advisor-tags"></p>'
+     );
 
-      //Get advisor
-      let advisor = getAdvisorInfoByID(advisorId);
+     //Get advisor
+     let advisor = getAdvisorInfoByID(advisorId);
 
-      //Create string with tags
-      let tags = "";
-      if (advisor && advisor.settings && advisor.settings.broker_tags)
-         advisor.settings.broker_tags.forEach(function (e) {
-            tags += "<br>" + e.name;
-         });
+     //Create string with tags
+     let tags = "";
+     if (advisor && advisor.settings && advisor.settings.broker_tags)
+       advisor.settings.broker_tags.forEach(function (e) {
+         tags += "<br>" + e.name;
+       });
 
-      //Add tags
-      $(".advisor-tags").html(tags.substr(4, tags.length));
-      if (advisor && advisor.email)
-         $(".advisor-quick-links").append('<a href="/manage/revisions?email=' + encodeURIComponent(advisor.email) + '" class="btn pill secondary btn--action-default" style="max-width: unset">View Revisions</a>');
-
+     //Add tags
+     $(".advisor-tags").html(tags.substr(4, tags.length));
+     if (advisor && advisor.email)
+       $(".advisor-quick-links").append(
+         '<a href="/manage/revisions?email=' +
+           encodeURIComponent(advisor.email) +
+           '" class="btn pill secondary btn--action-default" style="max-width: unset">View Revisions</a>'
+       );
    }
 
    //Content Assist page
@@ -855,16 +925,16 @@ $(function() {
       $(".add-custom-content").wrap('<div style="display: flex; flex-flow: column">').parent().prepend('<a href="../content" class="btn btn--action-default-outlined add-custom-content" style="margin-bottom: 10px;">Back to Content Assist</a>');
       $("#custom-content-list_length, #content-list_length").find("option").last().after('<option value="200">200</option><option value="500">500</option><option value="999999">All</option>');
 
-      /* $(".providence--advisor-list-nav").append('<a href="#" class=" providence--advisor-list-title"> <span class="chip chip--taken-down content-contentAssist">Content Assist</span> </a>');
-      $(".content-contentAssist").on('click', function(){
-        $('#search-content').val("Content Assist");
-        $("#search-content-btn")[0].click();
-      });
-      $(".content-leadPilot").on('click', function(){
-        $('#search-content').val("Lead Pilot");
-        $("#search-content-btn")[0].click();
-      });*/
-
+      //Remove Lead Pilot content
+     
+         $('#content-list').on("init.dt", delay(e => {
+            console.log(ready)
+            $("#content-list tr").each(function(i,e){
+               console.log(i)
+               if($(e).find(".content-cat")[0].textContent=="Lead Pilot")
+                  $(e).hide()
+            }) 
+         }, 750));
 
       //When enter is pressed when typing in search
       $('#search-content').on('keyup', delay(e => {
@@ -1638,6 +1708,7 @@ async function addLiveURLToDroplist(list, advisor) {
 
 async function displayReviewer(url, container, cb) {
    let review = await getReviewer(url);
+   
    if (review && review[0]) {
       let reviewText = '<div class="review-item-preview"><div >';
       reviewText += '<p class="approvedByNote" style="font-size: 12px;' + (review[2] == "Rejected" ? 'color: #c2001e;' : 'color: #007750;') + '">' + review[2] + ' By: ' + review[1] + ' - ' + review[0] + '</p>';
