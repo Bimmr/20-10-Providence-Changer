@@ -1,5 +1,6 @@
 1.8.1
 - Displays if the post is custom and if not where it's from
+- Made highlight difference sections smaller
 1.8.0
 - Shows both french and english in review preview
 - Added a darkness toggle to review preview

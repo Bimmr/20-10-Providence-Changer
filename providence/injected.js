@@ -190,6 +190,9 @@ $(function() {
       '#review-item .change-item.darken{background: #111}'+
       '#review-item .dark-toggle{position: absolute; top: 75px; left: 0; height: 20px; width: 20px; background: #f4f4f4; border-radius: 0 0 30% 0; display: flex; font-size: .75em; justify-content: center; align-items: center; cursor: pointer;}'+
       
+      //Highlight Difference Helper
+      'body.providence #compare-diff{top: 160px !important; left: 280px;!important}'+
+      '@media(max-width: 1380px){body.providence #compare-diff{top: 190px !important; }}'+
 
       // Night Themed
       'body.providence.nightMode h1{color: #efefef}' +
