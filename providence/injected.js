@@ -35,6 +35,14 @@ $(function() {
       // Misc
       'body.providence #header{z-index: 10}'+
 
+      // Add Sub Nav to Manage Content nav
+      '.providence--section-nav-sub {z-index: -1; font-size: .9em; top: -100% !important; opacity: 0; display: flex !important; flex-direction: column !important; position: absolute; background: #03182e; transition: top 0.6s, opacity 0.3s;}'+
+      '.providence--section-nav li:hover .providence--section-nav-sub {top: 100% !important; opacity:1;}'+
+      '.providence--section-nav li a:has(~ .providence--section-nav-sub){background: #03182e}'+
+      '.providence--section-nav-sub a { padding: 1rem !important; }'+
+      'body.providence .providence--section-nav-sub li a::after{ display:none !important; }'+
+      'body.providence .providence--section-nav-sub li:not(:is(.active, :hover)) a{ color: rgba(255,255,255,0.55) !important; }'+
+
       // Float the page navigation
       '.dataTables_paginate,.table-length {position: sticky;bottom: 0; padding: 10px;left: 0;right: 0;}' +
       '.dataTables_paginate {width: 750px;margin: 0 auto; z-index:3}' +
@@ -257,6 +265,7 @@ $(function() {
 
       '</style>');
 
+   $(".providence--section-nav a[href='/manage/content']").after('<ul class="providence--section-nav-sub"><li><a href="/manage/content" class="vendor_content_assist">Vendor Provided</a></li><li><a href="/manage/content/custom" class="siteforward_content_assist">SiteForward Provided</a></li></ul>')
 
    if (localStorage.getItem("nightMode") == "true")
       $(".providence").addClass("nightMode");
@@ -914,6 +923,10 @@ $(function() {
 
    //Content Assist page
    else if (urlParts.length > 4 && urlParts[4].indexOf("content") == 0) {
+
+      let is_SiteForward_Bucket = urlParts[5]?.indexOf("custom") == 0 || false
+      document.querySelector(is_SiteForward_Bucket ? ".siteforward_content_assist" : ".vendor_content_assist").parentNode.classList.add("active")
+
       $("#content-list_wrapper, #custom-content-list_wrapper").prepend(
          '<div class="search-bar">' +
          '<div class="text-control" aria-required="true" style=" margin: 10px 0 0 0; flex-basis: 80%; padding-right: 15px"> ' +
@@ -929,7 +942,6 @@ $(function() {
       $("#custom-content-list_length, #content-list_length").find("option").last().after('<option value="200">200</option><option value="500">500</option><option value="999999">All</option>');
 
       //Remove Lead Pilot content
-     
          $('#content-list').on("init.dt", delay(e => {
             console.log(ready)
             $("#content-list tr").each(function(i,e){
