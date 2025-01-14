@@ -1513,9 +1513,16 @@ $(function() {
                      $(this).append(group);
                   }
                }
-               //Remove any that are not assignable
+               //Remove any that are not assignable (Not on a team)
                fe.querySelectorAll(":scope > option").forEach(e=>e.remove())
                fe.querySelectorAll("optgroup").forEach(e=>e.children.length == 0 ? e.remove() : "")
+
+               //Properly set when no officer is selected
+               let hasSelection = fe.querySelector("option[selected]") ? true : false
+               if(!hasSelection){
+                  let option = fe.querySelector("option[value*='all']")
+                  fe.value = option.value
+               }
 
                $(fe).addClass("optGroupsAdded");
                //Remove assignees based on tags

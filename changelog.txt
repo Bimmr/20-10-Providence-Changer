@@ -1,5 +1,6 @@
 1.8.2
 - Added sub nav to manage content tab
+- Fixed displaying when no officer is selected for website
 1.8.1
 - Displays if the post is custom and if not where it's from
 - Made highlight difference sections smaller
