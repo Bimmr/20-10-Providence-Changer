@@ -835,15 +835,46 @@ $(function() {
 
      //Check if item in review is content
      checkIfContent(revisionId).then(result =>{
-      if(!result.is_content) return
-      let who = !result.is_provided ? (result.is_custom ? "SiteForward" : "Edited Custom") : "Vendor"
-      document.querySelector(".post-info").setAttribute("data-content", `${who} Provided Content`)
+      
+      const OUTPUT_DIFFERENCES = true
+      if(!result.is_post) return // If it's not a post do nothing
+
+      console.log(result)
+      //Check where the content is from
+      let who = ""
+      if (result.is_custom) who = "Custom"
+      else if (result.from_vendor) who = "Vendor Provided"
+      else if (result.from_siteforward) who = "SiteForward Provided"
+
+      if (result.edits && (result.edits.title.length > 0 || result.edits.content.length > 0)){
+         who = "Edited "+ who
+         if(OUTPUT_DIFFERENCES && result.edits.title.length > 0){
+            console.log('\n\x1b[1m%cTitle Differences\x1b[0m', 'font-size: 1.5rem');
+            result.edits.title.forEach(e => {
+               console.log("\x1b[3mAdvisor:\x1b[m "+ e.advisor.replace('[[', '\x1b[1m[').replace(']]', ']\x1b[m'))
+               console.log("\x1b[3mVendor:\x1b[m " + e.vendor.replace('[[', '\x1b[1m[').replace(']]', ']\x1b[m'))
+               console.log("-------")
+            })
+         }
+         if(OUTPUT_DIFFERENCES && result.edits.content.length > 0){
+            console.log('\n\x1b[1m%cContent Differences\x1b[m', 'font-size: 1.5rem');
+            result.edits.content.forEach(e => {
+               console.log("\x1b[3mAdvisor:\x1b[m "+ e.advisor.replace('[[', '\x1b[1m[').replace(']]', ']\x1b[m'))
+               console.log("\x1b[3mVendor:\x1b[m " + e.vendor.replace('[[', '\x1b[1m[').replace(']]', ']\x1b[m'))
+               console.log("-------")
+            })
+         }
+      }
+
+      document.querySelector(".post-info").setAttribute("data-content", `${who} Content`)
       let icon_classes = document.querySelector(".post-info .icon").classList
-      icon_classes.remove("icon-file-unknown")
-      if(result.is_custom || result.is_provided)
+      icon_classes.remove("icon-reset")
+      if(result.is_custom)
+         icon_classes.add("icon-file-word")
+      else if(result.edits)
+         icon_classes.add("icon-file-unknown")
+      else if(result.is_from_vendor || result.is_from_siteforward)
          icon_classes.add("icon-copy")
-      else 
-         icon_classes.add("icon-new-change")
      })
 
      async function checkIfContent(revisionId){
@@ -853,23 +884,105 @@ $(function() {
        )
        current_item = await current_item.json()
 
-       //Check if the current review item is content (uploaded to content bucket somewhere)
-       let is_content = current_item.content_id
+      return new Promise(resolve =>{
+         if(current_item.location != "post" ) resolve({is_post: false})
+         else{
+            $(".title").append(`<span class="mini-change tot_tip right post-info" data-content="Checking"><span class="icon icon-reset"></span></span>`)
+               
+            //Check both bukets
+            let is_custom = current_item.content_id == null
+            let from_siteforward = getContent(current_item, "https://app.twentyoverten.com/api/content/broker")
+            let from_vendor = getContent(current_item, "https://app.twentyoverten.com/api/content")
+            
+            // When both promises are done check for edits, and then resolve the parent promise
+            Promise.all([from_siteforward, from_vendor]).then(values=> {
+               let edits = null
 
-      return new Promise(resolve =>{ 
-         if(current_item.location != "post" || !is_content) return resolve({is_content: false})
-            $(".title").append(`<span class="mini-change tot_tip right post-info" data-content="Checking"><span class="icon icon-file-unknown"></span></span>`)
+               // If article isn't custom get the differences
+               if(!is_custom){
 
-         //Check both bukets
-         let is_custom = isContent(current_item, "https://app.twentyoverten.com/api/content/broker")
-         let is_provided = isContent(current_item, "https://app.twentyoverten.com/api/content")
+                  let found_article = values[0]
+                  if(Object.keys(found_article).length === 0){
+                     found_article = values[1]
+                  }
 
-         Promise.all([is_custom, is_provided]).then(values=> resolve({is_content: true, is_custom: values[0], is_provided: values[1]}))
+                  const title = getArrayDifferences(parseHTML(found_article.title), parseHTML(current_item.title))
+                  const content = getArrayDifferences( parseHTML(found_article.content || found_article.html), parseHTML(current_item.content || current_item.html))
+                  edits = {title, content}
+               }
+
+               resolve(
+               {
+                  is_post: true, 
+                  is_custom,
+                  from_siteforward: values[0], 
+                  from_vendor: values[1],
+                  edits
+               })
+            })
+
+
+            // Function to parse HTML into an array of tags and content
+            function parseHTML(html) {
+               const regex = /(<h[1-6][^>]*>[\s\S]*?<\/h[1-6]>)|(<p[^>]*>[\s\S]*?<\/p>)|(<li[^>]*>[\s\S]*?<\/li>)|(<img[^>]*>)|(<a[^>]*>[\s\S]*?<\/a>)/gi;
+               let match;
+               const result = [];
+               while ((match = regex.exec(html)) !== null) {
+                  if (match[0]) {
+                     result.push(match[0].trim());
+                  }
+               }
+               return result;
+               }
+
+            // Function to find the first index at which two strings differ
+            function findDifferenceIndex(str1, str2) {
+               let index = 0;
+               while (index < str1.length && index < str2.length) {
+                  if (str1[index] !== str2[index]) {
+                        return index;
+                  }
+                  index++;
+               }
+               return index;
+            }
+
+            // Function to compare two arrays and return differences with brackets
+            function getArrayDifferences(arr1, arr2) {
+               const differences = [];
+               const maxLength = Math.max(arr1.length, arr2.length);
+               let inDifference = false; // Flag to track if we're in the middle of a difference
+
+               for (let i = 0; i < maxLength; i++) {
+                  if (arr1[i] !== arr2[i]) {
+                        if (!inDifference) {
+                           const vendorText = arr1[i] || "";
+                           const advisorText = arr2[i] || "";
+
+                           const diffIndex = findDifferenceIndex(vendorText, advisorText);
+
+                           const vendorDiff = vendorText.slice(0, diffIndex) + '[[' + vendorText.slice(diffIndex) + ']]';
+                           const advisorDiff = advisorText.slice(0, diffIndex) + '[[' + advisorText.slice(diffIndex) + ']]';
+
+                           differences.push({
+                              vendor: vendorDiff,
+                              advisor: advisorDiff
+                           });
+
+                           inDifference = true; // Start tracking the difference
+                        }
+                  } else {
+                        inDifference = false; // Reset the difference flag when texts align again
+                  }
+               }
+               return differences;
+            }
+         }
        })
 
      }
 
-     async function isContent(current_item, url) {
+     async function getContent(current_item, url) {
       
        let custom_content_list = await fetch(url)
        custom_content_list = await custom_content_list.json();
@@ -877,11 +990,11 @@ $(function() {
        //Check list of all content in bucket to see if title and content match
        return new Promise(function (resolve) {
          custom_content_list.content.forEach((blog) => {
-            if (blog.title == current_item.title && blog.html == current_item.content){ 
-               resolve(true)
+            if (blog._id == current_item.content_id){
+               resolve({title: blog.title, html: blog.html})
             }
          })
-         resolve(false)
+         resolve({})
       })
      }
 
