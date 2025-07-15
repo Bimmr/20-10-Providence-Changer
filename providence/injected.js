@@ -192,16 +192,20 @@ $(function() {
       '#review-item .change-item div[data-lang]{display: block !important; position: relative;}'+
       '#review-item .change-item div[data-lang]:before{content: ""; position: absolute; border: 1px dashed #7a7a7a; width: 100%; height: 100%;}'+
       '#review-item .change-item div[data-lang]:after{content: "Content for " attr(data-lang);position:absolute;top: 0;left:0;border:1px dashed #333; border-radius: 5px; opacity: 0.5;padding: 0 5px;font-size: 12px; font-weight: normal;}'+
-
+      
+      // Floating review helper 
+      '#review-item .floating-review-item-wrapper {background: #f4f4f4; border-top: 1px solid #e7e7e7; position: absolute; left: 0; border-radius: 0 0 10px 0; display: flex; flex-flow: row nowrap; justify-content: center; align-content: center; cursor: pointer; text-align: center;}'+
+      '#review-item .floating-review-item { font-size: .75em; justify-content: center; align-items: center; cursor: pointer; align-content: center; padding: 5px 10px}'+
+      
       // Colour Helper
       '#review-item .change-item{transition: background .3s}'+
       '#review-item .change-item.darken{background: #111}'+
-      '#review-item .floating-review-item-wrapper {background: #f4f4f4; position: absolute; top: 75px; left: 0; border-radius: 0 0 10px 0; display: flex; flex-flow: row nowrap; justify-content: center; align-content: center; cursor: pointer; text-align: center;}'+
-      '#review-item .floating-review-item { font-size: .75em; justify-content: center; align-items: center; cursor: pointer; align-content: center; padding: 5px 10px}'+
-      '#review-item .floating-review-item:not(:last-of-type) { border-right: 1px solid #ccc;}'+
-      '#review-item .floating-review-item .fa-spinner{animation: spinning 2s infinite linear;}'+
-      '#review-item #differences-dialog{position: absolute; left: 50%; transform: translateX(-50%); padding: 1rem; border: none; border-radius: 6px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); background: white; z-index: 1000; max-width: 90%; min-width: 75%;}'+
       
+      // Content source finder
+      '#review-item .floating-review-item:not(:last-of-type) { border-right: 1px solid #e7e7e7;}'+
+      '#review-item .floating-review-item .fa-spinner{animation: spinning 2s infinite linear;}'+
+      '#differences-dialog{position: fixed; left: calc(50% + 140px); transform: translateX(-50%); padding: 1rem; border: 2px groove #2d2d2d1f; border-radius: 6px; box-shadow: 0px -3px 40px 6px rgba(24,99,99,0.13); background: white; z-index: 1000; max-width: 90%; min-width: 75%;}'+
+
       //Highlight Difference Helper
       'body.providence #compare-diff{top: 160px !important; left: 280px;!important}'+
       '@media(max-width: 1380px){body.providence #compare-diff{top: 190px !important; }}'+
@@ -264,6 +268,8 @@ $(function() {
 
       'body.providence.nightMode #review-item .floating-review-item-wrapper { background: #2d2d2d}'+
 
+      'body.providence.nightMode #review-item .floating-review-item-wrapper {border-color: #4c4c4c}'+
+      'body.providence.nightMode #review-item .floating-review-item:not(:last-of-type) { border-color: #4c4c4c}'+
       
       '@keyframes spinning { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }'+
 
@@ -866,37 +872,37 @@ $(function() {
          
    
          if(OUTPUT_DIFFERENCES && result.edits.title.length > 0){
-            differences += ('<h2 style="font-size: 1.25em">Title Differences</h2>');
+            differences += ('<h2 style="font-size: 1.25em;border-bottom: 1px solid #ccc;">Title Differences</h2>');
             result.edits.title.forEach(e => {
                
             differences += `
-               <div style="display: flex; justify-content: space-between; gap: 2rem; border: 1px dashed #ccc;">
+               <div style="display: flex; justify-content: space-between; gap: 2rem; border-bottom: 1px dashed #ccc;">
                <div style="flex: 1;">
                   <p><span style="font-style: italic">Vendor:</span><br>${escapeHTML(e.vendor).replace(/\[\[/g, '<strong>[').replace(/\]\]/g, ']</strong>')}</p>
                </div>
                <div style="flex: 1;">
                   <p><span style="font-style: italic">Advisor:</span><br>${escapeHTML(e.advisor).replace(/\[\[/g, '<strong>[').replace(/\]\]/g, ']</strong>')}</p>
                </div>
-               </div>
-               <hr>`;
+               </div>`;
 
 
             })
          }
          if(OUTPUT_DIFFERENCES && result.edits.content.length > 0){
-            differences += ('<h2 style="font-size: 1.25em">Content Differences</h2>');
+            if(differences != "")
+               differences += "<br><br>"
+            differences += ('<h2 style="font-size: 1.25em;border-bottom: 1px solid #ccc;">Content Differences</h2>');
             result.edits.content.forEach(e => {
             
             differences += `
-               <div style="display: flex; justify-content: space-between; gap: 2rem; border: 1px dashed #ccc;">
+               <div style="display: flex; justify-content: space-between; gap: 2rem; border-bottom: 1px dashed #ccc;">
                <div style="flex: 1;">
                   <p><span style="font-style: italic">Vendor:</span><br>${escapeHTML(e.vendor).replace(/\[\[/g, '<strong>[').replace(/\]\]/g, ']</strong>')}</p>
                </div>
                <div style="flex: 1;">
                   <p><span style="font-style: italic">Advisor:</span><br>${escapeHTML(e.advisor).replace(/\[\[/g, '<strong>[').replace(/\]\]/g, ']</strong>')}</p>
                </div>
-               </div>
-               <hr>`;
+               </div>`;
 
 
             })
@@ -917,8 +923,6 @@ $(function() {
             // Create dialog
             const dialog = document.createElement("dialog");
             dialog.setAttribute("id", "differences-dialog");
-           
-
 
             // Add content
             const text = document.createElement("div");
@@ -930,8 +934,7 @@ $(function() {
 
             // Position near the button
             const rect = trigger.getBoundingClientRect();
-            
-            dialog.style.top = `${rect.bottom + window.scrollY + 5}px;`;
+            dialog.style.cssText = `top: ${rect.bottom + 5}px;`;
 
             // Show the dialog (non-modal)
             dialog.show();
