@@ -196,7 +196,11 @@ $(function() {
       // Colour Helper
       '#review-item .change-item{transition: background .3s}'+
       '#review-item .change-item.darken{background: #111}'+
-      '#review-item .dark-toggle{position: absolute; top: 75px; left: 0; height: 20px; width: 20px; background: #f4f4f4; border-radius: 0 0 30% 0; display: flex; font-size: .75em; justify-content: center; align-items: center; cursor: pointer;}'+
+      '#review-item .floating-review-item-wrapper {background: #f4f4f4; position: absolute; top: 75px; left: 0; border-radius: 0 0 10px 0; display: flex; flex-flow: row nowrap; justify-content: center; align-content: center; cursor: pointer; text-align: center;}'+
+      '#review-item .floating-review-item { font-size: .75em; justify-content: center; align-items: center; cursor: pointer; align-content: center; padding: 5px 10px}'+
+      '#review-item .floating-review-item:not(:last-of-type) { border-right: 1px solid #ccc;}'+
+      '#review-item .floating-review-item .fa-spinner{animation: spinning 2s infinite linear;}'+
+      '#review-item #differences-dialog{position: absolute; left: 50%; transform: translateX(-50%); padding: 1rem; border: none; border-radius: 6px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); background: white; z-index: 1000; max-width: 90%; min-width: 75%;}'+
       
       //Highlight Difference Helper
       'body.providence #compare-diff{top: 160px !important; left: 280px;!important}'+
@@ -258,7 +262,11 @@ $(function() {
       'body.providence.nightMode .sidebar-module-message-content{color: #2d2d2d; background: #fefefe;}' +
       'body.providence.nightMode .sidebar-module-footer{background: rgba(0,0,0,0.5);}' +
 
-      'body.providence.nightMode #review-item .dark-toggle{ background: #2d2d2d}'+
+      'body.providence.nightMode #review-item .floating-review-item-wrapper { background: #2d2d2d}'+
+
+      
+      '@keyframes spinning { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }'+
+
       
       //TODO: Add Dark mode for chat?
 
@@ -840,41 +848,122 @@ $(function() {
       if(!result.is_post) return // If it's not a post do nothing
 
       console.log(result)
+      const from_siteforward = result.from_siteforward != {}
+      const from_vendor = result.from_vendor != {}
+      const was_edited = result.edits && (result.edits.title.length > 0 || result.edits.content.length > 0)
+
       //Check where the content is from
       let who = ""
       if (result.is_custom) who = "Custom"
-      else if (result.from_vendor) who = "Vendor Provided"
-      else if (result.from_siteforward) who = "SiteForward Provided"
+      else if (from_vendor) who = "Vendor Provided"
+      else if (from_siteforward) who = "SiteForward Provided"
 
-      if (result.edits && (result.edits.title.length > 0 || result.edits.content.length > 0)){
+
+      if (was_edited){
+         
          who = "Edited "+ who
+         let differences = ""
+         
+   
          if(OUTPUT_DIFFERENCES && result.edits.title.length > 0){
-            console.log('\n\x1b[1m%cTitle Differences\x1b[0m', 'font-size: 1.5rem');
+            differences += ('<h2 style="font-size: 1.25em">Title Differences</h2>');
             result.edits.title.forEach(e => {
-               console.log("\x1b[3mAdvisor:\x1b[m "+ e.advisor.replace('[[', '\x1b[1m[').replace(']]', ']\x1b[m'))
-               console.log("\x1b[3mVendor:\x1b[m " + e.vendor.replace('[[', '\x1b[1m[').replace(']]', ']\x1b[m'))
-               console.log("-------")
+               
+            differences += `
+               <div style="display: flex; justify-content: space-between; gap: 2rem; border: 1px dashed #ccc;">
+               <div style="flex: 1;">
+                  <p><span style="font-style: italic">Vendor:</span><br>${escapeHTML(e.vendor).replace(/\[\[/g, '<strong>[').replace(/\]\]/g, ']</strong>')}</p>
+               </div>
+               <div style="flex: 1;">
+                  <p><span style="font-style: italic">Advisor:</span><br>${escapeHTML(e.advisor).replace(/\[\[/g, '<strong>[').replace(/\]\]/g, ']</strong>')}</p>
+               </div>
+               </div>
+               <hr>`;
+
+
             })
          }
          if(OUTPUT_DIFFERENCES && result.edits.content.length > 0){
-            console.log('\n\x1b[1m%cContent Differences\x1b[m', 'font-size: 1.5rem');
+            differences += ('<h2 style="font-size: 1.25em">Content Differences</h2>');
             result.edits.content.forEach(e => {
-               console.log("\x1b[3mAdvisor:\x1b[m "+ e.advisor.replace('[[', '\x1b[1m[').replace(']]', ']\x1b[m'))
-               console.log("\x1b[3mVendor:\x1b[m " + e.vendor.replace('[[', '\x1b[1m[').replace(']]', ']\x1b[m'))
-               console.log("-------")
+            
+            differences += `
+               <div style="display: flex; justify-content: space-between; gap: 2rem; border: 1px dashed #ccc;">
+               <div style="flex: 1;">
+                  <p><span style="font-style: italic">Vendor:</span><br>${escapeHTML(e.vendor).replace(/\[\[/g, '<strong>[').replace(/\]\]/g, ']</strong>')}</p>
+               </div>
+               <div style="flex: 1;">
+                  <p><span style="font-style: italic">Advisor:</span><br>${escapeHTML(e.advisor).replace(/\[\[/g, '<strong>[').replace(/\]\]/g, ']</strong>')}</p>
+               </div>
+               </div>
+               <hr>`;
+
+
             })
          }
-      }
+                  
+         function escapeHTML(str) {
+         return (str || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+         }
+         
+         const trigger = document.querySelector(".open-differences");
 
-      document.querySelector(".post-info").setAttribute("data-content", `${who} Content`)
-      let icon_classes = document.querySelector(".post-info .icon").classList
-      icon_classes.remove("icon-reset")
+         trigger.addEventListener("click", function (event) {
+            // Create dialog
+            const dialog = document.createElement("dialog");
+            dialog.setAttribute("id", "differences-dialog");
+           
+
+
+            // Add content
+            const text = document.createElement("div");
+            text.innerHTML = differences;
+            dialog.appendChild(text);
+
+            // Append to body
+            document.body.appendChild(dialog);
+
+            // Position near the button
+            const rect = trigger.getBoundingClientRect();
+            
+            dialog.style.top = `${rect.bottom + window.scrollY + 5}px;`;
+
+            // Show the dialog (non-modal)
+            dialog.show();
+
+            // Close when clicking outside
+            const handleClickOutside = (e) => {
+               if (!dialog.contains(e.target)) {
+               dialog.close();
+               dialog.remove();
+               document.removeEventListener("click", handleClickOutside);
+               }
+            };
+
+            // Delay to avoid immediate close from the same click
+            setTimeout(() => {
+               document.addEventListener("click", handleClickOutside);
+            }, 0);
+         });
+
+
+
+      }
+      let difference_compare = document.querySelector(".open-differences")
+      difference_compare.setAttribute("title", `${who} Content`)
+      let icon_classes = difference_compare.querySelector("i").classList
+      icon_classes.remove("fa-spinner")
       if(result.is_custom)
-         icon_classes.add("icon-file-word")
-      else if(result.edits)
-         icon_classes.add("icon-file-unknown")
-      else if(result.is_from_vendor || result.is_from_siteforward)
-         icon_classes.add("icon-copy")
+         icon_classes.add("fa-edit")
+      else if(was_edited)
+         icon_classes.add("fa-user-edit")
+      else if(from_siteforward || from_vendor)
+         icon_classes.add("fa-copy")
      })
 
      async function checkIfContent(revisionId){
@@ -887,10 +976,12 @@ $(function() {
       return new Promise(resolve =>{
          if(current_item.location != "post" ) resolve({is_post: false})
          else{
-            $(".title").append(`<span class="mini-change tot_tip right post-info" data-content="Checking"><span class="icon icon-reset"></span></span>`)
+      
+            $(".floating-review-item-wrapper").append(`<div class="floating-review-item open-differences" title="Checking the file source"><i class="fas fa-spinner"></i></div>`)
                
             //Check both bukets
             let is_custom = current_item.content_id == null
+            console.log(current_item)
             let from_siteforward = getContent(current_item, "https://app.twentyoverten.com/api/content/broker")
             let from_vendor = getContent(current_item, "https://app.twentyoverten.com/api/content")
             
@@ -900,15 +991,19 @@ $(function() {
 
                // If article isn't custom get the differences
                if(!is_custom){
-
                   let found_article = values[0]
                   if(Object.keys(found_article).length === 0){
                      found_article = values[1]
                   }
 
-                  const title = getArrayDifferences(parseHTML(found_article.title), parseHTML(current_item.title))
-                  const content = getArrayDifferences( parseHTML(found_article.content || found_article.html), parseHTML(current_item.content || current_item.html))
-                  edits = {title, content}
+                  try{
+                     current_item = {title: current_item.title, html: current_item.content}
+                     const title = getArrayDifferences(parseHTML(found_article.title), parseHTML(current_item.title))
+                     const content = getArrayDifferences( parseHTML(found_article.html), parseHTML(current_item.html))
+                     edits = {title, content}
+                  }catch(e){
+                     alert("Please login as an advisor once to load the Content API")
+                  }
                }
 
                resolve(
@@ -917,6 +1012,7 @@ $(function() {
                   is_custom,
                   from_siteforward: values[0], 
                   from_vendor: values[1],
+                  current_item,
                   edits
                })
             })
@@ -924,16 +1020,17 @@ $(function() {
 
             // Function to parse HTML into an array of tags and content
             function parseHTML(html) {
-               const regex = /(<h[1-6][^>]*>[\s\S]*?<\/h[1-6]>)|(<p[^>]*>[\s\S]*?<\/p>)|(<li[^>]*>[\s\S]*?<\/li>)|(<img[^>]*>)|(<a[^>]*>[\s\S]*?<\/a>)/gi;
+               // Update the regex to also capture content outside of HTML tags
+               const regex = /(<h[1-6][^>]*>[\s\S]*?<\/h[1-6]>)|(<p[^>]*>[\s\S]*?<\/p>)|(<li[^>]*>[\s\S]*?<\/li>)|(<img[^>]*>)|(<a[^>]*>[\s\S]*?<\/a>)|([^<>]+)/gi;
                let match;
                const result = [];
                while ((match = regex.exec(html)) !== null) {
-                  if (match[0]) {
-                     result.push(match[0].trim());
+                  if (match[0].trim()) { // Ensure we don't push empty strings
+                        result.push(match[0].trim());
                   }
                }
                return result;
-               }
+            }
 
             // Function to find the first index at which two strings differ
             function findDifferenceIndex(str1, str2) {
@@ -1000,7 +1097,8 @@ $(function() {
 
      // Add Dark toggle button
      $(".review-header").append(
-       '<div class="dark-toggle" title="Toggle page preview darkness"><i class="fas fa-moon"></i></div>'
+      
+       '<div class="floating-review-item-wrapper"> <div class="floating-review-item dark-toggle" title="Toggle page preview darkness"><i class="fas fa-moon"></i></div></div>'
      );
      $(".dark-toggle").on("click", function () {
        let i = $(this).find("i");
