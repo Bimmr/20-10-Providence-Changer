@@ -194,9 +194,12 @@ $(function() {
       '#review-item .change-item div[data-lang]:after{content: "Content for " attr(data-lang);position:absolute;top: 0;left:0;border:1px dashed #333; border-radius: 5px; opacity: 0.5;padding: 0 5px;font-size: 12px; font-weight: normal;}'+
       
       // Floating review helper 
-      '#review-item .floating-review-item-wrapper {background: #f4f4f4; border-top: 1px solid #e7e7e7; position: absolute; left: 0; border-radius: 0 0 10px 0; display: flex; flex-flow: row nowrap; justify-content: center; align-content: center; cursor: pointer; text-align: center;}'+
-      '#review-item .floating-review-item { font-size: .75em; justify-content: center; align-items: center; cursor: pointer; align-content: center; padding: 5px 10px}'+
-      
+      '#review-item .floating-review-item-wrapper {height: 30px; width: 98px; background: #f4f4f4; border-top: 1px solid #e7e7e7; position: absolute; left: 0; border-radius: 0 0 10px 0; display: flex; flex-flow: row nowrap; justify-content: center; align-content: center; text-align: center;}'+
+      '#review-item .floating-review-item {transition: all .3s; flex-grow: 1; overflow: hidden; font-size: .75em; justify-content: center; align-items: center; align-content: center; }'+
+      '#review-item .floating-review-item i {transition: transform .3s; padding: 4px;}'+
+      '#review-item .floating-review-item:hover i {transform: scale(1.3)}'+
+      '#review-item .floating-review-item:is(.dark-toggle, :has(i.fa-user-edit)) i{cursor: pointer}'+
+
       // Colour Helper
       '#review-item .change-item{transition: background .3s}'+
       '#review-item .change-item.darken{background: #111}'+
@@ -867,7 +870,7 @@ $(function() {
 
       if (was_edited){
          
-         who = "Edited "+ who
+         who = "Edited "+ who 
          let differences = ""
          
    
@@ -957,8 +960,9 @@ $(function() {
 
 
       }
+      
       let difference_compare = document.querySelector(".open-differences")
-      difference_compare.setAttribute("title", `${who} Content`)
+      difference_compare.setAttribute("title", `${who} Content${was_edited ? " (Click to see differences)": ""}`)
       let icon_classes = difference_compare.querySelector("i").classList
       icon_classes.remove("fa-spinner")
       if(result.is_custom)
