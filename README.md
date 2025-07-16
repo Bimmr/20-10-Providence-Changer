@@ -9,6 +9,7 @@ Misc:
 - Checkboxes for rejections in chat (Saves locally)
 - Added view profile to chat
 - Added Night Mode
+- Added dropdown navigation to custom content nav link
 
 Main List:
 - Adds search bar that can search by tags, names, email, status, created year
@@ -51,6 +52,9 @@ Advisor Profile & Review:
 - After clicking Back in preview it will scroll down page to the item in list
 - Added Notes & Status
 - Added Preview Site link
+- Shows both French and English content in review items
+- Shows if post is custom/vendor provided/siteforward provided
+    - Shows differences if edited and from vendor/siteforward
 
 Revisions:
 - Adds option to turn revisions table to a full compliance report that includes notes and rejections
