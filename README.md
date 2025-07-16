@@ -4,7 +4,7 @@ Update 20/10 Providence Dashboard with extra things
 Misc:
 - Remembers chat messages
 - Defaults to All Advisors tab
-- Pagenation navigation sticky to bottom
+- Pagination navigation sticky to bottom
 - Added "View Profile" icon to chat wrapper
 - Checkboxes for rejections in chat (Saves locally)
 - Added view profile to chat
