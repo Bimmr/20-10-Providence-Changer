@@ -857,8 +857,8 @@ $(function() {
       if(!result.is_post) return // If it's not a post do nothing
 
       console.log(result)
-      const from_siteforward = result.from_siteforward != {}
-      const from_vendor = result.from_vendor != {}
+      const from_siteforward = Object.keys(result.from_siteforward).length != 0
+      const from_vendor = Object.keys(result.from_vendor).length != 0
       const was_edited = result.edits && (result.edits.title.length > 0 || result.edits.content.length > 0)
 
       //Check where the content is from
