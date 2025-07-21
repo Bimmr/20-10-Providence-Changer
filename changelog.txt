@@ -1,3 +1,5 @@
+1.8.3.1
+- Updated content api error message
 1.8.3
 - Cleaned up displaying if post is from vendor/siteforward/custom
 - Added debug message to display edits made to provided content
