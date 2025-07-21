@@ -991,7 +991,7 @@ $(function() {
             console.log(current_item)
             let from_siteforward = getContent(current_item, "https://app.twentyoverten.com/api/content/broker")
             let from_vendor = getContent(current_item, "https://app.twentyoverten.com/api/content")
-            
+             
             // When both promises are done check for edits, and then resolve the parent promise
             Promise.all([from_siteforward, from_vendor]).then(values=> {
                let edits = null
@@ -1003,14 +1003,10 @@ $(function() {
                      found_article = values[1]
                   }
 
-                  try{
-                     current_item = {title: current_item.title, html: current_item.content}
-                     const title = getArrayDifferences(parseHTML(found_article.title), parseHTML(current_item.title))
-                     const content = getArrayDifferences( parseHTML(found_article.html), parseHTML(current_item.html))
-                     edits = {title, content}
-                  }catch(e){
-                     alert("Please login as an advisor once to load the Content API")
-                  }
+                  current_item = {title: current_item.title, html: current_item.content}
+                  const title = getArrayDifferences(parseHTML(found_article.title), parseHTML(current_item.title))
+                  const content = getArrayDifferences( parseHTML(found_article.html), parseHTML(current_item.html))
+                  edits = {title, content}
                }
 
                resolve(
@@ -1090,7 +1086,16 @@ $(function() {
       
        let custom_content_list = await fetch(url)
        custom_content_list = await custom_content_list.json();
-
+       
+       // Check if content API loaded
+       if (!custom_content_list.content){
+         let difference_compare = document.querySelector(".open-differences")
+         difference_compare.setAttribute("title", `Error: Unable to load content API.\nPlease login as advisor to load the content API.`)
+         let icon_classes = difference_compare.querySelector("i").classList
+         icon_classes.remove("fa-spinner")
+         icon_classes.add("fa-exclamation-circle")
+      }
+                
        //Check list of all content in bucket to see if title and content match
        return new Promise(function (resolve) {
          custom_content_list.content.forEach((blog) => {
