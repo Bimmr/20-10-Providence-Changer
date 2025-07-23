@@ -988,7 +988,6 @@ $(function() {
                
             //Check both bukets
             let is_custom = current_item.content_id == null
-            console.log(current_item)
             let from_siteforward = getContent(current_item, "https://app.twentyoverten.com/api/content/broker")
             let from_vendor = getContent(current_item, "https://app.twentyoverten.com/api/content")
              
@@ -997,12 +996,14 @@ $(function() {
                let edits = null
 
                // If article isn't custom get the differences
-               if(!is_custom){
-                  let found_article = values[0]
-                  if(Object.keys(found_article).length === 0){
-                     found_article = values[1]
-                  }
+               let found_article = values[0]
+               if(Object.keys(found_article).length === 0) // If current found article doesn't exist, assign the next
+                  found_article = values[1]
+               if(Object.keys(found_article).length === 0) // If it still doesn't exist, make it null
+                  found_article = null
 
+               if(found_article){
+                  is_custom = false // Sometimes articles won't have a content_id, but will still be from content assist - this is confirmed by checking title and html
                   current_item = {title: current_item.title, html: current_item.content}
                   const title = getArrayDifferences(parseHTML(found_article.title), parseHTML(current_item.title))
                   const content = getArrayDifferences( parseHTML(found_article.html), parseHTML(current_item.html))
@@ -1099,9 +1100,10 @@ $(function() {
        //Check list of all content in bucket to see if title and content match
        return new Promise(function (resolve) {
          custom_content_list.content.forEach((blog) => {
-            if (blog._id == current_item.content_id){
+            if (blog._id == current_item.content_id)
                resolve({title: blog.title, html: blog.html})
-            }
+            else if(blog.title == current_item.title && blog.html == current_item.content)
+               resolve({title: blog.title, html: blog.html})
          })
          resolve({})
       })
