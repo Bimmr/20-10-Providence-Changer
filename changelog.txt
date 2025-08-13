@@ -1,3 +1,6 @@
+1.8.5
+- Reworked "Add Note to All" button
+- Moved DynamoDB id to seperate file
 1.8.4
 - Re-added title and body comparing to check if it's provided content (Not all custom content have a content_id)
 1.8.3.1
