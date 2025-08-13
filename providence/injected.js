@@ -546,7 +546,29 @@ $(function() {
       }, 2000);
 
       if (localStorage.getItem('IsSiteForward') == "true") {
-         $(".changes-header .btn-group").append('<a href="#" class="btn pill btn--action-approve" onclick="approveAll()">Approve All</a><a href="#" class="btn pill btn--action-review" onclick="addNoteToAll()">Add Note to All</a>');
+         $(".changes-header .btn-group").append('<a href="#" class="btn pill btn--action-approve" onclick="approveAll()">Approve All</a><a href="#" class="btn pill btn--action-review add-note-to-all">Add Note to All</a>');
+         
+         document.querySelector(".add-note-to-all").addEventListener("click", ()=>{
+            var note = prompt("Add your note")
+            if(note != null){
+               let revision_ids = [...document.querySelectorAll(".revision-note")].map(rev => rev.getAttribute("data-id"))
+               let promises = []
+               revision_ids.forEach(id =>{
+                  promises.push(new Promise((resolve,reject)=>{
+                     $.ajax({
+                        method: 'PUT',
+                        dataType: 'json',
+                        cache: false,
+                        data: {"internal_notes": note},
+                        url: "https://app.twentyoverten.com/api/revisions/"+id,
+                        success: function(){resolve(id)},
+                        error: function(){reject(id)}
+                     })
+                  }))
+               })
+               Promise.all(promises).then(()=>window.location.reload())
+            }
+         })
       }
 
       if($(".changes-list")[0]?.children.length == 0){
@@ -1794,46 +1816,6 @@ function manageChatRejections(advisorId) {
 
 function approveAll() {
    $(".approve-item").click();
-}
-
-function addNoteToAll() {
-   var notes = $(".revision-note");
-   noteIndex = -1;
-   var note = prompt("Add your note",);
-   if (note != null)
-      addNote(function () {
-         location.reload();
-      });
-
-   function addNote(cb) {
-      noteIndex++;
-      var note = notes[noteIndex];
-      if (note)
-         addNoteIn(notes[noteIndex], () => addNote(cb));
-      else
-         cb();
-   }
-
-   function addNoteIn(e, cb) {
-      e.click();
-
-      var overlay = $("#revision-note-overlay");
-      waitForStyle(true, overlay, "display", "block", function () {
-         waitForClass(false, overlay, "velocity-animating", function () {
-            setTimeout(function () {
-               overlay.find(".fr-element.fr-view").html(note);
-               overlay.find(".save").click();
-               waitForClass(true, overlay, "velocity-animating", function () {
-                  waitForClass(false, overlay, "velocity-animating", function () {
-                     waitForStyle(true, overlay, "display", "none", function () {
-                        cb();
-                     });
-                  });
-               });
-            }, 1000);
-         });
-      });
-   }
 }
 
 function matchesDate(date, key, advisor) {
