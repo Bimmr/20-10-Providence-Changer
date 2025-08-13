@@ -546,8 +546,10 @@ $(function() {
       }, 2000);
 
       if (localStorage.getItem('IsSiteForward') == "true") {
-         $(".changes-header .btn-group").append('<a href="#" class="btn pill btn--action-approve" onclick="approveAll()">Approve All</a><a href="#" class="btn pill btn--action-review add-note-to-all">Add Note to All</a>');
-         
+         $(".changes-header .btn-group").append('<a href="#" class="btn pill btn--action-approve approve-all">Approve All</a><a href="#" class="btn pill btn--action-review add-note-to-all">Add Note to All</a>');
+         document.querySelector(".approve-all").addEventListener("click", ()=>{
+            document.querySelectorAll(".approve-item").forEach(elm => elm.click())
+         })
          document.querySelector(".add-note-to-all").addEventListener("click", ()=>{
             var note = prompt("Add your note")
             if(note != null){
@@ -1812,10 +1814,6 @@ function manageChatRejections(advisorId) {
       console.log("Error getting "+id)
       console.log(err);
    });
-}
-
-function approveAll() {
-   $(".approve-item").click();
 }
 
 function matchesDate(date, key, advisor) {
