@@ -14,5 +14,6 @@ function injectModule(file, node) {
 }
 injectScript( chrome.runtime.getURL('/js/aws-sdk-2.892.0.min.js'), 'body');
 injectScript( chrome.runtime.getURL('/js/utils.js'), 'body');
+injectScript( chrome.runtime.getURL('/js/keys.js'), 'body');
 injectScript( chrome.runtime.getURL('/js/db.js'), 'body');
 injectScript( chrome.runtime.getURL('/providence/injected.js'), 'body');
