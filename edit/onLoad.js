@@ -5,6 +5,17 @@ function injectScript(file, node) {
   s.setAttribute('src', file);
   th.appendChild(s);
 }
+
+function injectStylesheet(file, node) {
+  var th = document.getElementsByTagName(node)[0];
+  var s = document.createElement('link');
+  s.setAttribute('rel', 'stylesheet');
+  s.setAttribute('type', 'text/css');
+  s.setAttribute('href', file);
+  th.appendChild(s);
+}
+
+injectStylesheet(chrome.runtime.getURL('/edit/styles.css'), 'head');
 injectScript( chrome.runtime.getURL('/js/aws-sdk-2.892.0.min.js'), 'body');
 injectScript( chrome.runtime.getURL('/js/utils.js'), 'body');
 injectScript( chrome.runtime.getURL('/js/keys.js'), 'body');

@@ -1,6 +1,6 @@
 {
   "name": "Providence Changer",
-  "version": "1.8.5",
+  "version": "1.8.6",
   "short_name": "Providence Changer",
   "description": "TwentyOverTen Providence Changes",
   "manifest_version": 3,
@@ -10,12 +10,7 @@
   "content_scripts": [
     {
       "matches": [
-        "https://app.twentyoverten.com/manage",
-        "https://app.twentyoverten.com/manage#",
-        "https://app.twentyoverten.com/manage/advisor*",
-        "https://app.twentyoverten.com/manage/revisions*",
-        "https://app.twentyoverten.com/manage/review*",
-        "https://app.twentyoverten.com/manage/content*"
+        "https://app.twentyoverten.com/manage*"
       ],
       "all_frames": false,
       "js": [
@@ -24,6 +19,9 @@
         "/js/keys.js",
         "/js/db.js",
         "/providence/onLoad.js"
+      ],
+      "css": [
+        "/providence/styles.css"
       ]
     },
     {
@@ -37,6 +35,9 @@
         "/js/keys.js",
         "/js/db.js",
         "/edit/onLoad.js"
+      ],
+      "css": [
+        "/edit/styles.css"
       ]
     }
   ],
@@ -44,10 +45,12 @@
     {
       "resources": [
         "/providence/injected.js",
+        "/providence/styles.css",
+        "/edit/injected.js",
+        "/edit/styles.css",
         "/js/utils.js",
         "/js/keys.js",
         "/js/db.js",
-        "/edit/injected.js",
         "/js/aws-sdk-2.892.0.min.js"
       ],
       "matches": [
