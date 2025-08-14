@@ -117,3 +117,100 @@ function delay(callback, ms) {
     }, ms || 0);
   };
 }
+
+// =============================================================================
+// Utility Functions
+// =============================================================================
+/**
+ * Create a new HTML element.
+ * @param {*} tag - The tag name of the element to create.
+ * @param {*} options - The options to apply to the element.
+ * @returns {HTMLElement} - The created element.
+ */
+function createElement(tag, options = {}) {
+    const element = document.createElement(tag)
+    Object.entries(options).forEach(([key, value]) => {
+        if (key === "class") element.className = value
+        else if (key === "html") element.innerHTML = value
+        else if (key === "style" && typeof value === "object") Object.assign(element.style, value)
+        else if (key.startsWith("on") && typeof value === "function") element.addEventListener(key.slice(2), value)
+        else if (key === "checked") element.checked = value == true ? true : null
+        else element.setAttribute(key, value)
+    })
+    return element
+}
+
+/**
+ * Wait for a specific condition to be met.
+ * @param {*} conditionFn - The condition function to evaluate.
+ * @param {*} timeout - The maximum time to wait (in milliseconds).
+ * @param {*} interval - The interval between checks (in milliseconds).
+ * @returns {Promise} - A promise that resolves when the condition is met.
+ */
+function waitForCondition(conditionFn, timeout = 2000, interval = 50) {
+    return new Promise((resolve, reject) => {
+        const start = Date.now()
+        function check() {
+            if (conditionFn()) {
+                resolve()
+            } else if (Date.now() - start >= timeout) {
+                reject(new Error("Condition timeout"))
+            } else {
+                setTimeout(check, interval)
+            }
+        }
+        check()
+    })
+}
+
+/**
+ * Wait for a specific style change on an element.
+ * @param {*} shouldBe - The expected state (true/false) of the style.
+ * @param {*} element - The target element to observe.
+ * @param {*} property - The CSS property to check.
+ * @param {*} value - The expected value of the CSS property.
+ * @returns {Promise} - A promise that resolves when the style change is detected.
+ */
+function waitForStyleAsync(shouldBe, element, property, value) {
+    return new Promise((resolve) => {
+        const check = () => {
+            const style = window.getComputedStyle(element)
+            if ((style[property] === value) === shouldBe) {
+                resolve()
+            } else {
+                requestAnimationFrame(check)
+            }
+        }
+        check()
+    })
+}
+
+/**
+ * Wait for a specific class change on an element.
+ * @param {*} shouldHave - The expected state (true/false) of the class.
+ * @param {*} element - The target element to observe.
+ * @param {*} className - The class name to check.
+ * @returns {Promise} - A promise that resolves when the class change is detected.
+ */
+function waitForClassAsync(shouldHave, element, className) {
+    return new Promise((resolve) => {
+        const check = () => {
+            if (element.classList.contains(className) === shouldHave) {
+                resolve()
+            } else {
+                requestAnimationFrame(check)
+            }
+        }
+        check()
+    })
+}
+
+/**
+ * Get an item by its ID.
+ * @param {*} c - The class name to search within.
+ * @param {*} id - The ID of the item to retrieve.
+ * @returns {HTMLElement|null} - The found element or null if not found.
+ */
+function getItemById(c, id) {
+    return document.querySelector(`.${c}[data-id="${id}"]`)
+}
