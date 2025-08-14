@@ -14,14 +14,7 @@
       ],
       "all_frames": false,
       "js": [
-        "/js/utils.js",
-        "/js/aws-sdk-2.892.0.min.js",
-        "/js/keys.js",
-        "/js/db.js",
         "/providence/onLoad.js"
-      ],
-      "css": [
-        "/providence/styles.css"
       ]
     },
     {
@@ -30,14 +23,7 @@
         "https://app.twentyoverten.com/publish"
       ],
       "js": [
-        "/js/utils.js",
-        "/js/aws-sdk-2.892.0.min.js",
-        "/js/keys.js",
-        "/js/db.js",
         "/edit/onLoad.js"
-      ],
-      "css": [
-        "/edit/styles.css"
       ]
     }
   ],
