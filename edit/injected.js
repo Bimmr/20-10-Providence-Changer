@@ -119,8 +119,7 @@ const Editor = {
     setupEditorStop() {
         ;["keypress", "mousedown"].forEach((event) => {
             document.addEventListener(event, () => {
-                if (this.isEditing)
-                    this.isEditing = false
+                if (this.isEditing) this.isEditing = false
             })
         })
     },
