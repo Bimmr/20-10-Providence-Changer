@@ -105,7 +105,7 @@ let waitForStyle = function(b, e, s, v, callback) {
   }, 100);
 }
 
-//delay and wait when typing
+//delay and wait
 function delay(callback, ms) {
   var timer = 0;
   return function () {

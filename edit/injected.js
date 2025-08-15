@@ -362,9 +362,9 @@ const Chat = {
     async handleChatOpen() {
         try {
             await this.waitForChatLoad()
-            await this.setupRejectionHandling()
             this.setupSavedMessageHandling()
             this.setupChatEventListeners()
+            await this.setupRejectionHandling()
         } catch (err) {
             console.error("Error initializing chat:", err)
         }
@@ -387,17 +387,19 @@ const Chat = {
         const advisorId = window.loggedInUser
         const rejections = await getRejections(advisorId)
 
-        this.addRejectionCheckboxes(rejections)
-        this.setupRejectionChangeListener(advisorId)
+        this.addRejectionCheckboxes(rejections, advisorId)
+        this.initRejectionChangeListener()
     },
 
     /**
      * Add rejection checkboxes to the rejection notices.
      * @param {Array} rejections - The list of rejections.
+     * @param {string} advisorId - The ID of the advisor.
      */
-    addRejectionCheckboxes(rejections) {
+    addRejectionCheckboxes(rejections, advisorId) {
         document.querySelectorAll(".rejection-notice").forEach((notice) => {
             const rejectionId = notice.dataset.id
+            notice.dataset.advisorId = advisorId
             const rejectionItem = rejections.find((item) => item.rejectionId === rejectionId) || []
 
             notice.querySelectorAll(".rejected-item").forEach((item, i) => {
@@ -413,33 +415,38 @@ const Chat = {
     },
 
     /**
-     * Setup rejection change listener.
-     * @param {string} advisorId - The ID of the advisor.
+     * Initialize rejection change listener.
+     * Sets up a single global event listener for all rejection checkboxes.
      */
-    setupRejectionChangeListener(advisorId) {
-        document.addEventListener(
-            "change",
-            (e) => {
-                if (!e.target.matches(".rejection-completed")) return
-                this.handleRejectionChange(e.target, advisorId)
-            },
-            { capture: true }
-        )
-    },
+    initRejectionChangeListener() {
+        // Only set up the listener once
+        if (!this.rejectionListenerInitialized) {
+            document.addEventListener(
+                "change",
+                (e) => {
+                    if (!e.target.matches(".rejection-completed")) return;
+                    
+                    const checkbox = e.target;
+                    const rejectionWrapper = checkbox.closest(".rejection-notice");
+                    if (!rejectionWrapper) return;
 
-    /**
-     * Handle rejection change events.
-     * @param {HTMLInputElement} checkbox - The checkbox element.
-     * @param {string} advisorId - The ID of the advisor.
-     */
-    handleRejectionChange(checkbox, advisorId) {
-        const rejectionWrapper = checkbox.closest(".rejection-notice")
-        const rejectionId = rejectionWrapper.dataset.id
-        const rejectionArray = Array.from(rejectionWrapper.querySelectorAll(".rejected-item")).map(
-            (item) => item.querySelector(".rejection-completed").checked
-        )
+                    const rejectionId = rejectionWrapper.dataset.id;
+                    const advisorId = rejectionWrapper.dataset.advisorId;
+                    
+                    if (!rejectionId || !advisorId) {
+                        console.warn("Missing rejection or advisor ID for rejection change");
+                        return;
+                    }
 
-        updateRejection(advisorId, rejectionId, rejectionArray)
+                    const rejectionArray = Array.from(rejectionWrapper.querySelectorAll(".rejected-item"))
+                        .map(item => item.querySelector(".rejection-completed").checked);
+
+                    updateRejection(advisorId, rejectionId, rejectionArray);
+                },
+                { capture: true }
+            );
+            this.rejectionListenerInitialized = true;
+        }
     },
 
     /**
