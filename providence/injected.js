@@ -1,5 +1,5 @@
-let baseUrl = "https://app.twentyoverten.com/"
-//"https://staging-app.twentyoverten.com/"
+let baseUrl = "https://app.twentyoverten.com"
+//"https://staging-app.twentyoverten.com"
 
 // Global Info
 let advisorInfo = []
@@ -69,6 +69,27 @@ async function getSiteInfo(site_id) {
     return response.json()
 }
 
+/**
+ * Get the advisor info from the cached DataTable
+ * @param {*} id
+ * @returns
+ */
+function getAdvisorInfoFromTable(id) {
+    return advisorInfo.find(function (e) {
+        return id === e._id
+    })
+}
+
+/**
+ * Get advisor info by display name from the cached DataTable
+ * @param {string} displayName - The advisor's display name
+ * @returns {Object|null} - Advisor info object or null if not found
+ */
+function getAdvisorInfoByNameFromTable(displayName) {
+    if (!displayName || !advisorInfo) return null
+    return advisorInfo.find((advisor) => advisor.display_name === displayName) || null
+}
+
 // =============================================================================
 // Night Mode Module
 // =============================================================================
@@ -102,8 +123,6 @@ const NightMode = {
 // =============================================================================
 // Chat Module
 // =============================================================================
-//TODO: Re-add profile search
-//TODO: Re-add profile icon and link
 const Chat = {
     /**
      * Initialize the chat module.
@@ -116,31 +135,171 @@ const Chat = {
      * Setup chat open listeners.
      */
     setupChatOpenListeners() {
+        // Chat open listener
         document.querySelectorAll(".open-chat, #open-chat").forEach((el) => {
             el.addEventListener("click", () => this.handleChatOpen())
         })
-        document.querySelectorAll(".recent-chats .user").forEach((el) => {
-            el.addEventListener("click", () => this.handleChatOpen())
+
+        // Chat user selection listener
+        document.addEventListener("click", (e) => {
+            if (e.target.matches(".chat-users-list-wrapper ul .user")) {
+                let advisor_id = e.target.querySelector(".chat-user").getAttribute("data-advisor_id")
+                document.querySelector("#live-chat").setAttribute("data-advisor_id", advisor_id)
+                this.handleChatOpen()
+            } else if (e.target.matches(".chat-users-list-wrapper ul .user img")) {
+                let advisor_id = e.target.parentNode.parentNode.getAttribute("data-advisor_id")
+                document.querySelector("#live-chat").setAttribute("data-advisor_id", advisor_id)
+                this.handleChatOpen()
+            }
         })
+
+        // Rejection change listener
+        document.addEventListener(
+            "change",
+            (e) => {
+                if (!e.target.matches(".rejection-completed")) return
+
+                const checkbox = e.target
+                const rejectionWrapper = checkbox.closest(".rejection-notice")
+                if (!rejectionWrapper) return
+
+                const rejectionId = rejectionWrapper.dataset.id
+                const advisorId = rejectionWrapper.dataset.advisorId
+
+                if (!rejectionId || !advisorId) {
+                    console.warn("Missing rejection or advisor ID for rejection change")
+                    return
+                }
+
+                const rejectionArray = Array.from(rejectionWrapper.querySelectorAll(".rejected-item")).map(
+                    (item) => item.querySelector(".rejection-completed").checked
+                )
+
+                updateRejection(advisorId, rejectionId, rejectionArray)
+            },
+            { capture: true }
+        )
+    },
+    setupChatWindow(advisor_id) {
+        if (!document.querySelector(".chat-wrapper .view-profile-chat")) {
+            const chatWrapper = document.querySelector(".chat-wrapper")
+            if (chatWrapper) {
+                const profileLink = createElement("a", {
+                    target: "_blank",
+                    href: `/manage/advisor/${advisor_id}`,
+                    class: "tot_tip bottom view-profile-chat",
+                    "data-content": "View Profile",
+                    style: "position: absolute;top: 0;right: 60px;height: 20px;width: 20px;margin: 25px 20px;z-index: 1;color: #909090;font-size: 1.1em;",
+                    html: '<i class="fas fa-user"></i>',
+                })
+
+                chatWrapper.append(profileLink)
+            }
+        } else document.querySelector(".chat-wrapper .view-profile-chat").href = `/manage/advisor/${advisor_id}`
     },
 
     /**
      * Handle chat open interactions.
      */
     async handleChatOpen() {
-        const open_chat_id = document.querySelector("#open-chat").getAttribute("data-advisor_id")
-        if (open_chat_id != null) {
-            await this.waitForChatLoad()
-            document.querySelector('.chat-users-list-wrapper ul [data-advisor_id="' + open_chat_id + '"]').click()
-        }
+        await this.waitForChatLoad()
+        const opened_chat_id = document.querySelector(".recent-chats li.active a")?.getAttribute("data-advisor_id")
+        let target_chat_id = document.querySelector("#live-chat").getAttribute("data-advisor_id")
+
+        if (opened_chat_id != target_chat_id && target_chat_id != null) {
+            document.querySelector('.chat-users-list-wrapper ul [data-advisor_id="' + target_chat_id + '"]').click()
+        } else target_chat_id = opened_chat_id
+
+        this.setupChatWindow(target_chat_id)
+
         try {
             await this.waitForChatLoad()
             this.setupSavedMessageHandling()
             this.setupChatEventListeners()
-            await this.setupRejectionHandling()
-            
+            this.setupChatSearch()
+            await this.setupRejectionHandling(target_chat_id)
         } catch (err) {
             console.error("Error initializing chat:", err)
+        }
+    },
+
+    /**
+     * Setup chat search functionality
+     */
+    setupChatSearch() {
+        // Only add search if it doesn't already exist
+        if (document.querySelector(".chat-search")) return
+
+        // Add search icon and input
+        document.querySelector(".chat-users-list-wrapper").insertAdjacentHTML(
+            "beforeend",
+            `
+            <a href="#" class="chat-search">
+                <i class="fas fa-search chat-search-icon"></i>
+                <div class="chat-search-input-wrapper">
+                    <input type="text" placeholder="Search Name">
+                    <div class="chat-search-input-search">
+                        <i class="fas fa-search"></i>
+                        <div class="chat-search-results"></div>
+                    </div>
+                </div>
+            </a>
+        `
+        )
+
+        // Setup search input listener with debouncing
+        const searchInput = document.querySelector(".chat-search-input-wrapper input")
+        const searchButton = document.querySelector(".chat-search-input-search i")
+        const searchResults = document.querySelector(".chat-search-results")
+
+        searchInput.addEventListener(
+            "keyup",
+            delay((e) => {
+                const searchName = searchInput.value
+                if (searchName.length >= 3) {
+                    this.performChatSearch()
+                } else {
+                    searchResults.innerHTML = ""
+                }
+            }, 500)
+        )
+
+        // Setup search button listener
+        searchButton.addEventListener("click", () => this.performChatSearch())
+    },
+
+    /**
+     * Perform chat user search
+     */
+    performChatSearch() {
+        const searchInput = document.querySelector(".chat-search-input-wrapper input")
+        const searchResults = document.querySelector(".chat-search-results")
+        const searchName = searchInput.value.toLowerCase()
+
+        if (!searchName) {
+            searchResults.innerHTML = ""
+            return
+        }
+
+        // Find matching users
+        const users = document.querySelectorAll(".chat-users-list-wrapper .user")
+        const results = Array.from(users).filter((user) => {
+            const content = user.getAttribute("data-content")
+            return content && content.toLowerCase().includes(searchName)
+        })
+
+        // If exactly one result, click it automatically
+        if (results.length === 1) {
+            const link = results[0].querySelector("a")
+            if (link) link.click()
+        }
+
+        // Show result count
+        searchResults.innerHTML = results.length
+
+        // Clear results if search is empty or only one result was found
+        if (searchName.length === 0 || results.length === 1) {
+            searchResults.innerHTML = ""
         }
     },
 
@@ -150,31 +309,39 @@ const Chat = {
     async waitForChatLoad() {
         await waitForCondition(() => {
             const chatWrapper = document.querySelector(".chat-wrapper")
-            return chatWrapper && !chatWrapper.classList.contains("loading")
+            return (
+                chatWrapper &&
+                !chatWrapper.classList.contains("loading") &&
+                document.querySelector("body").classList.contains("chat-open")
+            )
         })
     },
 
     /**
      * Setup rejection handling.
+     * Waits 500ms total before adding the checkboxes (including time taken by getRejections)
      */
-    async setupRejectionHandling() {
-        const advisorId = document.querySelector("#open-chat").getAttribute("data-advisor_id")
-        const rejections = await getRejections(advisorId)
-        console.log(rejections)
+    async setupRejectionHandling(advisor_id) {
+        const startTime = performance.now()
+        const rejections = await getRejections(advisor_id)
+        const elapsedTime = performance.now() - startTime
 
-        this.addRejectionCheckboxes(rejections, advisorId)
-        this.initRejectionChangeListener()
+        // Calculate remaining wait time to reach 500ms total
+        const WAIT_TIME = 500
+        const remainingWaitTime = Math.max(0, WAIT_TIME - elapsedTime)
+
+        setTimeout(() => {
+            this.addRejectionCheckboxes(rejections, advisor_id)
+        }, remainingWaitTime)
     },
 
     /**
      * Add rejection checkboxes to the rejection notices.
      * @param {Array} rejections - The list of rejections.
-     * @param {string} advisorId - The ID of the advisor.
      */
-    addRejectionCheckboxes(rejections, advisorId) {
+    addRejectionCheckboxes(rejections) {
         document.querySelectorAll(".rejection-notice").forEach((notice) => {
             const rejectionId = notice.dataset.id
-            notice.dataset.advisorId = advisorId
             const rejectionItem = rejections.find((item) => item.rejectionId === rejectionId) || []
 
             notice.querySelectorAll(".rejected-item").forEach((item, i) => {
@@ -187,41 +354,6 @@ const Chat = {
                 item.insertBefore(checkbox, item.firstChild)
             })
         })
-    },
-
-    /**
-     * Initialize rejection change listener.
-     * Sets up a single global event listener for all rejection checkboxes.
-     */
-    initRejectionChangeListener() {
-        // Only set up the listener once
-        if (!this.rejectionListenerInitialized) {
-            document.addEventListener(
-                "change",
-                (e) => {
-                    if (!e.target.matches(".rejection-completed")) return;
-                    
-                    const checkbox = e.target;
-                    const rejectionWrapper = checkbox.closest(".rejection-notice");
-                    if (!rejectionWrapper) return;
-
-                    const rejectionId = rejectionWrapper.dataset.id;
-                    const advisorId = rejectionWrapper.dataset.advisorId;
-                    
-                    if (!rejectionId || !advisorId) {
-                        console.warn("Missing rejection or advisor ID for rejection change");
-                        return;
-                    }
-
-                    const rejectionArray = Array.from(rejectionWrapper.querySelectorAll(".rejected-item"))
-                        .map(item => item.querySelector(".rejection-completed").checked);
-
-                    updateRejection(advisorId, rejectionId, rejectionArray);
-                },
-                { capture: true }
-            );
-            this.rejectionListenerInitialized = true;
-        }
     },
 
     /**
@@ -245,6 +377,7 @@ const Chat = {
 
         document.querySelector(".close-chat").addEventListener("click", () => {
             localStorage.setItem("savedChatMsg", chatMessage.querySelector(".fr-element").innerHTML)
+            document.querySelector("#live-chat").setAttribute("data-advisor_id", null)
         })
 
         document.querySelector(".chat-tools .send-message").addEventListener("click", () => {
@@ -268,6 +401,7 @@ const Manage = {
         this.checkFilterWarning()
         this.SearchBar.init()
         this.AdvisorList.init()
+        this.ReviewList.init()
     },
 
     /**
@@ -306,12 +440,11 @@ const Manage = {
         }, 500)
 
         // Custom chat opening buttons
-        document.addEventListener('click', e => {
-            if (e.target.matches('.open-chat-extension')) {
-                const advisorId = e.target.getAttribute("data-advisor_id");
-                let open_chat = document.querySelector("#open-chat");
-                open_chat.setAttribute("data-advisor_id", advisorId);
-                open_chat.click();
+        document.addEventListener("click", (e) => {
+            if (e.target.matches(".open-chat-extension")) {
+                const advisorId = e.target.getAttribute("data-advisor_id")
+                document.querySelector("#live-chat").setAttribute("data-advisor_id", advisorId)
+                document.querySelector("#open-chat").click()
             }
         })
     },
@@ -328,7 +461,7 @@ const Manage = {
                 }
                 clearInterval(waitForShowAllBtn)
             }
-        }, 100)
+        }, 200)
     },
 
     /**
@@ -386,10 +519,13 @@ const Manage = {
          * Setup event listeners for the SearchBar module.
          */
         setupEventListeners() {
-            document.querySelector("#search-advisor").addEventListener("keyup", delay(() => {
-                document.querySelector("#search-advisor-btn").click()
-            }, 400))
-            
+            document.querySelector("#search-advisor").addEventListener(
+                "keyup",
+                delay(() => {
+                    document.querySelector("#search-advisor-btn").click()
+                }, 400)
+            )
+
             document.querySelector("#search-advisor-btn").addEventListener("click", () => this.handleSearch())
             document
                 .querySelectorAll(".providence-overview--nav a")
@@ -523,7 +659,6 @@ const Manage = {
                 // Check date pattern
                 const dateMatch = search.match(searchPatterns.datePattern)
                 if (dateMatch) {
-                    console.log(dateMatch)
                     const [_, type, year, month, day] = dateMatch
                     return matchesDateCriteria(data, type + "_at", year, month, day)
                 }
@@ -581,42 +716,55 @@ const Manage = {
     AdvisorList: {
         init() {
             this.setupEventListeners()
-
-            // The draw.dt event doesn't seem to fire on the initial draw, so lets wait 2 seconds then update the dropdowns
-            setTimeout(() => {
-                this.updateDropdowns()
-            }, 2000)
         },
 
         setupEventListeners() {
-
             // When Table is redrawn and if the "Show All Advisors" button is active then update the advisor list in local storage
             // Update dropdowns when the table is redrawn
-            document.getElementById("advisorsList").addEventListener("draw.dt", delay(() => {
-                if (document.getElementById("showAllAdvisors").classList.contains("active")) {
-                    document.querySelector(".providence-overview--list")?.classList.add("loadedAll");
-                    this.updateAdvisorInfo();
-                }
-                this.updateDropdowns();
-            }, 500));
+            $("#advisorsList").on(
+                "draw.dt",
+                delay(() => {
+                    if (document.getElementById("showAllAdvisors").classList.contains("active")) {
+                        document.querySelector(".providence-overview--list")?.classList.add("loadedAll")
+                        this.updateAdvisorInfo()
+                    }
 
-            // When search bar's button is clicked, update the dropdowns
-            document.querySelector("#search-advisor-btn").addEventListener("click", () => {
-                setTimeout(() => {
-                    console.log("Search button clicked, updating advisor dropdowns")
                     this.updateDropdowns()
-                }, 1)
+                    this.updateOfficerList()
+                    this.checkForUnPublished()
+                }, 500)
+            )
+        },
+
+        /**
+         * Check for unpublished advisors, if any are found add a note under their state
+         */
+        checkForUnPublished() {
+            let rows = document.querySelectorAll("#advisorsList tbody tr")
+            rows.forEach((row) => {
+                const advisor = getAdvisorInfoFromTable(row._id)
+                let isUnPublished = false
+                if (hasStatus("approved", advisor)) {
+                    let dateA = Date.parse(advisor.site.published_at),
+                        dateB = Date.parse(advisor.site.submitted_at)
+                    isUnPublished = dateA < dateB
+                }
+                if (isUnPublished) {
+                    let state = row.querySelector(".has-state")
+                    state.append(
+                        "<p style=\"font-size: .75em;color: #1fe9ae;text-align: center;margin: 5px 0 0 0; font-family: 'Anonymous Pro', Courier, monospace;\">Not Published</p>"
+                    )
+                }
             })
         },
+
         /**
          * Update the dropdowns for each row in the advisor list table
          */
         updateDropdowns() {
-            console.log("Updating advisor dropdowns")
-
             // Check if we're updating the dropdowns for the regular list or the searchbar list
             let rows = document.querySelectorAll("#advisorsList tbody tr")
-            if (document.querySelector(".search-bar tbody")) rows = document.querySelectorAll(".search-bar tbody tr")
+            // if (document.querySelector(".search-bar tbody")) rows = document.querySelectorAll(".search-bar tbody tr")
 
             if (rows.length < 2) return // Not enough rows to actually be showing data
 
@@ -629,7 +777,8 @@ const Manage = {
                 if (dropdown.childElementCount > 3) continue // Skip if dropdown already has items
 
                 // Get advisor info from DataTable
-                let advisor_info = this.getAdvisorInfoFromTable(advisor_id)
+                let advisor_info = getAdvisorInfoFromTable(advisor_id)
+                if (!advisor_info) continue
 
                 // Add Open Chat
                 const open_chat = createElement("li", {
@@ -665,17 +814,10 @@ const Manage = {
                 }
             }
         },
-        getAdvisorInfoFromTable(id) {
-            return advisorInfo.find(function (e) {
-                return id === e._id
-            })
-        },
-
         /**
          * Update list of advisor info, allows being able to see full list when not showing in table
          */
         updateAdvisorInfo() {
-            console.log("Updating advisor info from table")
             advisorInfo = []
             $("#advisorsList")
                 .DataTable()
@@ -685,129 +827,416 @@ const Manage = {
                     advisorInfo.push(e)
                 })
             localStorage.setItem("advisorList", JSON.stringify(advisorInfo))
+            // Notify other scripts that the advisor list was updated
+            try {
+                const evt = new CustomEvent("advisorListUpdated", { detail: advisorInfo })
+                document.dispatchEvent(evt)
+                console.log("advisorListUpdated dispatched", advisorInfo)
+            } catch (err) {
+                console.warn("advisorListUpdated dispatch failed", err)
+            }
+        },
+
+        /**
+         * Update officer dropdowns with organized optgroups
+         */
+        updateOfficerList() {
+            document.querySelectorAll(".form-item--control.assigned_officer").forEach((selectElement) => {
+                if (selectElement.classList.contains("optGroupsAdded")) return
+
+                const officers = {
+                    Teams: [],
+                    SiteForward: [],
+                    "MLS Sales Communication": [],
+                    "Insurance Compliance": [],
+                    Miscellaneous: [],
+                    Other: [],
+                }
+
+                // Organize options into groups
+                selectElement.querySelectorAll("option").forEach((option) => {
+                    const id = option.value.substring(option.value.indexOf("|") + 1)
+                    option.setAttribute("data-id", id)
+
+                    if (isTeam(id)) officers.Teams.push(option)
+                    else if (isSiteForward(id)) officers.SiteForward.push(option)
+                    else if (isMLSSalesCompliance(id)) officers["MLS Sales Communication"].push(option)
+                    else if (isMSICompliance(id)) officers["Insurance Compliance"].push(option)
+                    else if (isMiscellaneous(id)) officers.Miscellaneous.push(option)
+                    else if (!isNotAssignable(id)) officers.Other.push(option)
+                })
+
+                // Create optgroups
+                Object.entries(officers).forEach(([groupName, optionList]) => {
+                    if (groupName === "Other" && optionList.length === 0) return
+
+                    const optgroup = createElement("optgroup", {
+                        label: groupName,
+                        style: "padding-top: 4px;",
+                    })
+
+                    // Sort options based on account list index
+                    optionList
+                        .sort((a, b) => {
+                            const indexA = allAccountList().indexOf(a.getAttribute("data-id"))
+                            const indexB = allAccountList().indexOf(b.getAttribute("data-id"))
+                            return indexA - indexB
+                        })
+                        .forEach((option) => {
+                            const id = option.getAttribute("data-id")
+                            if (!isNotActive(id)) {
+                                optgroup.appendChild(option.cloneNode(true))
+                            }
+                            option.remove()
+                        })
+
+                    if (optgroup.children.length > 0) {
+                        selectElement.appendChild(optgroup)
+                    }
+                })
+
+                // Clean up any remaining ungrouped options
+                selectElement.querySelectorAll(":scope > option").forEach((option) => option.remove())
+
+                // Remove empty optgroups
+                selectElement.querySelectorAll("optgroup").forEach((optgroup) => {
+                    if (optgroup.children.length === 0) optgroup.remove()
+                })
+
+                // Set default selection if none exists
+                if (!selectElement.querySelector("option[selected]")) {
+                    const allOption = selectElement.querySelector("option[value*='all']")
+                    if (allOption) selectElement.value = allOption.value
+                }
+
+                selectElement.classList.add("optGroupsAdded")
+
+                // Hide assignees based on advisor tags
+                const tagsElement = selectElement.closest("tr")?.querySelector(".advisor-tags")
+                if (tagsElement) {
+                    const tags = tagsElement.textContent
+                    const optgroups = selectElement.querySelectorAll("optgroup")
+
+                    // Hide MLS options if no dealer tags
+                    if (!tags.includes("IIROC") && !tags.includes("MFDA")) {
+                        // Hide MLS option in Teams group
+                        const teamsGroup = optgroups[0]
+                        if (teamsGroup?.querySelectorAll("option")[1]) {
+                            teamsGroup.querySelectorAll("option")[1].style.display = "none"
+                        }
+                        // Hide MLS Sales Communication group
+                        if (optgroups[2]) {
+                            optgroups[2].style.display = "none"
+                        }
+                    }
+
+                    // Hide MSI options if no insurance
+                    if (tags.includes("Insurance: None")) {
+                        // Hide MSI option in Teams group
+                        const teamsGroup = optgroups[0]
+                        if (teamsGroup?.querySelectorAll("option")[2]) {
+                            teamsGroup.querySelectorAll("option")[2].style.display = "none"
+                        }
+                        // Hide Insurance Compliance group
+                        if (optgroups[3]) {
+                            optgroups[3].style.display = "none"
+                        }
+                    }
+                }
+            })
+        },
+    },
+    // ======================= Review List =======================
+    // TODO: Add review overview
+    ReviewList: {
+        init() {
+            this.setupEventListeners()
+        },
+
+        setupEventListeners() {
+            document.addEventListener("advisorListUpdated", (event) => {
+                if (event.detail.length > 0) {
+                    this.sortReviewCards()
+                    this.addDetailsToCards()
+                    this.setupRevisionCount()
+                }
+            })
+        },
+
+        /**
+         * Sort advisor review cards by priority and time
+         */
+        sortReviewCards() {
+            const advisorCards = document.querySelectorAll(".advisor-card")
+            if (advisorCards.length === 0) return
+
+            // Convert to array and sort
+            const sortedCards = Array.from(advisorCards).sort((a, b) => {
+                // Get advisor names from cards
+                const nameA = a.dataset.name
+                const nameB = b.dataset.name
+
+                // Load advisor info from DataTable
+                const infoA = getAdvisorInfoByNameFromTable(nameA)
+                const infoB = getAdvisorInfoByNameFromTable(nameB)
+
+                // Get current times for both cards in minutes
+                const timeA = this.parseTimeToMinutes(a.querySelector(".submitted")?.textContent || "")
+                const timeB = this.parseTimeToMinutes(b.querySelector(".submitted")?.textContent || "")
+
+                // Check if either card is a construction page
+                const isConstructionA = hasTag("Construction", infoA)
+                const isConstructionB = hasTag("Construction", infoB)
+
+                // Construction Pages come first
+                if (isConstructionA && !isConstructionB) return -1
+                if (isConstructionB && !isConstructionA) return 1
+
+                // Compare time (newer submissions first)
+                return timeA < timeB ? 1 : timeA > timeB ? -1 : 0
+            })
+
+            // Re-append sorted cards to the container
+            const container = document.querySelector(".providence-pending--list")
+            if (container) {
+                sortedCards.forEach((card) => container.appendChild(card))
+            }
+        },
+
+        /**
+         * Parse time string to minutes for comparison
+         * @param {string} timeString - Time string like "2 months ago", "3 days ago", etc.
+         * @returns {number} - Time in minutes
+         */
+        parseTimeToMinutes(timeString) {
+            if (!timeString) return 0
+
+            const time = timeString.toLowerCase()
+            let value = 1
+            let unit = ""
+
+            // Extract number and unit
+            const parts = time.split(" ")
+            if (parts[0] && parts[0] !== "a" && parts[0] !== "an") {
+                value = parseInt(parts[0]) || 1
+            }
+
+            // Determine unit
+            if (time.includes("month")) {
+                unit = "months"
+            } else if (time.includes("day")) {
+                unit = "days"
+            } else if (time.includes("hour")) {
+                unit = "hours"
+            } else {
+                unit = "minutes"
+            }
+
+            // Convert to minutes
+            switch (unit) {
+                case "months":
+                    return value * 60 * 24 * 30
+                case "days":
+                    return value * 60 * 24
+                case "hours":
+                    return value * 60
+                default:
+                    return value
+            }
+        },
+        setupRevisionCount() {
+            const advisor_cards = document.querySelectorAll(".advisor-card")
+            advisor_cards.forEach(async (card) => {
+                const revisions = await this.getRevisions(card.getAttribute("advisor_id"))
+                card.querySelector(".cardApprovals").textContent = revisions.approved
+                card.querySelector(".cardPending").textContent = revisions.pending
+                card.querySelector(".cardRejections").textContent = revisions.rejected
+
+                //TODO: Add review counts to overview
+            })
+        },
+        /**
+         * Get the revisions for a specific advisor's review
+         * @param {*} advisor_id 
+         * @returns 
+         */
+        async getRevisions(advisor_id) {
+            const data = await fetch(`${baseUrl}/manage/advisor/${advisor_id}`)
+            const response = await data.text()
+            const parser = new DOMParser()
+            const doc = parser.parseFromString(response, "text/html")
+
+            const approved = doc.querySelectorAll(".review-item.approved-status").length
+            const rejected = doc.querySelectorAll(".review-item.rejected-status").length
+            const pending = doc.querySelectorAll(".review-item").length - approved - rejected
+          return { approved, pending, rejected }
+        },
+
+        /**
+         * Add details to each advisor card
+         */
+        addDetailsToCards() {
+            document.querySelectorAll(".advisor-card").forEach((card) => {
+                // Add card status section
+                if (!card.querySelector(".card-status")) {
+                    const cardContent = card.querySelector(".card-content")
+                    const cardStatus = createElement("div", { class: "card-status" })
+                    cardContent?.prepend(cardStatus)
+                    
+                    // Move submitted and changes elements to card status
+                    const submitted = card.querySelector(".submitted")
+                    const changes = card.querySelector(".card-changes")
+                    if (submitted) cardStatus.appendChild(submitted)
+                    if (changes) cardStatus.appendChild(changes)
+                }
+
+                // Add card title section
+                if (!card.querySelector(".card-title")) {
+                    const cardTitle = createElement("div", { class: "card-title" })
+                    card.prepend(cardTitle)
+                    
+                    // Move advisor profile and h4 to card title
+                    const advisorProfile = card.querySelector(".advisor-profile")
+                    const h4 = card.querySelector("h4")
+                    if (advisorProfile) cardTitle.appendChild(advisorProfile)
+                    if (h4) cardTitle.appendChild(h4)
+                }
+
+                const advisor_id = card.querySelector(".btn--action-review")?.href.split("/").pop()
+                const advisor_info = getAdvisorInfoFromTable(advisor_id)
+                card.setAttribute("advisor_id", advisor_id)
+
+                // Add card tags section
+                if (!card.querySelector(".card-tags")) {
+                    const cardContent = card.querySelector(".card-content")
+                    cardContent?.appendChild(createElement("div", { class: "card-tags" }))
+                }
+
+                // Add card tier section
+                if (!card.querySelector(".card-tier")) {
+                    const cardContent = card.querySelector(".card-content")
+                    cardContent?.appendChild(createElement("div", { class: "card-tier" }))
+                }
+
+                // Add card changes section
+                if (!card.querySelector(".card-changes")) {
+                    const submitted = card.querySelector(".submitted")
+                    if (submitted) {
+                        const cardChanges = createElement("div", {
+                            class: "card-changes",
+                            html: '<span><span class="cardApprovals"></span> - <span class="cardPending"></span> - <span class="cardRejections"></span></div>'
+                        })
+                        submitted.insertAdjacentElement("afterend", cardChanges)
+                    }
+                }
+
+                // Add card extras section
+                if (!card.querySelector(".card-extras")) {
+                    const officer_name = getOfficerName(advisor_info.officer_id)
+                    let important_tags = ""
+
+                    // Important Tags List
+                    const importantTagsList = [
+                        "Migrating",
+                        "Brand New",
+                        "Post-Review",
+                        "Redesign",
+                        "Construction",
+                        "Dealer OBA",
+                        "Not On Program",
+                        "Tier"
+                    ]
+                    advisor_info.settings.broker_tags.forEach((tag) => {
+                        if (importantTagsList.some((importantTag) => tag.name.indexOf(importantTag) > -1))
+                            important_tags += `<span class="tag">${tag.name}</span>, `
+                    })
+                    important_tags = important_tags.slice(0, -1) // Remove trailing comma
+
+                    const cardContent = card.querySelector(".card-content")
+                    const cardExtras = createElement("div", {
+                        class: "card-extras",
+                        html: `<p class="cardOfficer" style="margin: 0">${officer_name}</p><p class="cardImportantTags" style="line-height: 1; margin: 0">${important_tags}</p>`
+                    })
+                    cardContent?.appendChild(cardExtras)
+                }
+
+                // Add the Open chat button to the card
+                if (!card.querySelector(".open-chat-extension")) {
+                    const reviewBtn = card.querySelector(".card-action .btn--action-review")
+                    if (reviewBtn) {
+                        reviewBtn.target = "_blank"
+                        
+                        const chatBtn = createElement("a", {
+                            href: "#messages",
+                            style: "margin-left: 5px;flex-grow:1",
+                            class: "btn pill primary btn--action-review open-chat-extension",
+                            "data-advisor_id": advisor_id,
+                            "data-cover": "Open Chat",
+                            html: "Open Chat"
+                        })
+                        
+                        const cardAction = card.querySelector(".card-action")
+                        cardAction?.appendChild(chatBtn)
+                    }
+                }
+            })
         },
     },
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // ==================================================== OLD CODE ============================================================
 
 function oldready() {
-    //Chat changes
-    $(".open-chat").on("click", function () {
-        let gathering_rejections = null
-
-        //Wait for the chat to initialize
-        let attempts = 0,
-            waiting = setInterval(() => {
-                if (attempts++ > 100) clearInterval(waiting)
-
-                if (!document.querySelector("body").classList.contains("chat-open")) return
-
-                // Get what chat to open
-                let openID = document.querySelector("#open-chat").getAttribute("data-advisor_id")
-                if (openID)
-                    document.querySelector('.chat-users-list-wrapper ul [data-advisor_id="' + openID + '"]').click()
-
-                // Get advisor ID by what it says to open, whats currently active, or if in profile page - what the 2nd open chat button says
-                var advisorId =
-                    openID ||
-                    document.querySelector(".recent-chats li.active a")?.getAttribute("data-advisor_id") ||
-                    document.querySelectorAll(".open-chat")[1]?.getAttribute("data-advisor_id")
-
-                //Wait 1 second to gather rejections
-                if (gathering_rejections) clearTimeout(gathering_rejections)
-                gathering_rejections = setTimeout(() => {
-                    manageChatRejections(advisorId)
-                }, 1000)
-
-                //When the chat gets opened, display saved message
-                if (
-                    localStorage.getItem("savedChatMsg") &&
-                    localStorage.getItem("savedChatMsg") != "null" &&
-                    localStorage.getItem("savedChatMsg") != "undefined"
-                ) {
-                    $($("#chatMessage").find(".fr-wrapper")).removeClass("show-placeholder")
-                    $($("#chatMessage").find(".fr-element")).html(localStorage.getItem("savedChatMsg"))
-                }
-
-                //When the chat gets closed, save the message
-                $(".close-chat").on("click", function () {
-                    localStorage.setItem("savedChatMsg", $($("#chatMessage").find(".fr-element")).html())
-                })
-
-                //When message is sent remove from saved message
-                $(".chat-tools")
-                    .find(".send-message")
-                    .on("click", function () {
-                        localStorage.setItem("savedChatMsg", null)
-                        $("#loadLastMessage").hide()
-                    })
-
-                //Get currently opened chat's advisor id, and add the icon
-                $(".chat-wrapper .tot_tip").after(
-                    '<a target="_blank" href="/manage/advisor/' +
-                        advisorId +
-                        '" class="tot_tip bottom view-profile-chat" data-content="View Profile" style="position: absolute;top: 0;right: 60px;height: 20px;width: 20px;margin: 25px 20px;z-index: 1;color: #909090;font-size: 1.1em;"><i class="fas fa-user"></i></a>'
-                )
-
-                // If the chat is changed, grab the new advisor id and update the icon's link
-                $(".recent-chats, .all-chats")
-                    .find("li")
-                    .off()
-                    .on("click", function (e) {
-                        var advisorClickedId = $(this).find("a").first().attr("data-advisor_id")
-                        $(".view-profile-chat")[0].href = "/manage/advisor/" + advisorClickedId
-
-                        //Wait 1 second to gather rejections
-                        if (gathering_rejections) clearTimeout(gathering_rejections)
-                        gathering_rejections = setTimeout(() => {
-                            manageChatRejections(advisorClickedId)
-                        }, 1000)
-                    })
-
-                // Add search icon
-                $(".chat-users-list-wrapper").append(
-                    '<a href="#" class="chat-search" > <i class="fas fa-search chat-search-icon"></i> <div class="chat-search-input-wrapper"> <input type="text" placeholder="Search Name"> <div class="chat-search-input-search"> <i class="fas fa-search"></i><div class="chat-search-results"></div> </div> </div> </a>'
-                )
-                $(".chat-search-input-wrapper input")
-                    .off()
-                    .on(
-                        "keyup",
-                        delay((e) => {
-                            let searchName = $(".chat-search-input-wrapper input").val()
-                            if (searchName.length >= 3) $(".chat-search-input-search i").click()
-                            else $(".chat-search-results").html("")
-                        }, 500)
-                    )
-                $(".chat-search-input-search i")
-                    .off()
-                    .on("click", function () {
-                        let searchName = $(".chat-search-input-wrapper input").val().toLowerCase()
-                        let results = $(".chat-users-list-wrapper .user").filter(
-                            (i, el) => el.getAttribute("data-content").toLowerCase().indexOf(searchName) >= 0
-                        )
-                        if (results.length == 1) {
-                            results.find("a").first().click()
-                        }
-
-                        $(".chat-search-results").html(results.length)
-                        if (searchName.length == 0 || results.length == 1) $(".chat-search-results").html("")
-                    })
-
-                // Clicking Chat list icons sets advisor id attribute
-                document
-                    .querySelectorAll(".chat-users-list-wrapper .user a")
-                    .forEach((e) =>
-                        e.addEventListener("click", () =>
-                            document
-                                .querySelector("#open-chat")
-                                .setAttribute("data-advisor_id", e.getAttribute("data-advisor_id"))
-                        )
-                    )
-                clearInterval(waiting)
-            }, 50)
-    })
-
     //Get the URL Parts
     let urlParts = window.location.href.split("/")
 
@@ -1919,231 +2348,7 @@ function oldready() {
 
     //Home Page
     else {
-        //When DataTable gets drawn
-        $("#advisorsList").on(
-            "draw.dt",
-            delay((e) => {
-                if (
-                    //$(".team-filter.active").text().indexOf("All") >= 0 &&
-                    $("#showAllAdvisors").hasClass("active")
-                ) {
-                    $(".providence-overview--list").addClass("loadedAll")
-
-                    updateAdvisorInfo()
-                    // tableData = $(".dataTable").DataTable().data();
-                }
-
-                updateList()
-                updateCustomEvents()
-                updateOfficerList()
-                updateSlider()
-                sort()
-            }, 750)
-        )
-
-        //Apply sort to slider cards
-        function sort() {
-            // Get the time in minutes
-            function getTime(time) {
-                //months (2 months)
-                if (time.indexOf("month") > 0) {
-                    if (time.split(" ")[0].indexOf("a") >= 0) time = 1
-                    else {
-                        time = time.split(" ")[0]
-                    }
-                    time = parseInt(time) * 60 * 24 * 30
-                }
-                //Days (2 Days/a few days)
-                else if (time.indexOf("day") > 0) {
-                    if (time.split(" ")[0].indexOf("a") >= 0) time = 1
-                    else {
-                        time = time.split(" ")[0]
-                    }
-                    time = parseInt(time) * 60 * 24
-                }
-                //Hours (2 Hours/a few hours)
-                else if (time.indexOf("hour") > 0) {
-                    if (time.split(" ")[0].indexOf("a") >= 0) time = 1
-                    else time = time.split(" ")[0]
-                    time = parseInt(time) * 60
-                }
-                //Minutes (2 minutes / a few minutes)
-                else {
-                    if (time.split(" ")[0].indexOf("a") >= 0) time = 1
-                    else time = parseInt(time)
-                }
-                return time
-            }
-
-            //Sort advisor slide list
-            $(".advisor-card")
-                .sort((a, b) => {
-                    a = $(a)
-                    b = $(b)
-
-                    //Get advisor name from cards
-                    let nameA = a.data("name"),
-                        nameB = b.data("name")
-
-                    //Load advisor info from DataTable
-                    let infoA = getAdvisorInfo(nameA),
-                        infoB = getAdvisorInfo(nameB)
-
-                    //Get current times for both cards in minutes
-                    let timeA = getTime(a.find(".submitted").text()),
-                        timeB = getTime(b.find(".submitted").text())
-
-                    // Check if either card is a construction page
-                    let isConstructionA = hasTag("Construction", infoA),
-                        isConstructionB = hasTag("Construction", infoB)
-
-                    //Construction Pages come first
-                    if (isConstructionA && !isConstructionB) return -1
-                    else if (isConstructionB && !isConstructionA) return 1
-
-                    //Compare time
-                    return timeA < timeB ? 1 : timeA > timeB ? -1 : 0
-                    // return 0;
-                })
-
-                //Add each element back in the new order
-                .each(function () {
-                    $(".providence-pending--list").append(this)
-                })
-        }
-
-        //Add OptGroups to officer select
-        function updateOfficerList() {
-            $(".form-item--control.assigned_officer").each(function (fi, fe) {
-                if (!$(fe).hasClass("optGroupsAdded")) {
-                    let officers = {
-                        Teams: [],
-                        SiteForward: [],
-                        "MLS Sales Communication": [],
-                        "Insurance Compliance": [],
-                        Miscellaneous: [],
-                        Other: [],
-                    }
-                    $(fe)
-                        .find("option")
-                        .each(function (i, e) {
-                            let id = e.value.substr(e.value.indexOf("|") + 1)
-                            let option = $(this)
-                            option[0].setAttribute("data-id", id)
-
-                            if (isTeam(id)) officers["Teams"].push(option)
-                            else if (isSiteForward(id)) officers["SiteForward"].push(option)
-                            else if (isMLSSalesCompliance(id)) officers["MLS Sales Communication"].push(option)
-                            else if (isMSICompliance(id)) officers["Insurance Compliance"].push(option)
-                            else if (isMiscellaneous(id)) officers["Miscellaneous"].push(option)
-                            else if (!isNotAssignable(id)) officers["Other"].push(option)
-                        })
-
-                    for (let [key, value] of Object.entries(officers)) {
-                        if (key != "Other" || (key == "Other" && officers["Other"].length > 0)) {
-                            let group = '<optgroup style="padding-top: 4px;" label="' + key + '">'
-
-                            // Loop through a sorted list (Sorts based on ID index of each group)
-                            value
-                                .sort(
-                                    (a, b) =>
-                                        allAccountList().indexOf(a[0].getAttribute("data-id")) -
-                                        allAccountList().indexOf(b[0].getAttribute("data-id"))
-                                )
-                                .forEach(function (item) {
-                                    let id = item[0].value.substr(item[0].value.indexOf("|") + 1)
-
-                                    if (!isNotActive(id)) {
-                                        group += item[0].outerHTML
-                                    }
-                                    item.remove()
-                                })
-                            $(this).append(group)
-                        }
-                    }
-                    //Remove any that are not assignable (Not on a team)
-                    fe.querySelectorAll(":scope > option").forEach((e) => e.remove())
-                    fe.querySelectorAll("optgroup").forEach((e) => (e.children.length == 0 ? e.remove() : ""))
-
-                    //Properly set when no officer is selected
-                    let hasSelection = fe.querySelector("option[selected]") ? true : false
-                    if (!hasSelection) {
-                        let option = fe.querySelector("option[value*='all']")
-                        fe.value = option.value
-                    }
-
-                    $(fe).addClass("optGroupsAdded")
-                    //Remove assignees based on tags
-                    let tags = fe.parentNode.parentNode.parentNode.querySelector(".advisor-tags").textContent
-                    if (tags.indexOf("IIROC") == -1 && tags.indexOf("MFDA") == -1) {
-                        // No Dealer tags, hide MLS as an assignee
-                        fe.querySelectorAll("optgroup")[0].querySelectorAll("option")[1].style.display = "none"
-                        fe.querySelectorAll("optgroup")[2].style.display = "none"
-                    }
-                    if (tags.indexOf("Insurance: None") >= 0) {
-                        // Has no insurance, hide MSI as an assignee
-                        fe.querySelectorAll("optgroup")[0].querySelectorAll("option")[2].style.display = "none"
-                        fe.querySelectorAll("optgroup")[3].style.display = "none"
-                    }
-                }
-            })
-        }
     }
-}
-
-function manageChatRejections(advisorId) {
-    getRejections(advisorId)
-        .then((rejections) => {
-            $(".rejection-notice").each(function () {
-                let rejectionItem =
-                    rejections.find((item) => {
-                        return item.rejectionId == $(this).data("id")
-                    }) || []
-                $(this)
-                    .find(".rejected-item")
-                    .each(function (i, rejectionWrapper) {
-                        let isCompleted = rejectionItem?.rejection ? rejectionItem.rejection[i] : false
-                        $(this).prepend(
-                            '<input class="rejection-completed"' +
-                                (isCompleted ? "checked=true" : "") +
-                                ' type="checkbox">'
-                        )
-                    })
-                $(".rejection-completed")
-                    .off()
-                    .on("change", function () {
-                        let index = Array.prototype.indexOf.call(this.parentNode.parentNode.children, this.parentNode)
-                        let rejectionId = $(this).parent().parent().parent().parent().data("id")
-                        let rejectionArray = []
-                        $(this)
-                            .parent()
-                            .parent()
-                            .find(".rejected-item")
-                            .each(function (e, item) {
-                                rejectionArray.push($(item).find(".rejection-completed")[0].checked ? true : false)
-                            })
-                        updateRejection(advisorId, rejectionId, rejectionArray)
-                    })
-            })
-        })
-        .catch((err, id) => {
-            console.log("Error getting " + id)
-            console.log(err)
-        })
-}
-
-//Get current advisor info from displayName(Exact match)
-function getAdvisorInfo(displayName) {
-    return advisorInfo.find(function (e) {
-        return displayName === e.display_name
-    })
-}
-
-//Get current advisor info from id(Exact match)
-function getAdvisorInfoByID(id) {
-    return advisorInfo.find(function (e) {
-        return id === e._id
-    })
 }
 
 //Check if the tag exists in the advisor's tags(NOT Exact match)
@@ -2175,43 +2380,6 @@ function hasStatus(status, advisor) {
         }
         return advisorStatus.indexOf(status) >= 0
     } else return false
-}
-
-// Check if advisor is published
-function notPublished(advisor) {
-    if (hasStatus("approved", advisor)) {
-        let dateA = Date.parse(advisor.site.published_at),
-            dateB = Date.parse(advisor.site.submitted_at)
-        return dateA < dateB
-    }
-    return false
-}
-
-//Get their live domain
-function getLiveDomain(id) {
-    return new Promise(function (resolve) {
-        $.get(baseUrl + "manage/advisor/" + id).done((data) => {
-            let $data = $(data)
-            let a = $data.find('a[data-content="View Live Site"]')
-            let link = a && a.length > 0 ? a[0].href : null
-            resolve(link)
-        })
-    })
-}
-
-//Add their live domain to the list
-async function addLiveURLToDroplist(list, advisor) {
-    let id = advisor._id
-    let url = await getLiveDomain(id)
-
-    if (url)
-        list.append(
-            '<li><a href="' +
-                url +
-                '" class="liveWebsiteURL" target="_blank" data-advisor_id="' +
-                id +
-                '">View Live Website</a></li>'
-        )
 }
 
 async function displayReviewer(url, container, cb) {
@@ -2575,83 +2743,4 @@ function updateSlider() {
         }
     })
     updateCustomEvents()
-}
-
-function updateCustomEvents() {
-    //Add the Open Chat button click listener
-    $(".open-chat-extension")
-        .off()
-        .on("click", function () {
-            //Open the chat sidebar
-            let open_chat = document.querySelector("#open-chat")
-            open_chat.setAttribute("data-advisor_id", this.getAttribute("data-advisor_id"))
-            open_chat.click()
-        })
-}
-
-function updateList(container) {
-    if (!container) container = "#advisorsList"
-
-    //Add "Open Chat" link to all rows
-    $(container)
-        .find("tbody tr")
-        .each(function (i, e) {
-            e = $(e)
-            let list = $($(this).find("ul"))
-
-            //Only add if not already added
-            if (list.length > 0 && list.children().length < 6) {
-                //Get ID
-                id = list.children(":first").find("a")[0]?.href
-                id = id.split("/")[id.split("/").length - 1]
-
-                list.find("a").first().prop("target", "_blank")
-                list.append(
-                    '<li><a href="#messages" class="open-chat-extension" data-advisor_id="' +
-                        id +
-                        '">Open Chat</a></li>'
-                )
-
-                //Add link to view website without needing to login/view profile
-                let info = getAdvisorInfoByID(id)
-                if (info && info.email)
-                    list.append(
-                        '<li><a href="/manage/revisions?email=' +
-                            encodeURIComponent(info.email) +
-                            '" target="_blank" class="" data-advisor_id="' +
-                            id +
-                            '">View Revisions</a></li>'
-                    )
-                if (info && info.site)
-                    list.append(
-                        '<li><a href="https://' +
-                            info.site.settings.subdomain +
-                            '.app.twentyoverten.com" class="" target="_blank" data-advisor_id="' +
-                            id +
-                            '">View Preview Website</a></li>'
-                    )
-                if (info) addLiveURLToDroplist(list, info)
-
-                //Add a "Not Published" status if the site is approved/editing but not published
-                if (notPublished(info)) {
-                    let state = e.find(".has-state")
-                    state.append(
-                        "<p style=\"font-size: .75em;color: #1fe9ae;text-align: center;margin: 5px 0 0 0; font-family: 'Anonymous Pro', Courier, monospace;\">Not Published</p>"
-                    )
-                }
-                if (info && info.submitted_date) {
-                    let date = e.find(".has-date")
-                    date[0].setAttribute("data-date", info.submitted_date)
-                }
-
-                //Add a note saying when it was reviwed
-                // - Not sure if theres a way to get the time of it's last rejection. I can get the rejection ID from the chat, or the revisions page. but I can't get a list of them
-                //   if (hasStatus("review completed", info)) {
-                //     let state = row.find(".has-state");
-                //     let reviewDate = new Date(Date.parse(info.site.updated_at));
-                //     reviewDate = reviewDate.toString().substring(0, reviewDate.toString().indexOf(':')-3);
-                //     state.append('<p style="font-size: .75em;color: #1fe9ae;text-align: center;margin: 5px 0 0 0; font-family: \'Anonymous Pro\', Courier, monospace;">Reviewed: '+ reviewDate+'</p>');
-                //   }
-            }
-        })
 }
