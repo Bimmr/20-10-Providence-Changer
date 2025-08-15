@@ -28,8 +28,6 @@ const NightMode = {
         const hasNightMode = localStorage.getItem("nightMode-p") === "true"
         document.body.classList.toggle("nightMode", hasNightMode)
         this.setupToggle()
-
-        console.log("Night Mode Initialized")
     },
 
     /**
@@ -60,8 +58,6 @@ const PageTabs = {
         this.previewIframe = document.getElementById("previewIframe")
         this.updatePageTab()
         this.setupObservers()
-
-        console.log("Page Tabs Initialized")
     },
 
     /**
@@ -113,17 +109,19 @@ const Editor = {
      */
     init() {
         if (!localStorage.getItem("IsSiteForward")) return
-        this.setupGlobalEvents()
+        this.setupEditorStop()
         this.setupEditDropdown()
-        console.log("Editor dropdown Initialized")
     },
 
     /**
      * Setup global event listeners.
      */
-    setupGlobalEvents() {
+    setupEditorStop() {
         ;["keypress", "mousedown"].forEach((event) => {
-            document.addEventListener(event, () => (this.editing = false))
+            document.addEventListener(event, () => {
+                if (this.isEditing)
+                    this.isEditing = false
+            })
         })
     },
 
@@ -148,10 +146,10 @@ const Editor = {
         <a href="#" class="popout-preview">Mark As Edited</a>
         <div class="tot_droplist is-far-right">
           <ul>
-            <li><a href="#" class="edit-pages-pages" data-size="desktop">Edit Pages</a></li>
-            <li><a href="#" class="edit-pages-members" data-size="tablet">Edit Members</a></li>
-            <li><a href="#" class="edit-pages-posts" data-size="mobile">Edit Posts</a></li>
-            <li><a href="#" class="edit-pages-all">Edit All</a></li>
+            <li><a href="#" class="edit-nav-pages" data-size="desktop">Edit Pages</a></li>
+            <li><a href="#" class="edit-nav-members" data-size="tablet">Edit Members</a></li>
+            <li><a href="#" class="edit-nav-posts" data-size="mobile">Edit Posts</a></li>
+            <li><a href="#" class="edit-nav-all">Edit All</a></li>
           </ul>
         </div>`,
         })
@@ -163,10 +161,10 @@ const Editor = {
      */
     setupEventListeners(editDropdown) {
         const actions = {
-            "edit-pages-pages": () => this.editPages(),
-            "edit-pages-members": () => this.editMembers(),
-            "edit-pages-posts": () => this.editPosts(),
-            "edit-pages-all": () => this.editAll(),
+            "edit-nav-pages": () => this.editPages(),
+            "edit-nav-members": () => this.editMembers(),
+            "edit-nav-posts": () => this.editPosts(),
+            "edit-nav-all": () => this.editAll(),
         }
 
         editDropdown.addEventListener("click", async (e) => {
@@ -188,26 +186,38 @@ const Editor = {
     },
 
     /**
-     * Handle overlay interactions.
+     * Handle overlays that appear on the side
+     * Runs as: Wait for style, wait for class, perform action, wait for !class, wait for style
+     * Waits for overlay to open, does an action, and then waits for it to close
      * @param {string} overlayId - The ID of the overlay element.
      * @param {Function} action - The action to perform on the overlay.
+     * @param {number} timeBeforeAction - Time to wait before performing the action.
      */
-    async handleOverlayInteraction(overlayId, action) {
-        const $overlay = document.getElementById(overlayId)
-        await waitForStyleAsync(true, $overlay, "display", "block")
-        await waitForClassAsync(true, $overlay, "ready")
-        await action($overlay)
-        await this.closeOverlay($overlay)
-    },
-
-    /**
-     * Close the overlay.
-     * @param {HTMLElement} $overlay - The overlay element to close.
-     */
-    async closeOverlay($overlay) {
-        $overlay.querySelector(".cancel").click()
+    async handleSidebarOverlay(selector, action, timeBeforeAction = 0) {
+        const overlay = document.querySelector(selector)
+        await waitForStyleAsync(true, overlay, "display", "block")
+        await waitForClassAsync(true, overlay, "ready")
+        if (timeBeforeAction > 0) await new Promise((r) => setTimeout(r, timeBeforeAction))
+        await action(overlay)
         await waitForClassAsync(false, document.body, "overlay-active")
-        await waitForStyleAsync(true, $overlay, "display", "none")
+        await waitForStyleAsync(true, overlay, "display", "none")
+    },
+    /**
+     * Handle larger overlays
+     * Runs as: Wait for class, perform action, wait for !class
+     * Waits for overlay to open, does an action, and then waits for it to close
+     * @param {string} selector - CSS selector for the overlay element.
+     * @param {Function} action - The action to perform on the overlay.
+     * @param {number} timeBeforeAction - Time to wait before performing the action.
+     */
+    async handleLargerOverlay(selector, action, timeBeforeAction = 0) {
+        const overlay = document.querySelector(selector)
+        await waitForClassAsync(true, overlay, "velocity-animating")
+        await waitForClassAsync(false, overlay, "velocity-animating")
+        if (timeBeforeAction > 0) await new Promise((r) => setTimeout(r, timeBeforeAction))
+        await action(overlay)
+        await waitForClassAsync(true, overlay, "velocity-animating")
+        await waitForClassAsync(false, overlay, "velocity-animating")
     },
 
     /**
@@ -219,12 +229,12 @@ const Editor = {
 
         for (const pageId of pagesArray) {
             if (!this.isEditing) break
-            const page = getItemById("page-settings", pageId)
-            if (!page) continue
+            const page_settings = getItemById("page-settings", pageId)
+            if (!page_settings) continue
 
-            await this.handleOverlayInteraction("page-settings-overlay", ($overlay) => {
-                page.click()
-                $overlay.querySelector(".save").click()
+            page_settings.click()
+            await this.handleSidebarOverlay("#page-settings-overlay", (overlay) => {
+                overlay.querySelector(".save").click()
             })
         }
     },
@@ -247,16 +257,17 @@ const Editor = {
      * @param {string} memberId - The ID of the member element.
      */
     async handleMemberSection(memberId) {
-        const member = getItemById("manage-members", memberId)
-        if (!member) return
+        const manage_member = getItemById("manage-members", memberId)
+        if (!manage_member) return
 
-        await this.handleOverlayInteraction("page-settings-overlay", async () => {
-            member.click()
+        manage_member.click()
+        await this.handleSidebarOverlay("#page-settings-overlay", async () => {
             const memberIds = Array.from(document.querySelectorAll(".member")).map((e) => e.dataset.id)
             for (const memberId of memberIds) {
                 if (!this.isEditing) break
-                await this.editSingleMember(memberId)
+                await this.editMember(memberId)
             }
+            document.querySelector("#page-settings-overlay").querySelector(".cancel").click()
         })
     },
 
@@ -264,12 +275,18 @@ const Editor = {
      * Edit a single member.
      * @param {string} memberId - The ID of the member element.
      */
-    async editSingleMember(memberId) {
+    async editMember(memberId) {
         const member = getItemById("member", memberId)
         if (!member) return
 
         member.click()
-        await this.handleEditPane(".edit-member-pane")
+        await this.handleLargerOverlay(
+            ".edit-member-pane",
+            (overlay) => {
+                overlay.querySelector(".save").click()
+            },
+            2000
+        )
     },
 
     async editPosts() {
@@ -287,16 +304,17 @@ const Editor = {
      * @param {string} postId - The ID of the post element.
      */
     async handlePostSection(postId) {
-        const post = getItemById("manage-posts", postId)
-        if (!post) return
+        const manage_posts = getItemById("manage-posts", postId)
+        if (!manage_posts) return
 
-        await this.handleOverlayInteraction("page-settings-overlay", async () => {
-            post.click()
+        manage_posts.click()
+        await this.handleSidebarOverlay("#page-settings-overlay", async () => {
             const postIds = Array.from(document.querySelectorAll(".post")).map((e) => e.dataset.id)
             for (const postId of postIds) {
                 if (!this.isEditing) break
                 await this.editSinglePost(postId)
             }
+            document.querySelector("#page-settings-overlay").querySelector(".cancel").click()
         })
     },
 
@@ -309,20 +327,13 @@ const Editor = {
         if (!post) return
 
         post.click()
-        await this.handleEditPane(".edit-post-pane")
-    },
-
-    /**
-     * Handle edit pane interactions.
-     * @param {string} paneSelector - The selector for the edit pane.
-     */
-    async handleEditPane(paneSelector) {
-        await waitForClassAsync(false, document.querySelector(".edit-post-pane"), "velocity-animating")
-        await waitForStyleAsync(true, document.querySelector(paneSelector), "display", "block")
-        await new Promise((resolve) => setTimeout(resolve, 2000))
-        document.querySelector(paneSelector).querySelector(".save").click()
-        await waitForClassAsync(false, document.querySelector(".edit-post-pane"), "velocity-animating")
-        await waitForStyleAsync(true, document.querySelector(paneSelector), "display", "none")
+        await this.handleLargerOverlay(
+            ".edit-post-pane",
+            (overlay) => {
+                overlay.querySelector(".save").click()
+            },
+            2000
+        )
     },
 }
 
@@ -335,7 +346,6 @@ const Chat = {
      */
     init() {
         this.setupChatOpenListeners()
-        console.log("Chat Module Initialized")
     },
 
     /**
@@ -497,7 +507,6 @@ const Archives = {
             const archivesOverlay = document.querySelector("#archives-overlay")
             return archivesOverlay && !archivesOverlay.classList.contains("loading")
         })
-        console.log("Archives Overlay Loaded")
     },
 
     /**
