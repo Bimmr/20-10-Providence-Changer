@@ -4,16 +4,42 @@ let baseUrl = "https://app.twentyoverten.com"
 // Global Info
 let advisorInfo = []
 let urlParts = ""
+let database = null
 
 $(async function () {
     try {
-        await waitForCondition(() => typeof isSiteForward === "function", 2000)
+        await waitForCondition(() => typeof isSiteForward === "function", 5000)
+        database = new DatabaseClient()
         console.log("Providence Changer Loaded")
         ready()
     } catch (error) {
+        console.error(error)
         alert("Unable to load Extension, please reload the page to try enabling the extension again.")
     }
 })
+
+/**
+ * Wait for a specific condition to be met.
+ * @param {*} conditionFn - The condition function to evaluate.
+ * @param {*} timeout - The maximum time to wait (in milliseconds).
+ * @param {*} interval - The interval between checks (in milliseconds).
+ * @returns {Promise} - A promise that resolves when the condition is met.
+ */
+function waitForCondition(conditionFn, timeout = 2000, interval = 50) {
+    return new Promise((resolve, reject) => {
+        const start = Date.now()
+        function check() {
+            if (conditionFn()) {
+                resolve()
+            } else if (Date.now() - start >= timeout) {
+                reject(new Error("Condition timeout"))
+            } else {
+                setTimeout(check, interval)
+            }
+        }
+        check()
+    })
+}
 
 // Function to initialize the page
 async function ready() {
@@ -151,7 +177,19 @@ const AdvisorDetails = {
     },
     addPreviewLinkIcon(){
         const preview_link_icon = createElement("li", {
-            html: `<a href="https://${this.advisor_info.site.settings.subdomain}.app.twentyoverten.com" class="tot_tip top center" data-content="View Preview Website"><svg id="icon-preview-website" viewBox="0 0 24 24" class="action-icon"> <path d="M8.617,12.682H5.9a6.149,6.149,0,0,0,4.544,5.258,12.465,12.465,0,0,1-1.207-2.378A9.792,9.792,0,0,1,8.617,12.682Z"> </path> <path d="M10.444,6.062A6.147,6.147,0,0,0,5.9,11.318H8.617A10.69,10.69,0,0,1,10.444,6.062Z"></path> <path d="M9.981,11.32h4.038A8.453,8.453,0,0,0,13.8,9.956a9.382,9.382,0,0,0-.376-1.207,10.325,10.325,0,0,0-.479-1.036q-0.271-.511-0.49-0.841T12,6.237q-0.235.3-.45,0.637t-0.49.844a9.048,9.048,0,0,0-.858,2.24A8.275,8.275,0,0,0,9.981,11.32Z"> </path> <path d="M12,0A12,12,0,1,0,24,12,12,12,0,0,0,12,0Zm7.242,13.947a7.416,7.416,0,0,1-1.843,3.26,7.431,7.431,0,0,1-1.457,1.18,7.514,7.514,0,0,1-1.728.781,7.408,7.408,0,0,1-1.925.327Q12.192,19.5,12,19.5t-0.288-.005a7.514,7.514,0,0,1-6.235-3.787,7.6,7.6,0,0,1-.719-1.76,7.461,7.461,0,0,1,0-3.893A7.416,7.416,0,0,1,6.6,6.794a7.431,7.431,0,0,1,1.457-1.18,7.514,7.514,0,0,1,1.728-.781,7.408,7.408,0,0,1,1.925-.327Q11.808,4.5,12,4.5t0.288,0.005a7.514,7.514,0,0,1,6.235,3.787,7.6,7.6,0,0,1,.719,1.76A7.461,7.461,0,0,1,19.242,13.947Z"> </path> <path d="M13.556,6.061h0a10.792,10.792,0,0,1,1.833,5.258H18.1A6.149,6.149,0,0,0,13.556,6.061Z"></path> <path d="M13.555,17.94A6.15,6.15,0,0,0,18.1,12.682H15.387A10.782,10.782,0,0,1,13.555,17.94Z"></path> <path d="M14.019,12.682H9.981a8.453,8.453,0,0,0,.221,1.364,9.381,9.381,0,0,0,.376,1.207,10.312,10.312,0,0,0,.479,1.036q0.271,0.511.49,0.841T12,17.765q0.235-.3.453-0.637t0.49-.844a10.017,10.017,0,0,0,.479-1.036,9.631,9.631,0,0,0,.376-1.2A8.274,8.274,0,0,0,14.019,12.682Z"> </path> </svg></a>`
+            html: `<a href="https://${this.advisor_info.site.settings.subdomain}.app.twentyoverten.com" class="tot_tip top center" data-content="View Preview Website" target="_blank">
+                <svg class="action-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="48" height="48" style="display:inline-block; vertical-align:middle; fill:currentColor;">
+                    <mask id="browser-mask" x="0" y="0" width="24" height="24">
+                        <circle cx="12" cy="12" r="12" fill="white"/>
+                        <rect x="6" y="7" width="12" height="10" rx="1.5" ry="1.5" fill="none" stroke="black" stroke-width="1.2"/>
+                        <line x1="6" y1="10" x2="18" y2="10" stroke="black" stroke-width="1.2"/>
+                        <circle cx="8" cy="8.5" r="0.7" fill="black"/>
+                        <circle cx="10" cy="8.5" r="0.7" fill="black"/>
+                        <circle cx="12" cy="8.5" r="0.7" fill="black"/>
+                    </mask>
+                    <circle cx="12" cy="12" r="12" fill="currentColor" mask="url(#browser-mask)"/>
+                </svg>
+            </a>`
         })
         document.querySelector(".advisor-actions").appendChild(preview_link_icon)
     },
@@ -166,9 +204,7 @@ const AdvisorDetails = {
         document.querySelector(".details-wrapper .btn-container").appendChild(open_revisions)
     },
     
-// =============================================================================
-// Archives Sub-Module
-// =============================================================================
+// ========================== Archives Sub-Module =============================
     Archives: {
         /**
          * Initialize the archives module.
@@ -329,7 +365,7 @@ const Chat = {
                 if (!rejectionWrapper) return
 
                 const rejectionId = rejectionWrapper.dataset.id
-                const advisorId = rejectionWrapper.dataset.advisorId
+                const advisorId = document.querySelector("#live-chat").getAttribute("data-advisor_id")
 
                 if (!rejectionId || !advisorId) {
                     console.warn("Missing rejection or advisor ID for rejection change")
@@ -340,12 +376,13 @@ const Chat = {
                     (item) => item.querySelector(".rejection-completed").checked
                 )
 
-                updateRejection(advisorId, rejectionId, rejectionArray)
-            },
-            { capture: true }
+                database.updateRejection(advisorId, rejectionId, rejectionArray)
+            }
         )
     },
-    setupChatWindow(advisor_id) {
+    setupChatWindow() {
+
+        const advisor_id = document.querySelector("#live-chat").getAttribute("data-advisor_id")
         if (!document.querySelector(".chat-wrapper .view-profile-chat")) {
             const chatWrapper = document.querySelector(".chat-wrapper")
             if (chatWrapper) {
@@ -382,7 +419,7 @@ const Chat = {
             this.setupSavedMessageHandling()
             this.setupChatEventListeners()
             this.setupChatSearch()
-            await this.setupRejectionHandling(target_chat_id)
+            await this.setupRejectionHandling()
         } catch (err) {
             console.error("Error initializing chat:", err)
         }
@@ -486,9 +523,10 @@ const Chat = {
      * Setup rejection handling.
      * Waits 500ms total before adding the checkboxes (including time taken by getRejections)
      */
-    async setupRejectionHandling(advisor_id) {
+    async setupRejectionHandling() {
+        const advisor_id = document.querySelector("#live-chat").getAttribute("data-advisor_id")
         const startTime = performance.now()
-        const rejections = await getRejections(advisor_id)
+        const rejections = await database.getRejections(advisor_id)
         const elapsedTime = performance.now() - startTime
 
         // Calculate remaining wait time to reach 500ms total
@@ -996,7 +1034,6 @@ const Manage = {
             try {
                 const evt = new CustomEvent("advisorListUpdated", { detail: advisorInfo })
                 document.dispatchEvent(evt)
-                console.log("advisorListUpdated dispatched", advisorInfo)
             } catch (err) {
                 console.warn("advisorListUpdated dispatch failed", err)
             }
@@ -1113,12 +1150,11 @@ const Manage = {
     },
     // ======================= Review List =======================
     ReviewList: {
-        importantTagsList: [
+        important_tag_list: [
             "Migrating",
             "Brand New",
             "Post-Review",
             "Redesign",
-            "Construction",
             "Not On Program",
             "Tier",
         ],
@@ -1133,6 +1169,7 @@ const Manage = {
                     this.sortReviewCards()
                     this.addDetailsToCards()
                     this.setupRevisionCount()
+                    this.filterReviewCards()
                 }
             })
             document.addEventListener("click", (e) => {
@@ -1147,7 +1184,6 @@ const Manage = {
             })
         },
         filterReviewCards(clicked_category, clicked_text){
-            console.log("Filtering for ", clicked_category, clicked_text)
             const cards = document.querySelectorAll(".advisor-card")
             if (cards.length === 0) return
             cards.forEach((card) => {
@@ -1161,6 +1197,8 @@ const Manage = {
                         card.style.display = "block"
                     else
                         card.style.display = "none"
+                else
+                    card.style.display = "block"
             })
 
         },
@@ -1261,7 +1299,7 @@ const Manage = {
                 this.reviewCount.all.total += revisions.approved + revisions.pending + revisions.rejected
 
                 // Update tag review count
-                const tags = card.querySelectorAll(".tag")
+                const tags = card.querySelectorAll(".card-tags .tag")
                 tags.forEach((tag) => {
                     let tag_name = tag.textContent
                     if (!this.reviewCount.tags[tag_name])
@@ -1302,17 +1340,37 @@ const Manage = {
                     })
                     .join("")}
                 </tbody>
-                <thead><tr><th>Filter by Tags</th></tr></thead>
-                <tbody class="tags">
+                <thead><tr><th>Filter by Tags <span class="expand-toggle" title="Show/Hide Other Tags">▼</span></th></tr></thead>
+                <tbody class="tags important-tags">
                 ${Object.entries(this.reviewCount.tags)
+                    .filter(([tag, data]) => {
+                        return this.important_tag_list.some((importantTag) => tag.indexOf(importantTag) > -1)
+                    })
+                    .sort(([tagA], [tagB]) => tagA.localeCompare(tagB))
                     .map(([tag, data]) => {
                         return `<tr><td>${tag}</td><td>${data.sites}</td><td>${data.pending}</td></tr>`
                     })
                     .join("")}
                 </tbody>
+                <tbody class="tags other-tags" style="display:none">
+                ${Object.entries(this.reviewCount.tags)
+                    .filter(([tag, data]) => {
+                        return !this.important_tag_list.some((importantTag) => tag.indexOf(importantTag) > -1)
+                    })
+                    .sort(([tagA], [tagB]) => tagA.localeCompare(tagB))
+                    .map(([tag, data]) => {
+                        return `<tr><td>${tag}</td><td>${data.sites}</td><td>${data.pending}</td></tr>`
+                    })
+                    .join("")}
+                </tbody>
+
                 </table>`,
             })
             document.querySelector(".providence-pending--title").innerHTML = reviewFilter.outerHTML
+            document.querySelector(".expand-toggle").addEventListener("click", (e) => {
+                document.querySelector(".tags.other-tags").style.display = e.target.innerHTML === "▼" ? "table-row-group" : "none"
+                e.target.innerHTML = e.target.innerHTML === "▼" ? "▲" : "▼"
+            })
         },
 
         /**
@@ -1366,18 +1424,6 @@ const Manage = {
                 const advisor_info = getAdvisorInfoFromTable(advisor_id)
                 card.setAttribute("advisor_id", advisor_id)
 
-                // Add card tags section
-                if (!card.querySelector(".card-tags")) {
-                    const cardContent = card.querySelector(".card-content")
-                    cardContent?.appendChild(createElement("div", { class: "card-tags" }))
-                }
-
-                // Add card tier section
-                if (!card.querySelector(".card-tier")) {
-                    const cardContent = card.querySelector(".card-content")
-                    cardContent?.appendChild(createElement("div", { class: "card-tier" }))
-                }
-
                 // Add card changes section
                 if (!card.querySelector(".card-changes")) {
                     const submitted = card.querySelector(".submitted")
@@ -1389,17 +1435,26 @@ const Manage = {
                         submitted.insertAdjacentElement("afterend", cardChanges)
                     }
                 }
+                
+                let important_tags = ""
+                let all_tags = ""
+
+                advisor_info.settings.broker_tags.forEach((tag) => {
+                    if (this.important_tag_list.some((importantTag) => tag.name.indexOf(importantTag) > -1))
+                        important_tags += `<span class="tag">${tag.name}</span>, `
+                    all_tags += `<span class="tag">${tag.name}</span>, `
+                })
+                important_tags = important_tags.slice(0, -2) // Remove trailing comma and space
+                all_tags = all_tags.slice(0, -2) // Remove trailing comma and space
+
+                // Add card tags section
+                if (!card.querySelector(".card-tags")) {
+                    card.querySelector(".card-content").append(createElement("div", { class: "card-tags", html: all_tags }))
+                }
 
                 // Add card extras section
                 if (!card.querySelector(".card-extras")) {
                     const officer_name = getOfficerName(advisor_info.officer_id)
-                    let important_tags = ""
-
-                    advisor_info.settings.broker_tags.forEach((tag) => {
-                        if (this.importantTagsList.some((importantTag) => tag.name.indexOf(importantTag) > -1))
-                            important_tags += `<span class="tag">${tag.name}</span>, `
-                    })
-                    important_tags = important_tags.slice(0, -2) // Remove trailing comma and space
 
                     const cardContent = card.querySelector(".card-content")
                     const cardExtras = createElement("div", {
@@ -1454,8 +1509,9 @@ const Advisor = {
         this.setupReviewItemNotes()
         this.updateViewButtonText()
         this.checkEmptyReview()
+        this.setupLastReviewed()
 
-        // this.InternalDB.init()
+        this.InternalDB.init(this.advisor_id)
     },
     setupEventListeners(){
         document.addEventListener("click", async (e) => {
@@ -1612,14 +1668,16 @@ const Advisor = {
         return { status, officer, date, note, rejection }
     },
     setupLastReviewed(){
-        const last_reviewed_id = localStorage.getItem("last_reviewed_id")
-        if (!last_reviewed_id) return
+        setTimeout(() => {
+            const last_reviewed_id = localStorage.getItem("last_reviewed_id")
+            if (!last_reviewed_id) return
 
-        const last_reviewed_item = document.querySelector(`.review-item[data-id="${last_reviewed_id}"]`)
-        if (!last_reviewed_item) return
+            const last_reviewed_item = document.querySelector(`a[data-id="${last_reviewed_id}"]`)
+            if (!last_reviewed_item) return
 
-        last_reviewed_item.scrollIntoView({ behavior: "smooth" })
-        localStorage.removeItem("last_reviewed_id")
+            last_reviewed_item.scrollIntoView({behavior: "smooth", block: "center"} )
+            localStorage.removeItem("last_reviewed_id")
+        }, 1000)
     },
 
     // ======================= Review List =======================
@@ -1651,8 +1709,108 @@ const Advisor = {
 
     // ======================= InternalDB =======================
     InternalDB:{
-        init(){
+        advisor_id: null,
+        notes_loaded: false,
+        statuses_loaded: false,
+        init(advisor_id){
+            this.setupEventListeners()
+            this.setupNotes()
+            this.setupStatuses()
+            this.advisor_id = advisor_id
 
+        },
+        setupEventListeners(){
+            // Setup event listeners for the internal database
+        },
+        setupNotes(){
+            const note_button = createElement("div",{
+                class: "sidebar-module advisor-notes",
+                tabindex: "0",
+                html: `
+                <div class="sidebar-module-icon"><i class="far fa-pencil-alt"></i><span>Notes</span></div>
+                <div class="sidebar-module-wrapper">
+                    <div class="sidebar-module-header">Website Notes</div>
+                    <div class="sidebar-module-body">
+                        <div class="sidebar-module-message">
+                            <div class="sidebar-module-message-content" style="color: #9a9a9a; border-radius: 10px; ">
+                                <textarea style="width: 100%;height: 100%;padding: 5px;" class="updateNotes-textarea" placeholder="Loading Notes..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="sidebar-module-footer">
+                        <button class="btn updateNotes-button" style="display: none">Save</button>
+                    </div>
+                </div>`,
+                onclick: async ()=>{
+                    this.loadNotes()
+                }
+            })
+            document.querySelector("#advisor-details").prepend(note_button)
+            document.querySelector(".updateNotes-textarea").addEventListener("input", (e) => e.target.closest(".sidebar-module").querySelector(".updateNotes-button").style.display = "block")
+            document.querySelector(".updateNotes-button").addEventListener("click", async (e) => {
+                const textarea = document.querySelector(".updateNotes-textarea")
+                e.target.innerHTML = "Updating Notes..."
+                const notes = textarea.value
+                await database.updateNotes(this.advisor_id, notes)
+                e.target.innerHTML = "Notes Updated"
+                setTimeout(() => {
+                    e.target.innerHTML = "Save"
+                }, 2000)
+            })
+        },
+        async loadNotes(){
+            if (this.notes_loaded) return
+            const textarea = document.querySelector(".updateNotes-textarea")
+            textarea.placeholder = "There are no notes for this website.\nClick here to add some."
+            try{
+                const res = await database.getNotes(this.advisor_id)
+                if (res){
+                    if(res.message)
+                        textarea.value = res.message
+                    this.notes_loaded = true
+                }
+            }catch (error) {
+                textarea.placeholder = "Unable to load notes."
+            }
+        },
+        setupStatuses(){
+            const statuses_button = createElement("div", {
+                class: "sidebar-module advisor-statuses",
+                html: `
+                <div class="sidebar-module-icon"><i class="far fa-comments-alt"></i><span>Status</span></div>
+                <div class="sidebar-module-wrapper">
+                    <div class="sidebar-module-header">Website Status</div>
+                    <div class="sidebar-module-body">
+                        <div class="sidebar-module-message statusPlaceholder">
+                            <div class="sidebar-module-message-content" style=" padding: 20px; color: #9a9a9a; border-radius: 10px; text-align:center">Loading Statuses...</div>
+                        </div>
+                    </div>
+                    <div class="sidebar-module-footer">
+                        <textarea class="addStatus-input" type="text" placeholder="Add a status"></textarea>
+                        <button class="btn addStatus-button">Send</button>
+                    </div>
+                </div>
+                `,
+                onclick: async (e) => {
+                    const textarea = e.target.closest(".sidebar-module").querySelector(".addStatus-input")
+                    const status = textarea.value
+                    if (status) {
+                       this.loadStatuses()
+                    }
+                }
+            })
+            document.querySelector("#advisor-details").prepend(statuses_button)
+        },
+        async loadStatuses(){
+            if(this.statuses_loaded) return
+            try{
+                const res = await database.getStatuses(this.advisor_id)
+                if (res) {
+                    this.statuses_loaded = true
+                }
+            }catch (error) {
+                console.error("Error loading statuses:", error)
+            }
         }
     }
 }
@@ -1661,20 +1819,385 @@ const Advisor = {
 // Review Page Module
 // =============================================================================
 const Review = {
-    advisorInfo: null,
+    advisor_id: null,
+    advisor_info: null,
+    review_id: null,
     async init(){
-        let advisor_id = urlParts[5]
-        if (advisor_id[advisor_id.length - 1] === "#")
-            advisor_id = advisor_id.slice(0, -1)
+        this.advisor_id = urlParts[5]
+        if (this.advisor_id[this.advisor_id.length - 1] === "#")
+            this.advisor_id = this.advisor_id.slice(0, -1)
+        this.review_id = urlParts[6]
+        if (this.review_id[this.review_id.length - 1] === "#")
+            this.review_id = this.review_id.slice(0, -1)
 
-        this.advisorInfo = getAdvisorInfoFromTable(advisor_id)
-        AdvisorDetails.init(this.advisorInfo)
-        
+        this.advisor_info = getAdvisorInfoFromTable(this.advisor_id)
+        AdvisorDetails.init(this.advisor_info)
+        localStorage.setItem("last_reviewed_id", this.review_id)
+
         this.setupEventListeners()
+        this.addAddExtraButton()
+        this.FloatingTools.init(review_id)
     },
     setupEventListeners(){
         // Setup event listeners for the review page
-    }
+    },
+    addAddExtraButton(){
+        const addNoteButton = createElement("button", {
+            class: "btn btn--action-default revision-note",
+            html: "Add Note",
+            onclick: () => {
+                fetch(`${baseUrl}/api/revisions/${this.review_id}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ internal_notes: note })
+                })
+            }
+        })
+        document.querySelector(".review-tools").appendChild(addNoteButton)
+
+        if (document.querySelector(".review-tools a.active")) {
+            const addViewRevisionsButton = createElement("a", {
+                class: "btn pill secondary btn-sm primary btn--action-review",
+                target: "_blank",
+                html: "View Revisions",
+                href: window.location.href.replace("review", "revisions")
+            })
+            document.querySelector(".review-tools").appendChild(addViewRevisionsButton)
+        }
+    },
+    FloatingTools: {
+        review_id: null,
+        floating_tools: null,
+        init(review_id){
+            this.review_id = review_id
+            this.floating_tools = createElement("div", {
+                class: "floating-review-item-wrapper"
+            })
+            document.querySelector(".review-header").appendChild(this.floating_tools)
+
+            this.setupEventListeners()
+            this.addNightModeToggle()
+            this.setupContentReview()
+        },
+        setupEventListeners(){
+            // Setup event listeners for the floating tools
+        },
+        addNightModeToggle(){
+            const nightModeToggle = createElement("button", {
+                class: "floating-review-item dark-toggle",
+                title: "Toggle page preview darkness",
+                html: `<i class="fas fa-moon"></i>`,
+                onclick: (e) => {
+                    e.target.closest("i").classList.toggle("fa-sun")
+                    e.target.closest("i").classList.toggle("fa-moon")
+                    document.querySelector(".change-item").classList.toggle("darken")
+                }
+            })
+            this.floating_tools.appendChild(nightModeToggle)
+        },
+        setupContentReview() {
+            this.checkIfContent(this.review_id).then((result) => {
+                if (!result.is_post) return
+
+                const contentInfo = this.analyzeContentSource(result)
+                this.updateContentButton(contentInfo, result)
+                
+                if (contentInfo.was_edited) {
+                    this.setupDifferencesDialog(result.edits)
+                }
+            })
+        },
+
+        /**
+         * Analyze the content source and editing status
+         */
+        analyzeContentSource(result) {
+            const from_siteforward = Object.keys(result.from_siteforward).length > 0
+            const from_vendor = Object.keys(result.from_vendor).length > 0
+            const was_edited = result.edits && (result.edits.title.length > 0 || result.edits.content.length > 0)
+
+            let source = ""
+            if (result.is_custom) source = "Custom"
+            else if (from_vendor) source = "Vendor Provided"
+            else if (from_siteforward) source = "SiteForward Provided"
+
+            return {
+                source,
+                was_edited,
+                display_text: was_edited ? `Edited ${source}` : source
+            }
+        },
+
+        /**
+         * Update the content button with appropriate icon and tooltip
+         */
+        updateContentButton(contentInfo, result) {
+            const button = document.querySelector(".open-differences")
+            if (!button) return
+
+            const tooltip = `${contentInfo.display_text} Content${contentInfo.was_edited ? " (Click to see differences)" : ""}`
+            button.setAttribute("title", tooltip)
+
+            const icon = button.querySelector("i")
+            icon.classList.remove("fa-spinner")
+
+            if (result.is_custom) {
+                icon.classList.add("fa-edit")
+            } else if (contentInfo.was_edited) {
+                icon.classList.add("fa-user-edit")
+            } else if (Object.keys(result.from_siteforward).length > 0 || Object.keys(result.from_vendor).length > 0) {
+                icon.classList.add("fa-copy")
+            }
+        },
+
+        /**
+         * Setup the differences dialog for edited content
+         */
+        setupDifferencesDialog(edits) {
+            const trigger = document.querySelector(".open-differences")
+            if (!trigger) return
+
+            const differences = this.generateDifferencesHTML(edits)
+
+            trigger.addEventListener("click", (event) => {
+                event.preventDefault()
+                this.showDifferencesDialog(differences, trigger)
+            })
+        },
+
+        /**
+         * Generate HTML for displaying content differences
+         */
+        generateDifferencesHTML(edits) {
+            let html = ""
+
+            if (edits.title.length > 0) {
+                html += '<h2 style="font-size: 1.25em;border-bottom: 1px solid #ccc;">Title Differences</h2>'
+                html += edits.title.map(edit => this.createDifferenceBlock(edit)).join("")
+            }
+
+            if (edits.content.length > 0) {
+                if (html) html += "<br><br>"
+                html += '<h2 style="font-size: 1.25em;border-bottom: 1px solid #ccc;">Content Differences</h2>'
+                html += edits.content.map(edit => this.createDifferenceBlock(edit)).join("")
+            }
+
+            return html
+        },
+
+        /**
+         * Create a single difference comparison block
+         */
+        createDifferenceBlock(edit) {
+            const escapeAndHighlight = (text) => {
+                return this.escapeHTML(text)
+                    .replace(/\[\[/g, "<strong>[")
+                    .replace(/\]\]/g, "]</strong>")
+            }
+
+            return `
+                <div style="display: flex; justify-content: space-between; gap: 2rem; border-bottom: 1px dashed #ccc;">
+                    <div style="flex: 1;">
+                        <p><span style="font-style: italic">Vendor:</span><br>${escapeAndHighlight(edit.vendor)}</p>
+                    </div>
+                    <div style="flex: 1;">
+                        <p><span style="font-style: italic">Advisor:</span><br>${escapeAndHighlight(edit.advisor)}</p>
+                    </div>
+                </div>`
+        },
+
+        /**
+         * Show the differences dialog
+         */
+        showDifferencesDialog(differences, trigger) {
+            const dialog = createElement("dialog", {
+                id: "differences-dialog",
+                html: `<div>${differences}</div>`
+            })
+
+            document.body.appendChild(dialog)
+
+            // Position near the button
+            const rect = trigger.getBoundingClientRect()
+            dialog.style.cssText = `top: ${rect.bottom + 5}px;`
+
+            dialog.show()
+
+            // Setup click outside to close
+            const handleClickOutside = (e) => {
+                if (!dialog.contains(e.target)) {
+                    dialog.close()
+                    dialog.remove()
+                    document.removeEventListener("click", handleClickOutside)
+                }
+            }
+
+            setTimeout(() => {
+                document.addEventListener("click", handleClickOutside)
+            }, 0)
+        },
+
+        /**
+         * Escape HTML characters for safe display
+         */
+        escapeHTML(str) {
+            return (str || "")
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;")
+        },
+
+        /**
+         * Check if the current review item is content-related
+         */
+        async checkIfContent(revisionId) {
+            try {
+                const current_item = await fetch(`${baseUrl}/api/revisions/${revisionId}`)
+                const itemData = await current_item.json()
+                
+                if (itemData.location !== "post") {
+                    return { is_post: false }
+                }
+
+                // Add spinner button
+                document.querySelector(".floating-review-item-wrapper")?.insertAdjacentHTML(
+                    "beforeend",
+                    '<button class="floating-review-item open-differences" title="Checking the file source"><i class="fas fa-spinner"></i></button>'
+                )
+
+                const is_custom = itemData.content_id == null
+                const [from_siteforward, from_vendor] = await Promise.all([
+                    this.getContent(itemData, `${baseUrl}/api/content/broker`),
+                    this.getContent(itemData, `${baseUrl}/api/content`)
+                ])
+
+                let edits = null
+                let found_article = Object.keys(from_siteforward).length > 0 ? from_siteforward : from_vendor
+
+                if (found_article && Object.keys(found_article).length > 0) {
+                    const current_formatted = { title: itemData.title, html: itemData.content }
+                    edits = {
+                        title: this.getArrayDifferences(
+                            this.parseHTML(found_article.title),
+                            this.parseHTML(current_formatted.title)
+                        ),
+                        content: this.getArrayDifferences(
+                            this.parseHTML(found_article.html),
+                            this.parseHTML(current_formatted.html)
+                        )
+                    }
+                }
+
+                return {
+                    is_post: true,
+                    is_custom: found_article ? false : is_custom,
+                    from_siteforward,
+                    from_vendor,
+                    current_item: itemData,
+                    edits
+                }
+            } catch (error) {
+                console.error("Error checking content:", error)
+                return { is_post: false }
+            }
+        },
+
+        /**
+         * Get content from API endpoint
+         */
+        async getContent(current_item, url) {
+            try {
+                const response = await fetch(url)
+                const content_list = await response.json()
+
+                if (!content_list.content) {
+                    this.handleContentAPIError()
+                    return {}
+                }
+
+                const found = content_list.content.find(blog => 
+                    blog._id === current_item.content_id || 
+                    (blog.title === current_item.title && blog.html === current_item.content)
+                )
+
+                return found ? { title: found.title, html: found.html } : {}
+            } catch (error) {
+                console.error("Error fetching content:", error)
+                return {}
+            }
+        },
+
+        /**
+         * Handle content API loading errors
+         */
+        handleContentAPIError() {
+            const button = document.querySelector(".open-differences")
+            if (button) {
+                button.setAttribute("title", "Error: Unable to load content API.\nPlease login as advisor to load the content API.")
+                const icon = button.querySelector("i")
+                icon.classList.remove("fa-spinner")
+                icon.classList.add("fa-exclamation-circle")
+            }
+        },
+
+        /**
+         * Parse HTML into an array of tags and content
+         */
+        parseHTML(html) {
+            const regex = /(<h[1-6][^>]*>[\s\S]*?<\/h[1-6]>)|(<p[^>]*>[\s\S]*?<\/p>)|(<li[^>]*>[\s\S]*?<\/li>)|(<img[^>]*>)|(<a[^>]*>[\s\S]*?<\/a>)|([^<>]+)/gi
+            const result = []
+            let match
+
+            while ((match = regex.exec(html)) !== null) {
+                if (match[0].trim()) {
+                    result.push(match[0].trim())
+                }
+            }
+            return result
+        },
+
+        /**
+         * Find the first index where two strings differ
+         */
+        findDifferenceIndex(str1, str2) {
+            for (let i = 0; i < Math.min(str1.length, str2.length); i++) {
+                if (str1[i] !== str2[i]) return i
+            }
+            return Math.min(str1.length, str2.length)
+        },
+
+        /**
+         * Compare two arrays and return differences with brackets
+         */
+        getArrayDifferences(arr1, arr2) {
+            const differences = []
+            const maxLength = Math.max(arr1.length, arr2.length)
+            let inDifference = false
+
+            for (let i = 0; i < maxLength; i++) {
+                if (arr1[i] !== arr2[i]) {
+                    if (!inDifference) {
+                        const vendorText = arr1[i] || ""
+                        const advisorText = arr2[i] || ""
+                        const diffIndex = this.findDifferenceIndex(vendorText, advisorText)
+
+                        differences.push({
+                            vendor: vendorText.slice(0, diffIndex) + "[[" + vendorText.slice(diffIndex) + "]]",
+                            advisor: advisorText.slice(0, diffIndex) + "[[" + advisorText.slice(diffIndex) + "]]"
+                        })
+
+                        inDifference = true
+                    }
+                } else {
+                    inDifference = false
+                }
+            }
+            return differences
+        }
+    },
+
     //TODO: Implement the rest - starts line #2267
 }
 
@@ -1688,437 +2211,9 @@ function oldready() {
     //Get the URL Parts
     let urlParts = window.location.href.split("/")
 
-    //If currently reviewing
-    if ((urlParts.length > 4 && urlParts[4] === "advisor") || (urlParts.length > 4 && urlParts[4] === "advisor#")) {
-        //Add p on side for Advisor Tags
-        $($(".details-wrapper").find("header")).append(
-            '<p class="secondary center advisor-tags" style="font-size: .8em"></p>'
-        )
-        let advisorId = urlParts[urlParts.length - 1]
-        if (advisorId[advisorId.length - 1] == "#") advisorId = advisorId.substr(0, advisorId.length - 1)
-
-        //Get advisor
-        let advisor = getAdvisorInfoByID(advisorId)
-
-        //Create string with tags
-        let tags = ""
-        if (advisor && advisor.settings && advisor.settings.broker_tags)
-            advisor.settings.broker_tags.forEach(function (e) {
-                tags += "<br>" + e.name
-            })
-
-        //Add tags
-        $(".advisor-tags").html(tags.substr(4, tags.length))
-        if (advisor && advisor.email)
-            $(".advisor-quick-links").append(
-                '<a href="/manage/revisions?email=' +
-                    encodeURIComponent(advisor.email) +
-                    '" class="btn pill secondary btn--action-default" style="max-width: unset">View Revisions</a>'
-            )
-
-        $(".advisor-actions").append(
-            '<li><a href="https://' +
-                advisor?.site?.settings?.subdomain +
-                '.app.twentyoverten.com" class="tot_tip top center" data-content="View Preview Website"><svg id="icon-preview-website" viewBox="0 0 24 24" class="action-icon"> <path d="M8.617,12.682H5.9a6.149,6.149,0,0,0,4.544,5.258,12.465,12.465,0,0,1-1.207-2.378A9.792,9.792,0,0,1,8.617,12.682Z"> </path> <path d="M10.444,6.062A6.147,6.147,0,0,0,5.9,11.318H8.617A10.69,10.69,0,0,1,10.444,6.062Z"></path> <path d="M9.981,11.32h4.038A8.453,8.453,0,0,0,13.8,9.956a9.382,9.382,0,0,0-.376-1.207,10.325,10.325,0,0,0-.479-1.036q-0.271-.511-0.49-0.841T12,6.237q-0.235.3-.45,0.637t-0.49.844a9.048,9.048,0,0,0-.858,2.24A8.275,8.275,0,0,0,9.981,11.32Z"> </path> <path d="M12,0A12,12,0,1,0,24,12,12,12,0,0,0,12,0Zm7.242,13.947a7.416,7.416,0,0,1-1.843,3.26,7.431,7.431,0,0,1-1.457,1.18,7.514,7.514,0,0,1-1.728.781,7.408,7.408,0,0,1-1.925.327Q12.192,19.5,12,19.5t-0.288-.005a7.514,7.514,0,0,1-6.235-3.787,7.6,7.6,0,0,1-.719-1.76,7.461,7.461,0,0,1,0-3.893A7.416,7.416,0,0,1,6.6,6.794a7.431,7.431,0,0,1,1.457-1.18,7.514,7.514,0,0,1,1.728-.781,7.408,7.408,0,0,1,1.925-.327Q11.808,4.5,12,4.5t0.288,0.005a7.514,7.514,0,0,1,6.235,3.787,7.6,7.6,0,0,1,.719,1.76A7.461,7.461,0,0,1,19.242,13.947Z"> </path> <path d="M13.556,6.061h0a10.792,10.792,0,0,1,1.833,5.258H18.1A6.149,6.149,0,0,0,13.556,6.061Z"></path> <path d="M13.555,17.94A6.15,6.15,0,0,0,18.1,12.682H15.387A10.782,10.782,0,0,1,13.555,17.94Z"></path> <path d="M14.019,12.682H9.981a8.453,8.453,0,0,0,.221,1.364,9.381,9.381,0,0,0,.376,1.207,10.312,10.312,0,0,0,.479,1.036q0.271,0.511.49,0.841T12,17.765q0.235-.3.453-0.637t0.49-.844a10.017,10.017,0,0,0,.479-1.036,9.631,9.631,0,0,0,.376-1.2A8.274,8.274,0,0,0,14.019,12.682Z"> </path> </svg></a></li>'
-        )
-
-        //Load Notes
-        let notesLoaded = false
-        $("#advisor-details").prepend(
-            '<div class="sidebar-module advisor-notes" tabindex="0" ><div class="sidebar-module-icon"><i class="far fa-pencil-alt"></i><span>Notes</span></div><div class="sidebar-module-wrapper"><div class="sidebar-module-header">Website Notes</div><div class="sidebar-module-body"><div class="sidebar-module-message"><div class="sidebar-module-message-content" style="color: #9a9a9a; border-radius: 10px; "><textarea style="width: 100%;height: 100%;padding: 5px;" class="updateNotes-textarea" placeholder="Loading Notes..."></textarea></div></div></div><div class="sidebar-module-footer"><button class="btn updateNotes-button" style="display: none">Save</button></div></div></div>'
-        )
-        $(".advisor-notes").on("click", function () {
-            loadNotes()
-        })
-        $(".updateNotes-textarea").on(
-            "keyup",
-            delay(() => $(".updateNotes-button").show(), 1000)
-        )
-
-        let statusesLoaded = false
-        $("#advisor-details").prepend(
-            '<div class="sidebar-module advisor-statuses" tabindex="0" ><div class="sidebar-module-icon"><i class="far fa-comments-alt"></i><span>Status</span></div><div class="sidebar-module-wrapper"><div class="sidebar-module-header">Website Status</div><div class="sidebar-module-body"><div class="sidebar-module-message statusPlaceholder"><div class="sidebar-module-message-content" style=" padding: 20px; color: #9a9a9a; border-radius: 10px; text-align:center">Loading Statuses...</div></div></div><div class="sidebar-module-footer"><textarea class="addStatus-input" type="text" placeholder="Add a status"></textarea><button class="btn addStatus-button">Send</button></div></div></div>'
-        )
-        $(".advisor-statuses").on("click", function () {
-            loadStatuses()
-        })
-
-        //Notes
-        $(".updateNotes-button").on("click", function (event) {
-            $(".updateNotes-button").text("Updating Notes...")
-            updateNotes(advisorId, $(".updateNotes-textarea").val())
-                .then((data) => {
-                    $(".updateNotes-button").text("Notes Updated!")
-                    setTimeout(function () {
-                        $(".updateNotes-button").text("Save")
-                        $(".updateNotes-button").hide()
-                    }, 1500)
-                })
-                .catch((err) => {
-                    $(".updateNotes-button").text("Unable to update notes!")
-                    setTimeout(function () {
-                        $(".updateNotes-button").text("Save")
-                    }, 1500)
-                })
-        })
-
-        function loadNotes() {
-            if (notesLoaded) return
-
-            getNotes(advisorId)
-                .then((notes) => {
-                    notesLoaded = true
-                    $(".updateNotes-textarea")[0].placeholder =
-                        "There are no notes for this website.\nClick here to add some."
-                    if (notes) $(".updateNotes-textarea").val(notes.message)
-                })
-                .catch((err) => {
-                    $(".updateNotes-textarea")[0].placeholder = "Unable to load notes."
-                })
-        }
-
-        $(".addStatus-button").on("click", function (event) {
-            let officer = $("#header").find(".display-name + small").text()
-            let message = $(".addStatus-input").val()
-            let now = new Date()
-            addStatus(advisorId, officer, message)
-                .then((data) => {
-                    $(".statusPlaceholder").remove()
-                    $(".addStatus-input").val("")
-                    let date = now
-                    let term = date.getHours() >= 12 ? "pm" : "am"
-                    date =
-                        date.getMonth() +
-                        "/" +
-                        date.getDate() +
-                        "/" +
-                        date.getFullYear() +
-                        " - " +
-                        (date.getHours() % 12 || 12) +
-                        ":" +
-                        (date.getMinutes() < 10 ? "0" : "") +
-                        date.getMinutes() +
-                        term
-                    $(".sidebar-module.advisor-statuses .sidebar-module-body").append(
-                        '<div class="sidebar-module-message"><div class="sidebar-module-message-icon"><i class="fas fa-trash-alt"></i></div><div class="sidebar-module-message-info"><span class="sidebar-module-message-name">' +
-                            officer +
-                            '</span><span class="sidebar-module-message-time" data-time="' +
-                            now.getTime() +
-                            '">' +
-                            date +
-                            '</span></div><div class="sidebar-module-message-content">' +
-                            message +
-                            "</div></div>"
-                    )
-                    $(".sidebar-module.advisor-statuses .sidebar-module-body").scrollTop(function () {
-                        return this.scrollHeight
-                    })
-                    $(".sidebar-module-message-icon")
-                        .off()
-                        .on("click", function (e) {
-                            let confirmation = confirm("Are you sure you want to delete this status?")
-                            if (confirmation == true) {
-                                let messageModule = $(this).parent()
-                                let timeStamp = messageModule.find("[data-time]").data("time")
-                                delStatus(advisorId, timeStamp)
-                                    .then((data) => {
-                                        messageModule.remove()
-                                    })
-                                    .catch((err) => {
-                                        alert("Unable to delete status.")
-                                    })
-                            }
-                        })
-                })
-                .catch((err) => {
-                    alert("Unable to add Status")
-                })
-        })
-
-        function loadStatuses() {
-            if (statusesLoaded) {
-                $(".sidebar-module.advisor-statuses .sidebar-module-body").scrollTop(function () {
-                    return this.scrollHeight
-                })
-                return
-            }
-
-            getStatuses(advisorId).then((statuses) => {
-                statusesLoaded = true
-                if (statuses.length > 0) {
-                    $(".sidebar-module.advisor-statuses .sidebar-module-body").empty()
-                    statuses
-                        .sort(function (i1, i2) {
-                            if (i1.timestamp > i2) return -1
-                            else return 1
-                        })
-                        .forEach((item) => {
-                            let date = new Date(item.timestamp)
-                            let term = date.getHours() >= 12 ? "pm" : "am"
-                            date =
-                                date.getMonth() +
-                                1 +
-                                "/" +
-                                date.getDate() +
-                                "/" +
-                                date.getFullYear() +
-                                " - " +
-                                (date.getHours() % 12 || 12) +
-                                ":" +
-                                (date.getMinutes() < 10 ? "0" : "") +
-                                date.getMinutes() +
-                                term
-                            $(".sidebar-module.advisor-statuses .sidebar-module-body").append(
-                                '<div class="sidebar-module-message"><div class="sidebar-module-message-icon"><i class="fas fa-trash-alt"></i></div><div class="sidebar-module-message-info"><span class="sidebar-module-message-name">' +
-                                    item.officer +
-                                    '</span><span class="sidebar-module-message-time" data-time="' +
-                                    item.timestamp +
-                                    '">' +
-                                    date +
-                                    '</span></div><div class="sidebar-module-message-content">' +
-                                    item.message +
-                                    "</div></div>"
-                            )
-                        })
-                    $(".sidebar-module.advisor-statuses .sidebar-module-body").scrollTop(function () {
-                        return this.scrollHeight
-                    })
-                    $(".sidebar-module-message-icon")
-                        .off()
-                        .on("click", function (e) {
-                            let confirmation = confirm("Are you sure you want to delete this status?")
-                            if (confirmation == true) {
-                                let messageModule = $(this).parent()
-                                let timeStamp = messageModule.find("[data-time]").data("time")
-                                delStatus(advisorId, timeStamp)
-                                    .then((data) => {
-                                        messageModule.remove()
-                                    })
-                                    .catch((err) => {
-                                        alert("Unable to delete status.")
-                                    })
-                            }
-                        })
-                } else
-                    $(".sidebar-module.advisor-statuses .sidebar-module-message-content").html(
-                        "There are no statuses for this website."
-                    )
-            })
-        }
-
-        //Scroll down if needed
-        setTimeout(function () {
-            if (localStorage.getItem("lastReviewed")) {
-                let lastReviewed = JSON.parse(localStorage.getItem("lastReviewed"))
-                if (lastReviewed && lastReviewed.id == advisorId) {
-                    localStorage.setItem("lastReviewed", null)
-                    $([document.documentElement, document.body]).animate(
-                        {
-                            scrollTop: $(".title:contains(" + lastReviewed.title + ")").offset().top - 120,
-                        },
-                        1000
-                    )
-                } else localStorage.setItem("lastReviewed", null)
-            }
-        }, 2000)
-
-        if (localStorage.getItem("IsSiteForward") == "true") {
-            $(".changes-header .btn-group").append(
-                '<a href="#" class="btn pill btn--action-approve approve-all">Approve All</a><a href="#" class="btn pill btn--action-review add-note-to-all">Add Note to All</a>'
-            )
-            document.querySelector(".approve-all").addEventListener("click", () => {
-                document.querySelectorAll(".approve-item").forEach((elm) => elm.click())
-            })
-            document.querySelector(".add-note-to-all").addEventListener("click", () => {
-                var note = prompt("Add your note")
-                if (note != null) {
-                    let revision_ids = [...document.querySelectorAll(".revision-note")].map((rev) =>
-                        rev.getAttribute("data-id")
-                    )
-                    let promises = []
-                    revision_ids.forEach((id) => {
-                        promises.push(
-                            new Promise((resolve, reject) => {
-                                $.ajax({
-                                    method: "PUT",
-                                    dataType: "json",
-                                    cache: false,
-                                    data: { internal_notes: note },
-                                    url: "https://app.twentyoverten.com/api/revisions/" + id,
-                                    success: function () {
-                                        resolve(id)
-                                    },
-                                    error: function () {
-                                        reject(id)
-                                    },
-                                })
-                            })
-                        )
-                    })
-                    Promise.all(promises).then(() => window.location.reload())
-                }
-            })
-        }
-
-        if ($(".changes-list")[0]?.children.length == 0) {
-            $("body.providence .review-submission").css("bottom", "100px")
-            $(".changes-list").append(
-                "<h3>Something was put into draft mode</h3><p>This is a bug in the platform and shouldn't have come in for review.</p>"
-            )
-        }
-
-        //Add pending review count
-        $(".approved-count").after(
-            '<div class="approved-count pending-count"><span class="active">' +
-                $(".review-item:not(.approved-status):not(.rejected-status)").length +
-                "</span> Pending Changes</div>"
-        )
-
-        //Update pending review count on approve/reject click
-        $(".btn--action-approve, .btn--action-reject").on("click", function () {
-            $(".pending-count span").html($(".review-item:not(.approved-status):not(.rejected-status)").length)
-        })
-
-        $(".btn--action-default.revision-note, .btn--action-reject").on("click", function () {
-            let scrollBackTo = $(this)
-
-            setTimeout(
-                delay((e) => {
-                    //Add notes & scroll back down when save is clicked
-                    $(".settings-wrapper .btn.primary.btn-lg.save, .settings-wrapper .btn.btn-text.cancel").on(
-                        "click",
-                        function () {
-                            //Wait 2 seconds
-                            setTimeout(
-                                delay((e) => {
-                                    updateAllReviewItemNotes()
-                                    $([document.documentElement, document.body]).animate(
-                                        {
-                                            scrollTop: scrollBackTo.offset().top - 120,
-                                        },
-                                        1000
-                                    )
-                                }),
-                                1500
-                            )
-                        }
-                    )
-                }),
-                2000
-            )
-        })
-
-        //When archives are opened
-        $(".open-archives").on("click", function () {
-            //Wait 2 seconds
-            let attempts = 0,
-                waiting = setInterval(() => {
-                    if (attempts++ > 50) {
-                        clearInterval(waiting)
-                        alert(
-                            "Unable to load Archives.\nThis is a known bug, to fix it please log in as the account then refresh this page or view the archives in the website engine."
-                        )
-                    }
-
-                    if (document.querySelector("#archives-overlay").classList.contains("loading")) return
-
-                    // For each archive item adjust the styling
-                    $(".archive-item").each(function () {
-                        $(this).css("flex-flow", "row wrap")
-                        $(this).find(".archive-actions")[0].style = "position: absolute; top: 20px; right: 20px;"
-
-                        //Load the archive note
-                        let url = $(this).find(".btn-group").children().first()[0].href
-                        updateNotes(this, url)
-                    })
-
-                    async function updateNotes(item, url) {
-                        //Get the notes
-                        let notes = await getNotes(url)
-
-                        //Add the notes, and the styling
-                        if (notes) {
-                            $(item).append(
-                                '<div class="compliance-notes" style="font-size: 14px; width: 100%;">' +
-                                    notes +
-                                    "</div>"
-                            )
-                            $(item).find("span.small").css("font-size", "12px")
-                        }
-                    }
-
-                    function getNotes(url) {
-                        return new Promise(function (resolve) {
-                            //Read the note from the page
-                            $.get(url).done((data) => {
-                                let $data = $(data)
-
-                                //Try to get the notes
-                                let notes = $data.find(".is-compliance-notes").html()
-
-                                //Get the notes if it wasn't found the previous way
-                                if (!notes)
-                                    notes =
-                                        '<span class="small">Approved By: ' +
-                                        $($data.find(".print-timestamp-title + span")[2]).html() +
-                                        "</span>"
-                                resolve(notes)
-                            })
-                        })
-                    }
-
-                    clearInterval(waiting)
-                }, 50)
-        })
-
-        updateAllReviewItemNotes()
-
-        function updateAllReviewItemNotes() {
-            // For all approved/rejected items get the review information
-            $(".review-item").each(async function (i, e) {
-                let $e = $(e)
-                let reviewId = $e.find(".review-actions").find(".revision-note").data("id")
-
-                //TODO: Use revision api
-
-                //If a review id was found, get the review - need to do this way as revision API doesn't return officer info
-                if (reviewId) {
-                    displayReviewer(baseUrl + "manage/revisions/" + advisorId + "/" + reviewId, $e, function () {
-                        if (!$e.hasClass("approved-status") && !$e.hasClass("rejected-status"))
-                            $e.find(".review-item-preview").find(".approvedByNote").text("")
-                    })
-                }
-            })
-        }
-
-        //For each review item check if it's a link
-        $(".review-item").each(function (i, e) {
-            if (
-                $(e).find(".review-actions a")[0].innerHTML == "View Link" ||
-                $(e).find(".review-actions a")[0].innerHTML == "Review Link"
-            ) {
-                let link = $(e).find(".review-url").text()
-                let review = $(e).find(".review-actions a")[0]
-
-                //Indicate if the link is External or Internal
-                if (link.indexOf("http") >= 0) review.innerHTML = "Visit External Link"
-                else if (link.indexOf("#") >= 0) {
-                    review.innerHTML = "Visit Section Link"
-                    review.href = review.href.replace("app.twentyoverten.com/manage/advisor/", "")
-                } else {
-                    review.innerHTML = "Navigation Link"
-                    review.removeAttribute("href")
-                    review.style = "cursor: no-drop"
-                    review.classList.add("approve-item")
-                    review.classList.add("active")
-                    review.title = "Just a navigation link, has no content."
-                }
-            }
-        })
-    }
 
     // Revisions Page
-    else if (
+     if (
         (urlParts.length > 4 && urlParts[4].indexOf("revisions") == 0) ||
         (urlParts.length > 4 && urlParts[4].indexOf("revisions#") == 0)
     ) {
@@ -2252,353 +2347,6 @@ function oldready() {
             .last()
             .after(
                 '<option value="500">500</option><option value="1000">1000</option><option value="2000">2000</option><option value="999999">All</option>'
-            )
-    }
-
-    // Reviewing a review item page
-    else if (urlParts.length > 4 && urlParts[4].indexOf("review") == 0) {
-        let advisorId = urlParts[urlParts.length - 2]
-        let reviewId = urlParts[urlParts.length - 1]
-        let revisionId = document.querySelector(".btn--action-reject.reject-item").getAttribute("data-id")
-
-        //Remove any trailing parts of the URL
-        if (reviewId[reviewId.length - 1] == "#") reviewId = reviewId.substr(0, reviewId.length - 1)
-
-        //Add a simple add notes option
-        $(".review-tools").append(
-            '<button class="btn btn--action-default revision-note" data-id="' + revisionId + '">Add Notes</button>'
-        )
-        $(".revision-note").on("click", () => {
-            var note = prompt("Add your note")
-            if (note != null)
-                $.ajax({
-                    method: "PUT",
-                    dataType: "json",
-                    cache: false,
-                    data: { internal_notes: note },
-                    url: "https://app.twentyoverten.com/api/revisions/" + revisionId,
-                    success: function () {
-                        console.log("success")
-                    },
-                    error: function () {
-                        console.log("fail")
-                    },
-                })
-        })
-
-        //Add "View Revision" button and revision notes to the review tools navigation
-        if (
-            $(".review-tools").find('a[href="#approve"].active').length > 0 ||
-            $(".review-tools").find('a[href="#reject"].active').length > 0
-        ) {
-            $(".review-tools").append(
-                '<a href="' +
-                    window.location.href.replace("review", "revisions") +
-                    '" class="btn pill secondary btn-sm primary btn--action-review" target="_blank">View Revision</a>'
-            )
-
-            // Doesn't fit nicely
-            // displayReviewer(baseUrl+'manage/revisions/' + advisorId + '/' + reviewId, $(".review-title"));
-        }
-        localStorage.setItem(
-            "lastReviewed",
-            JSON.stringify({
-                id: advisorId,
-                title: $(".title")[0].childNodes[1].nodeValue.trim(),
-            })
-        )
-
-        //Check if item in review is content
-        checkIfContent(revisionId).then((result) => {
-            const OUTPUT_DIFFERENCES = true
-            if (!result.is_post) return // If it's not a post do nothing
-
-            console.log(result)
-            const from_siteforward = Object.keys(result.from_siteforward).length != 0
-            const from_vendor = Object.keys(result.from_vendor).length != 0
-            const was_edited = result.edits && (result.edits.title.length > 0 || result.edits.content.length > 0)
-
-            //Check where the content is from
-            let who = ""
-            if (result.is_custom) who = "Custom"
-            else if (from_vendor) who = "Vendor Provided"
-            else if (from_siteforward) who = "SiteForward Provided"
-
-            if (was_edited) {
-                who = "Edited " + who
-                let differences = ""
-
-                if (OUTPUT_DIFFERENCES && result.edits.title.length > 0) {
-                    differences += '<h2 style="font-size: 1.25em;border-bottom: 1px solid #ccc;">Title Differences</h2>'
-                    result.edits.title.forEach((e) => {
-                        differences += `
-               <div style="display: flex; justify-content: space-between; gap: 2rem; border-bottom: 1px dashed #ccc;">
-               <div style="flex: 1;">
-                  <p><span style="font-style: italic">Vendor:</span><br>${escapeHTML(e.vendor)
-                      .replace(/\[\[/g, "<strong>[")
-                      .replace(/\]\]/g, "]</strong>")}</p>
-               </div>
-               <div style="flex: 1;">
-                  <p><span style="font-style: italic">Advisor:</span><br>${escapeHTML(e.advisor)
-                      .replace(/\[\[/g, "<strong>[")
-                      .replace(/\]\]/g, "]</strong>")}</p>
-               </div>
-               </div>`
-                    })
-                }
-                if (OUTPUT_DIFFERENCES && result.edits.content.length > 0) {
-                    if (differences != "") differences += "<br><br>"
-                    differences +=
-                        '<h2 style="font-size: 1.25em;border-bottom: 1px solid #ccc;">Content Differences</h2>'
-                    result.edits.content.forEach((e) => {
-                        differences += `
-               <div style="display: flex; justify-content: space-between; gap: 2rem; border-bottom: 1px dashed #ccc;">
-               <div style="flex: 1;">
-                  <p><span style="font-style: italic">Vendor:</span><br>${escapeHTML(e.vendor)
-                      .replace(/\[\[/g, "<strong>[")
-                      .replace(/\]\]/g, "]</strong>")}</p>
-               </div>
-               <div style="flex: 1;">
-                  <p><span style="font-style: italic">Advisor:</span><br>${escapeHTML(e.advisor)
-                      .replace(/\[\[/g, "<strong>[")
-                      .replace(/\]\]/g, "]</strong>")}</p>
-               </div>
-               </div>`
-                    })
-                }
-
-                function escapeHTML(str) {
-                    return (str || "")
-                        .replace(/&/g, "&amp;")
-                        .replace(/</g, "&lt;")
-                        .replace(/>/g, "&gt;")
-                        .replace(/"/g, "&quot;")
-                        .replace(/'/g, "&#039;")
-                }
-
-                const trigger = document.querySelector(".open-differences")
-
-                trigger.addEventListener("click", function (event) {
-                    // Create dialog
-                    const dialog = document.createElement("dialog")
-                    dialog.setAttribute("id", "differences-dialog")
-
-                    // Add content
-                    const text = document.createElement("div")
-                    text.innerHTML = differences
-                    dialog.appendChild(text)
-
-                    // Append to body
-                    document.body.appendChild(dialog)
-
-                    // Position near the button
-                    const rect = trigger.getBoundingClientRect()
-                    dialog.style.cssText = `top: ${rect.bottom + 5}px;`
-
-                    // Show the dialog (non-modal)
-                    dialog.show()
-
-                    // Close when clicking outside
-                    const handleClickOutside = (e) => {
-                        if (!dialog.contains(e.target)) {
-                            dialog.close()
-                            dialog.remove()
-                            document.removeEventListener("click", handleClickOutside)
-                        }
-                    }
-
-                    // Delay to avoid immediate close from the same click
-                    setTimeout(() => {
-                        document.addEventListener("click", handleClickOutside)
-                    }, 0)
-                })
-            }
-
-            let difference_compare = document.querySelector(".open-differences")
-            difference_compare.setAttribute("title", `${who} Content${was_edited ? " (Click to see differences)" : ""}`)
-            let icon_classes = difference_compare.querySelector("i").classList
-            icon_classes.remove("fa-spinner")
-            if (result.is_custom) icon_classes.add("fa-edit")
-            else if (was_edited) icon_classes.add("fa-user-edit")
-            else if (from_siteforward || from_vendor) icon_classes.add("fa-copy")
-        })
-
-        async function checkIfContent(revisionId) {
-            //Get the current review item
-            let current_item = await fetch("https://app.twentyoverten.com/api/revisions/" + revisionId)
-            current_item = await current_item.json()
-
-            return new Promise((resolve) => {
-                if (current_item.location != "post") resolve({ is_post: false })
-                else {
-                    $(".floating-review-item-wrapper").append(
-                        `<div class="floating-review-item open-differences" title="Checking the file source"><i class="fas fa-spinner"></i></div>`
-                    )
-
-                    //Check both bukets
-                    let is_custom = current_item.content_id == null
-                    let from_siteforward = getContent(current_item, "https://app.twentyoverten.com/api/content/broker")
-                    let from_vendor = getContent(current_item, "https://app.twentyoverten.com/api/content")
-
-                    // When both promises are done check for edits, and then resolve the parent promise
-                    Promise.all([from_siteforward, from_vendor]).then((values) => {
-                        let edits = null
-
-                        // If article isn't custom get the differences
-                        let found_article = values[0]
-                        if (Object.keys(found_article).length === 0)
-                            // If current found article doesn't exist, assign the next
-                            found_article = values[1]
-                        if (Object.keys(found_article).length === 0)
-                            // If it still doesn't exist, make it null
-                            found_article = null
-
-                        if (found_article) {
-                            is_custom = false // Sometimes articles won't have a content_id, but will still be from content assist - this is confirmed by checking title and html
-                            current_item = { title: current_item.title, html: current_item.content }
-                            const title = getArrayDifferences(
-                                parseHTML(found_article.title),
-                                parseHTML(current_item.title)
-                            )
-                            const content = getArrayDifferences(
-                                parseHTML(found_article.html),
-                                parseHTML(current_item.html)
-                            )
-                            edits = { title, content }
-                        }
-
-                        resolve({
-                            is_post: true,
-                            is_custom,
-                            from_siteforward: values[0],
-                            from_vendor: values[1],
-                            current_item,
-                            edits,
-                        })
-                    })
-
-                    // Function to parse HTML into an array of tags and content
-                    function parseHTML(html) {
-                        // Update the regex to also capture content outside of HTML tags
-                        const regex =
-                            /(<h[1-6][^>]*>[\s\S]*?<\/h[1-6]>)|(<p[^>]*>[\s\S]*?<\/p>)|(<li[^>]*>[\s\S]*?<\/li>)|(<img[^>]*>)|(<a[^>]*>[\s\S]*?<\/a>)|([^<>]+)/gi
-                        let match
-                        const result = []
-                        while ((match = regex.exec(html)) !== null) {
-                            if (match[0].trim()) {
-                                // Ensure we don't push empty strings
-                                result.push(match[0].trim())
-                            }
-                        }
-                        return result
-                    }
-
-                    // Function to find the first index at which two strings differ
-                    function findDifferenceIndex(str1, str2) {
-                        let index = 0
-                        while (index < str1.length && index < str2.length) {
-                            if (str1[index] !== str2[index]) {
-                                return index
-                            }
-                            index++
-                        }
-                        return index
-                    }
-
-                    // Function to compare two arrays and return differences with brackets
-                    function getArrayDifferences(arr1, arr2) {
-                        const differences = []
-                        const maxLength = Math.max(arr1.length, arr2.length)
-                        let inDifference = false // Flag to track if we're in the middle of a difference
-
-                        for (let i = 0; i < maxLength; i++) {
-                            if (arr1[i] !== arr2[i]) {
-                                if (!inDifference) {
-                                    const vendorText = arr1[i] || ""
-                                    const advisorText = arr2[i] || ""
-
-                                    const diffIndex = findDifferenceIndex(vendorText, advisorText)
-
-                                    const vendorDiff =
-                                        vendorText.slice(0, diffIndex) + "[[" + vendorText.slice(diffIndex) + "]]"
-                                    const advisorDiff =
-                                        advisorText.slice(0, diffIndex) + "[[" + advisorText.slice(diffIndex) + "]]"
-
-                                    differences.push({
-                                        vendor: vendorDiff,
-                                        advisor: advisorDiff,
-                                    })
-
-                                    inDifference = true // Start tracking the difference
-                                }
-                            } else {
-                                inDifference = false // Reset the difference flag when texts align again
-                            }
-                        }
-                        return differences
-                    }
-                }
-            })
-        }
-
-        async function getContent(current_item, url) {
-            let custom_content_list = await fetch(url)
-            custom_content_list = await custom_content_list.json()
-
-            // Check if content API loaded
-            if (!custom_content_list.content) {
-                let difference_compare = document.querySelector(".open-differences")
-                difference_compare.setAttribute(
-                    "title",
-                    `Error: Unable to load content API.\nPlease login as advisor to load the content API.`
-                )
-                let icon_classes = difference_compare.querySelector("i").classList
-                icon_classes.remove("fa-spinner")
-                icon_classes.add("fa-exclamation-circle")
-            }
-
-            //Check list of all content in bucket to see if title and content match
-            return new Promise(function (resolve) {
-                custom_content_list.content.forEach((blog) => {
-                    if (blog._id == current_item.content_id) resolve({ title: blog.title, html: blog.html })
-                    else if (blog.title == current_item.title && blog.html == current_item.content)
-                        resolve({ title: blog.title, html: blog.html })
-                })
-                resolve({})
-            })
-        }
-
-        // Add Dark toggle button
-        $(".review-header").append(
-            '<div class="floating-review-item-wrapper"> <div class="floating-review-item dark-toggle" title="Toggle page preview darkness"><i class="fas fa-moon"></i></div></div>'
-        )
-        $(".dark-toggle").on("click", function () {
-            let i = $(this).find("i")
-            i.toggleClass("fa-moon")
-            i.toggleClass("fa-sun")
-            $(".change-item").toggleClass("darken")
-        })
-
-        // Add the tags on the left
-        $($(".details-wrapper").find("header")).append('<p class="secondary center advisor-tags"></p>')
-
-        //Get advisor
-        let advisor = getAdvisorInfoByID(advisorId)
-
-        //Create string with tags
-        let tags = ""
-        if (advisor && advisor.settings && advisor.settings.broker_tags)
-            advisor.settings.broker_tags.forEach(function (e) {
-                tags += "<br>" + e.name
-            })
-
-        //Add tags
-        $(".advisor-tags").html(tags.substr(4, tags.length))
-        if (advisor && advisor.email)
-            $(".advisor-quick-links").append(
-                '<a href="/manage/revisions?email=' +
-                    encodeURIComponent(advisor.email) +
-                    '" class="btn pill secondary btn--action-default" style="max-width: unset">View Revisions</a>'
             )
     }
 
@@ -2794,9 +2542,7 @@ function oldready() {
         }
     }
 
-    //Home Page
-    else {
-    }
+   
 }
 
 //Check if the tag exists in the advisor's tags(NOT Exact match)

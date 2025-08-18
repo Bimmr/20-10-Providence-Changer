@@ -22,11 +22,10 @@ body.providence .dataTables_info select, body.providence .dataTables_length sele
 /* Table details */
 body.providence .table .show-email {font-size: 0.9em}
 body.providence .table span.advisor-tags {font-size: 0.75em}
-
 body.providence .table .chip--approved{ background: #bdffe9 !important}
 
 /* Pending Review Count */
-.providence-pending--title{padding: 1em;}
+.providence-pending--title{padding: 1em; max-height: 40%; overflow-y: auto;}
 .review-table{width: 100%;font-size: .6em;border-top: 1px solid rgba(98,98,98,0.5); color: rgba(140,140,140,0.8); padding-top: .5rem; font-family: "CircularXXWeb-Book",Helvetica,Arial,sans-serif;}
 .review-table thead{border-bottom: 1px dashed rgba(88,88,88,0.50);}
 .review-table thead:first-of-type{border-bottom: 1px solid rgba(88,88,88,.75);}
@@ -38,6 +37,8 @@ body.providence .table .chip--approved{ background: #bdffe9 !important}
 .review-table td{color: #737373;}
 .review-table tr:hover td{color: #08aeea; cursor: pointer;}
 .review-table .active td{color: #08aeea;}
+.review-table .expand-toggle{cursor: pointer; font-size:0.75em;padding-left: 2px;}
+.review-table .expand-toggle:hover{color: #08aeea;}
 
 
 /* Cards */
@@ -115,6 +116,7 @@ body.providence #revisions-list.reportorized td.revisions-notes, body.providence
 
 #advisor-details .details-wrapper{max-height: calc(100% - 50px); overflow-y: auto;}
 #advisor-details .details-wrapper .btn-container{flex-flow: row wrap;}
+#advisor-details .btn-container .btn:last-of-type{margin: 5px auto;}
 
 #advisor-details .advisor-tags{font-size: 0.8em;}
 #review-changes .review-item .review-item-preview{display: flex; flex-flow: row wrap;}
@@ -144,13 +146,13 @@ body.providence #revisions-list.reportorized td.revisions-notes, body.providence
 #advisor-details{overflow: unset !important}
 .sidebar-module, .sidebar-module *{ transition: 0.5s top, 0.5s right, 0.5s width, 0.5s height}
 .sidebar-module{cursor: pointer; overflow: hidden; position: absolute; top: 0px; right: -25px; background: #f9f9f9; width: 25px; height: 90px; box-shadow: 1px 1px 1px #bdbdbd; color: #9c9c9c; border-radius: 0 5px 5px 0;}
-.sidebar-module:is(:focus, :focus-within){cursor: auto;right: -300px; width: 300px; height: 100%;}
+.sidebar-module:is(:focus, :focus-within, .open){cursor: auto;right: -300px; width: 300px; height: 100%;}
 .sidebar-module .sidebar-module-icon{top: -5px; position: absolute; left: 12px; opacity: 1; transform: rotate(90deg); transform-origin: left; display: flex; width: 150px;}
 .sidebar-module .sidebar-module-icon span{left: 10px; position: relative;}
 .sidebar-module .sidebar-module-icon i{top: 4px; position: relative;}
-.sidebar-module:is(:focus, :focus-within) .sidebar-module-icon{left: -50px; opacity: 0}
+.sidebar-module:is(:focus, :focus-within, .open) .sidebar-module-icon{left: -50px; opacity: 0}
 .sidebar-module .sidebar-module-wrapper{position: absolute; top: 0;left:0; opacity: 0; width: 100%; display: flex; flex-flow: column;height: 100%;}
-.sidebar-module:is(:focus, :focus-within) .sidebar-module-wrapper{opacity: 1;}
+.sidebar-module:is(:focus, :focus-within, .open) .sidebar-module-wrapper{opacity: 1;}
 .sidebar-module-header{font-size: 1.5em; text-align: center; padding: 10px; background: rgba(210,210,210,0.5); width: 100%; box-shadow: 0px 5px 10px 0px rgb(0 0 0 / 20%); border-bottom: 1px solid #cecece; color: #4d4d4d;}
 .sidebar-module-body{flex: 1; overflow: auto;}
 .sidebar-module-message{ margin: 15px 10px; position: relative; overflow: hidden;}
@@ -162,7 +164,7 @@ body.providence #revisions-list.reportorized td.revisions-notes, body.providence
 
 .sidebar-module.advisor-notes:is(:focus, :focus-within){z-index: 1;}
 .sidebar-module.advisor-statuses{top: 90px;}
-.sidebar-module.advisor-statuses:is(:focus, :focus-within){top: 0; z-index: 1;}
+.sidebar-module.advisor-statuses:is(:focus, :focus-within, .open){top: 0; z-index: 1;}
 .sidebar-module.advisor-statuses .sidebar-module-message .sidebar-module-message-icon {position: absolute; width: 20px; height: 20px; bottom: 1px; right: -50px; color: #111; opacity: 0; transition: .3s all ease-in-out;  font-size: .85em; cursor: pointer;}
 .sidebar-module.advisor-statuses .sidebar-module-message:is(:hover) .sidebar-module-message-icon {opacity: .5; right: -4px;}
 .sidebar-module.advisor-statuses .addStatus-input{width: 100%; padding: 5px;font-size: .9em;}
