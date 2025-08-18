@@ -124,11 +124,12 @@ body.providence #revisions-list.reportorized td.revisions-notes, body.providence
 #review-changes .review-item.approved-status .review-details{color:#007750 !important;}
 #review-changes .review-item.rejected-status .review-details{color:#c0392b !important;}
 #review-changes .review-item :is(.review-note, .review-rejection){flex-grow: 1;}
-#review-changes :is(.review-note, .review-rejection) > h3{margin: 10px 0;font-weight: bold;}
+#review-changes :is(.review-note, .review-rejection) > h3{margin: 10px 0;font-weight: bold; text-decoration: underline;}
 #review-changes .review-item .review-note > h3{color:#007750 !important;}
 #review-changes .review-item .review-rejection > h3{color:#c0392b !important;}
 #review-changes :is(.review-note, .review-rejection) .review-html{font-size: 0.8em;}
 #review-changes .review-item.approved-status .review-rejection{display: none;}
+/* TODO: When both a review and rejection are present, add margin to the review, padding and border to the rejection
 
 /* Language toggle in review */
 #review-item .change-item div[data-lang]{display: block !important; position: relative;}

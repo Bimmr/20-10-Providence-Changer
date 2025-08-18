@@ -2,7 +2,7 @@ let database = null
 
 $(async function () {
     try {
-        await waitForCondition(() => typeof isSiteForward === "function", 5000)
+        await waitForCondition(() => typeof isSiteForward === "function" && typeof DatabaseClient != "undefined", 5000)
         database = new DatabaseClient()
         console.log("Providence Changer Loaded")
         ready()
@@ -13,16 +13,16 @@ $(async function () {
 
 /**
  * Wait for a specific condition to be met.
- * @param {*} conditionFn - The condition function to evaluate.
+ * @param {*} condition_fn - The condition function to evaluate.
  * @param {*} timeout - The maximum time to wait (in milliseconds).
  * @param {*} interval - The interval between checks (in milliseconds).
  * @returns {Promise} - A promise that resolves when the condition is met.
  */
-function waitForCondition(conditionFn, timeout = 2000, interval = 50) {
+function waitForCondition(condition_fn, timeout = 2000, interval = 50) {
     return new Promise((resolve, reject) => {
         const start = Date.now()
         function check() {
-            if (conditionFn()) {
+            if (condition_fn()) {
                 resolve()
             } else if (Date.now() - start >= timeout) {
                 reject(new Error("Condition timeout"))
@@ -51,8 +51,8 @@ const NightMode = {
      * Initialize the night mode module.
      */
     init() {
-        const hasNightMode = localStorage.getItem("nightMode-p") === "true"
-        document.body.classList.toggle("nightMode", hasNightMode)
+        const has_night_mode = localStorage.getItem("nightMode-p") === "true"
+        document.body.classList.toggle("nightMode", has_night_mode)
         this.setupToggle()
     },
 
@@ -60,8 +60,8 @@ const NightMode = {
      * Setup the night mode toggle in the header.
      */
     setupToggle() {
-        const dropdownList = document.querySelector("#header .tot_dropdown .tot_droplist ul")
-        const nightModeToggle = createElement("li", {
+        const dropdown_list = document.querySelector("#header .tot_dropdown .tot_droplist ul")
+        const night_mode_toggle = createElement("li", {
             class: "nightModeToggle",
             html: '<a href="#">Toggle Night Mode</a>',
             onclick: () => {
@@ -69,7 +69,7 @@ const NightMode = {
                 localStorage.setItem("nightMode-p", document.body.classList.contains("nightMode"))
             },
         })
-        dropdownList.insertBefore(nightModeToggle, dropdownList.firstChild)
+        dropdown_list.insertBefore(night_mode_toggle, dropdown_list.firstChild)
     },
 }
 
@@ -107,22 +107,22 @@ const PageTabs = {
 
     /**
      * Color the page tab based on the iframe URL.
-     * @param {*} frameURL
+     * @param {*} frame_url
      */
-    colorPageTab(frameURL) {
-        const urlParts = frameURL.split("/")
-        const normalizedURL =
-            urlParts.length <= 4 && (!urlParts[3] || urlParts[3] === "home")
+    colorPageTab(frame_url) {
+        const url_parts = frame_url.split("/")
+        const normalized_url =
+            url_parts.length <= 4 && (!url_parts[3] || url_parts[3] === "home")
                 ? ""
-                : urlParts.length > 4
-                ? `${urlParts[3]}/${urlParts[4]}`
-                : urlParts[3]
+                : url_parts.length > 4
+                ? `${url_parts[3]}/${url_parts[4]}`
+                : url_parts[3]
 
-        const activeTab = document.querySelector(".active-page-tab")
-        if (activeTab) activeTab.classList.remove("active-page-tab")
+        const active_tab = document.querySelector(".active-page-tab")
+        if (active_tab) active_tab.classList.remove("active-page-tab")
 
-        const newActiveTab = document.querySelector(`#pagesWrapper .title[data-url="${normalizedURL}"]`)
-        if (newActiveTab) newActiveTab.parentElement.classList.add("active-page-tab")
+        const new_active_tab = document.querySelector(`#pagesWrapper .title[data-url="${normalized_url}"]`)
+        if (new_active_tab) new_active_tab.parentElement.classList.add("active-page-tab")
     },
 }
 
@@ -130,6 +130,7 @@ const PageTabs = {
 // Editor Module
 // =============================================================================
 const Editor = {
+    isEditing: false,
     /**
      * Initialize the editor module.
      */
@@ -154,9 +155,9 @@ const Editor = {
      * Setup the edit dropdown menu.
      */
     setupEditDropdown() {
-        const editDropdown = this.createEditDropdown()
-        document.querySelector(".browser-bar--right").appendChild(editDropdown)
-        this.setupEventListeners(editDropdown)
+        const edit_dropdown = this.createEditDropdown()
+        document.querySelector(".browser-bar--right").appendChild(edit_dropdown)
+        this.setupEventListeners(edit_dropdown)
     },
 
     /**
@@ -182,9 +183,9 @@ const Editor = {
 
     /**
      * Setup event listeners for the edit dropdown.
-     * @param {HTMLElement} editDropdown - The edit dropdown element.
+     * @param {HTMLElement} edit_dropdown - The edit dropdown element.
      */
-    setupEventListeners(editDropdown) {
+    setupEventListeners(edit_dropdown) {
         const actions = {
             "edit-nav-pages": () => this.editPages(),
             "edit-nav-members": () => this.editMembers(),
@@ -192,7 +193,7 @@ const Editor = {
             "edit-nav-all": () => this.editAll(),
         }
 
-        editDropdown.addEventListener("click", async (e) => {
+        edit_dropdown.addEventListener("click", async (e) => {
             const target = e.target.closest("a")
             if (!target) return
             e.preventDefault()
@@ -214,15 +215,15 @@ const Editor = {
      * Handle overlays that appear on the side
      * Runs as: Wait for style, wait for class, perform action, wait for !class, wait for style
      * Waits for overlay to open, does an action, and then waits for it to close
-     * @param {string} overlayId - The ID of the overlay element.
+     * @param {string} selector - The ID of the overlay element.
      * @param {Function} action - The action to perform on the overlay.
-     * @param {number} timeBeforeAction - Time to wait before performing the action.
+     * @param {number} time_before_action - Time to wait before performing the action.
      */
-    async handleSidebarOverlay(selector, action, timeBeforeAction = 0) {
+    async handleSidebarOverlay(selector, action, time_before_action = 0) {
         const overlay = document.querySelector(selector)
         await waitForStyleAsync(true, overlay, "display", "block")
         await waitForClassAsync(true, overlay, "ready")
-        if (timeBeforeAction > 0) await new Promise((r) => setTimeout(r, timeBeforeAction))
+        if (time_before_action > 0) await new Promise((r) => setTimeout(r, time_before_action))
         await action(overlay)
         await waitForClassAsync(false, document.body, "overlay-active")
         await waitForStyleAsync(true, overlay, "display", "none")
@@ -233,13 +234,13 @@ const Editor = {
      * Waits for overlay to open, does an action, and then waits for it to close
      * @param {string} selector - CSS selector for the overlay element.
      * @param {Function} action - The action to perform on the overlay.
-     * @param {number} timeBeforeAction - Time to wait before performing the action.
+     * @param {number} time_before_action - Time to wait before performing the action.
      */
-    async handleLargerOverlay(selector, action, timeBeforeAction = 0) {
+    async handleLargerOverlay(selector, action, time_before_action = 0) {
         const overlay = document.querySelector(selector)
         await waitForClassAsync(true, overlay, "velocity-animating")
         await waitForClassAsync(false, overlay, "velocity-animating")
-        if (timeBeforeAction > 0) await new Promise((r) => setTimeout(r, timeBeforeAction))
+        if (time_before_action > 0) await new Promise((r) => setTimeout(r, time_before_action))
         await action(overlay)
         await waitForClassAsync(true, overlay, "velocity-animating")
         await waitForClassAsync(false, overlay, "velocity-animating")
@@ -250,11 +251,11 @@ const Editor = {
      */
     async editPages() {
         this.isEditing = true
-        const pagesArray = Array.from(document.querySelectorAll(".page-settings")).map((e) => e.dataset.id)
+        const pages_array = Array.from(document.querySelectorAll(".page-settings")).map((e) => e.dataset.id)
 
-        for (const pageId of pagesArray) {
+        for (const page_id of pages_array) {
             if (!this.isEditing) break
-            const page_settings = getItemById("page-settings", pageId)
+            const page_settings = getItemById("page-settings", page_id)
             if (!page_settings) continue
 
             page_settings.click()
@@ -269,28 +270,28 @@ const Editor = {
      */
     async editMembers() {
         this.isEditing = true
-        const membersArray = Array.from(document.querySelectorAll(".manage-members")).map((e) => e.dataset.id)
+        const members_array = Array.from(document.querySelectorAll(".manage-members")).map((e) => e.dataset.id)
 
-        for (const memberId of membersArray) {
+        for (const member_id of members_array) {
             if (!this.isEditing) break
-            await this.handleMemberSection(memberId)
+            await this.handleMemberSection(member_id)
         }
     },
 
     /**
      * Handle member section interactions.
-     * @param {string} memberId - The ID of the member element.
+     * @param {string} member_id - The ID of the member element.
      */
-    async handleMemberSection(memberId) {
-        const manage_member = getItemById("manage-members", memberId)
+    async handleMemberSection(member_id) {
+        const manage_member = getItemById("manage-members", member_id)
         if (!manage_member) return
 
         manage_member.click()
         await this.handleSidebarOverlay("#page-settings-overlay", async () => {
-            const memberIds = Array.from(document.querySelectorAll(".member")).map((e) => e.dataset.id)
-            for (const memberId of memberIds) {
+            const member_ids = Array.from(document.querySelectorAll(".member")).map((e) => e.dataset.id)
+            for (const member_id of member_ids) {
                 if (!this.isEditing) break
-                await this.editMember(memberId)
+                await this.editMember(member_id)
             }
             document.querySelector("#page-settings-overlay").querySelector(".cancel").click()
         })
@@ -298,10 +299,10 @@ const Editor = {
 
     /**
      * Edit a single member.
-     * @param {string} memberId - The ID of the member element.
+     * @param {string} member_id - The ID of the member element.
      */
-    async editMember(memberId) {
-        const member = getItemById("member", memberId)
+    async editMember(member_id) {
+        const member = getItemById("member", member_id)
         if (!member) return
 
         member.click()
@@ -316,28 +317,28 @@ const Editor = {
 
     async editPosts() {
         this.isEditing = true
-        const postsArray = Array.from(document.querySelectorAll(".manage-posts")).map((e) => e.dataset.id)
+        const posts_array = Array.from(document.querySelectorAll(".manage-posts")).map((e) => e.dataset.id)
 
-        for (const pageId of postsArray) {
+        for (const page_id of posts_array) {
             if (!this.isEditing) break
-            await this.handlePostSection(pageId)
+            await this.handlePostSection(page_id)
         }
     },
 
     /**
      * Handle post section interactions.
-     * @param {string} postId - The ID of the post element.
+     * @param {string} post_id - The ID of the post element.
      */
-    async handlePostSection(postId) {
-        const manage_posts = getItemById("manage-posts", postId)
+    async handlePostSection(post_id) {
+        const manage_posts = getItemById("manage-posts", post_id)
         if (!manage_posts) return
 
         manage_posts.click()
         await this.handleSidebarOverlay("#page-settings-overlay", async () => {
-            const postIds = Array.from(document.querySelectorAll(".post")).map((e) => e.dataset.id)
-            for (const postId of postIds) {
+            const post_ids = Array.from(document.querySelectorAll(".post")).map((e) => e.dataset.id)
+            for (const post_id of post_ids) {
                 if (!this.isEditing) break
-                await this.editSinglePost(postId)
+                await this.editSinglePost(post_id)
             }
             document.querySelector("#page-settings-overlay").querySelector(".cancel").click()
         })
@@ -345,10 +346,10 @@ const Editor = {
 
     /**
      * Edit a single post.
-     * @param {string} postId - The ID of the post element.
+     * @param {string} post_id - The ID of the post element.
      */
-    async editSinglePost(postId) {
-        const post = getItemById("post", postId)
+    async editSinglePost(post_id) {
+        const post = getItemById("post", post_id)
         if (!post) return
 
         post.click()
@@ -401,8 +402,8 @@ const Chat = {
      */
     async waitForChatLoad() {
         await waitForCondition(() => {
-            const chatWrapper = document.querySelector(".chat-wrapper")
-            return chatWrapper && !chatWrapper.classList.contains("loading")
+            const chat_wrapper = document.querySelector(".chat-wrapper")
+            return chat_wrapper && !chat_wrapper.classList.contains("loading")
         })
     },
 
@@ -410,29 +411,29 @@ const Chat = {
      * Setup rejection handling.
      */
     async setupRejectionHandling() {
-        const advisorId = window.loggedInUser
-        const rejections = await database.getRejections(advisorId)
+        const advisor_id = window.loggedInUser
+        const rejections = await database.getRejections(advisor_id)
 
-        this.addRejectionCheckboxes(rejections, advisorId)
+        this.addRejectionCheckboxes(rejections, advisor_id)
     },
 
     /**
      * Add rejection checkboxes to the rejection notices.
      * @param {Array} rejections - The list of rejections.
-     * @param {string} advisorId - The ID of the advisor.
+     * @param {string} advisor_id - The ID of the advisor.
      */
-    addRejectionCheckboxes(rejections, advisorId) {
+    addRejectionCheckboxes(rejections, advisor_id) {
         document.querySelectorAll(".rejection-notice").forEach((notice) => {
-            const rejectionId = notice.dataset.id
-            notice.dataset.advisorId = advisorId
-            const rejectionItem = rejections.find((item) => item.rejectionId === rejectionId) || []
+            const rejection_id = notice.dataset.id
+            notice.dataset.advisorId = advisor_id
+            const rejection_item = rejections.find((item) => item.rejectionId === rejection_id) || []
 
             notice.querySelectorAll(".rejected-item").forEach((item, i) => {
-                const isCompleted = rejectionItem?.rejection?.[i] || false
+                const is_completed = rejection_item?.rejection?.[i] || false
                 const checkbox = createElement("input", {
                     class: "rejection-completed",
                     type: "checkbox",
-                    checked: isCompleted,
+                    checked: is_completed,
                 })
                 item.insertBefore(checkbox, item.firstChild)
             })
@@ -444,12 +445,12 @@ const Chat = {
      * Setup saved message handling.
      */
     setupSavedMessageHandling() {
-        const savedMsg = localStorage.getItem("savedChatMsg")
-        const chatMessage = document.querySelector("#chatMessage")
+        const saved_msg = localStorage.getItem("savedChatMsg")
+        const chat_message = document.querySelector("#chatMessage")
 
-        if (savedMsg && savedMsg !== "null" && savedMsg !== "undefined") {
-            chatMessage.querySelector(".fr-wrapper").classList.remove("show-placeholder")
-            chatMessage.querySelector(".fr-element").innerHTML = savedMsg
+        if (saved_msg && saved_msg !== "null" && saved_msg !== "undefined") {
+            chat_message.querySelector(".fr-wrapper").classList.remove("show-placeholder")
+            chat_message.querySelector(".fr-element").innerHTML = saved_msg
         }
     },
 
@@ -457,10 +458,10 @@ const Chat = {
      * Setup chat event listeners.
      */
     setupChatEventListeners() {
-        const chatMessage = document.querySelector("#chatMessage")
+        const chat_message = document.querySelector("#chatMessage")
 
         document.querySelector(".close-chat").addEventListener("click", () => {
-            localStorage.setItem("savedChatMsg", chatMessage.querySelector(".fr-element").innerHTML)
+            localStorage.setItem("savedChatMsg", chat_message.querySelector(".fr-element").innerHTML)
         })
 
         document.querySelector(".chat-tools .send-message").addEventListener("click", () => {
@@ -474,21 +475,21 @@ const Chat = {
                     if (!e.target.matches(".rejection-completed")) return;
                     
                     const checkbox = e.target;
-                    const rejectionWrapper = checkbox.closest(".rejection-notice");
-                    if (!rejectionWrapper) return;
+                    const rejection_wrapper = checkbox.closest(".rejection-notice");
+                    if (!rejection_wrapper) return;
 
-                    const rejectionId = rejectionWrapper.dataset.id;
-                    const advisorId = rejectionWrapper.dataset.advisorId;
+                    const rejection_id = rejection_wrapper.dataset.id;
+                    const advisor_id = rejection_wrapper.dataset.advisorId;
                     
-                    if (!rejectionId || !advisorId) {
+                    if (!rejection_id || !advisor_id) {
                         console.warn("Missing rejection or advisor ID for rejection change");
                         return;
                     }
 
-                    const rejectionArray = Array.from(rejectionWrapper.querySelectorAll(".rejected-item"))
+                    const rejection_array = Array.from(rejection_wrapper.querySelectorAll(".rejected-item"))
                         .map(item => item.querySelector(".rejection-completed").checked);
 
-                    database.updateRejection(advisorId, rejectionId, rejectionArray);
+                    database.updateRejection(advisor_id, rejection_id, rejection_array);
                 }
             );
     },
@@ -525,8 +526,8 @@ const Archives = {
      */
     async waitForArchivesOverlay() {
         await waitForCondition(() => {
-            const archivesOverlay = document.querySelector("#archives-overlay")
-            return archivesOverlay && !archivesOverlay.classList.contains("loading")
+            const archives_overlay = document.querySelector("#archives-overlay")
+            return archives_overlay && !archives_overlay.classList.contains("loading")
         })
     },
 
@@ -596,12 +597,12 @@ const Archives = {
      * @param {string} note - The note content to append.
      */
     appendNoteToItem(item, note) {
-        const complianceNote = createElement("div", {
+        const compliance_note = createElement("div", {
             class: "compliance-notes",
             style: "font-size: 14px; width: 100%;",
             html: note,
         })
-        item.appendChild(complianceNote)
+        item.appendChild(compliance_note)
         item.querySelectorAll("span.small").forEach((span) => {
             span.style.fontSize = "12px"
         })

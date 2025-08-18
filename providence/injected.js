@@ -2,15 +2,15 @@ let baseUrl = "https://app.twentyoverten.com"
 //"https://staging-app.twentyoverten.com"
 
 // Global Info
-let advisorInfo = []
-let urlParts = ""
+let advisor_list = []
+let url_parts = ""
 let database = null
+let officer_list = []
 
 $(async function () {
     try {
-        await waitForCondition(() => typeof isSiteForward === "function", 5000)
+        await waitForCondition(() => typeof isSiteForward === "function" && typeof DatabaseClient != "undefined", 5000)
         database = new DatabaseClient()
-        console.log("Providence Changer Loaded")
         ready()
     } catch (error) {
         console.error(error)
@@ -20,16 +20,16 @@ $(async function () {
 
 /**
  * Wait for a specific condition to be met.
- * @param {*} conditionFn - The condition function to evaluate.
- * @param {*} timeout - The maximum time to wait (in milliseconds).
- * @param {*} interval - The interval between checks (in milliseconds).
+ * @param {Function} condition_fn - The condition function to evaluate.
+ * @param {number} timeout - The maximum time to wait (in milliseconds).
+ * @param {number} interval - The interval between checks (in milliseconds).
  * @returns {Promise} - A promise that resolves when the condition is met.
  */
-function waitForCondition(conditionFn, timeout = 2000, interval = 50) {
+function waitForCondition(condition_fn, timeout = 2000, interval = 50) {
     return new Promise((resolve, reject) => {
         const start = Date.now()
         function check() {
-            if (conditionFn()) {
+            if (condition_fn()) {
                 resolve()
             } else if (Date.now() - start >= timeout) {
                 reject(new Error("Condition timeout"))
@@ -44,38 +44,50 @@ function waitForCondition(conditionFn, timeout = 2000, interval = 50) {
 // Function to initialize the page
 async function ready() {
     //Load advisor list from storage
-    if (localStorage.getItem("advisorList") != null) advisorInfo = JSON.parse(localStorage.getItem("advisorList"))
+    let advisor_list_req = await fetch(`${baseUrl}/manage/advisor/list?tags=`)
+    advisor_list_req = await advisor_list_req.json()
+    advisor_list = advisor_list_req.data
+    officer_list = await getOfficerList()
 
     // Check if the user is a SiteForward team member
     if (isSiteForward(window.loggedInUser)) localStorage.setItem("IsSiteForward", true)
 
     // Add content sub-menu items to content nav menu item
-    const contentSubNav = createElement("ul", {
+    const content_sub_nav = createElement("ul", {
         class: "providence--section-nav-sub",
         html: `
             <li><a href="/manage/content" class="vendor_content_assist">Vendor Provided</a></li>
             <li><a href="/manage/content/custom" class="siteforward_content_assist">SiteForward Provided</a></li>
          `,
     })
-    document.querySelector(".providence--section-nav a[href='/manage/content']").parentNode.append(contentSubNav)
+    document.querySelector(".providence--section-nav a[href='/manage/content']").parentNode.append(content_sub_nav)
 
     // Init general modules
     NightMode.init()
     Chat.init()
 
     // Get the URL Parts
-    urlParts = window.location.href.split("/")
+    url_parts = window.location.href.split("/")
 
     // Load the page modules
 
     // [https:]//[][app.twentyoverten.com]/[manage] -> Dashboard Home
-    if (urlParts.length == 4 && urlParts[3].includes("manage")) Manage.init()
-    
+    if (url_parts.length == 4 && url_parts[3].includes("manage")) Manage.init()
+
+    // [https:]//[][app.twentyoverten.com]/[manage]/[revisions] -> Revisions
+    else if (url_parts.length == 5 && url_parts[4].includes("revisions"))  Revisions.init()
+
+    // [https:]//[][app.twentyoverten.com]/[manage]/[content] -> Content
+    else if (url_parts.length == 5 && url_parts[4].includes("content"))  Content.init()
+
+    // [https:]//[][app.twentyoverten.com]/[manage]/[content]/[custom] -> Content
+    else if (url_parts.length == 6 && url_parts[4].includes("content") && url_parts[5].includes("custom"))  Content.init()
+
     // [https:]//[][app.twentyoverten.com]/[manage]/[advisor]/[###advisor_id###] -> Advisor Profile
-    else if (urlParts.length == 6 && urlParts[4].includes("advisor"))  Advisor.init()
+    else if (url_parts.length == 6 && url_parts[4].includes("advisor"))  Advisor.init()
 
     // [https:]//[][app.twentyoverten.com]/[manage]/[review]/[###advisor_id###]/[###item_id###] -> Item Review
-    else if (urlParts.length == 7 && urlParts[4].includes("review"))  Review.init()
+    else if (url_parts.length == 7 && url_parts[4].includes("review"))  Review.init()
 }
 
 // ============================================================================
@@ -84,44 +96,44 @@ async function ready() {
 
 /**
  * Fetch the advisor info from the advisor's id
- * @param {*} advisor_id
- * @returns
+ * @param {string} advisor_id - The advisor's ID
+ * @returns {Promise<Object>} - The advisor info object
  */
 async function getAdvisorInfo(advisor_id) {
-    const response = await fetch(`https://app.twentyoverten.com/manage/advisor/one/${advisor_id}`)
+    const response = await fetch(`${baseUrl}/manage/advisor/one/${advisor_id}`)
     return response.json()
 }
 
 /**
  * Fetch the site info from the site's id
  * Site id can be gotten from the advisor info
- * @param {*} site_id
- * @returns
+ * @param {string} site_id - The site's ID
+ * @returns {Promise<Object>} - The site info object
  */
 async function getSiteInfo(site_id) {
-    const response = await fetch(`https://app.twentyoverten.com/manage/advisor/notes/${site_id}`)
+    const response = await fetch(`${baseUrl}/manage/advisor/notes/${site_id}`)
     return response.json()
 }
 
 /**
- * Get the advisor info from the cached DataTable
- * @param {*} id
- * @returns
+ * Get the advisor info from the cached advisor list
+ * @param {string} id - The advisor's ID
+ * @returns {Object|undefined} - Advisor info object or undefined if not found
  */
-function getAdvisorInfoFromTable(id) {
-    return advisorInfo.find(function (e) {
+function getAdvisorInfoFromList(id) {
+    return advisor_list.find(function (e) {
         return id === e._id
     })
 }
 
 /**
- * Get advisor info by display name from the cached DataTable
- * @param {string} displayName - The advisor's display name
+ * Get advisor info by display name from the cached advisor list
+ * @param {string} display_name - The advisor's display name
  * @returns {Object|null} - Advisor info object or null if not found
  */
-function getAdvisorInfoByNameFromTable(displayName) {
-    if (!displayName || !advisorInfo) return null
-    return advisorInfo.find((advisor) => advisor.display_name === displayName) || null
+function getAdvisorInfoByNameFromList(display_name) {
+    if (!display_name) return null
+    return advisor_list.find((advisor) => advisor.display_name === display_name) || null
 }
 
 // =============================================================================
@@ -141,8 +153,8 @@ const NightMode = {
      * Setup the night mode toggle in the header.
      */
     setupToggle() {
-        const dropdownList = document.querySelector("#header .tot_dropdown .tot_droplist ul")
-        const nightModeToggle = createElement("li", {
+        const dropdown_list = document.querySelector("#header .tot_dropdown .tot_droplist ul")
+        const night_mode_toggle = createElement("li", {
             class: "nightModeToggle",
             html: '<a href="#">Toggle Night Mode</a>',
             onclick: () => {
@@ -150,23 +162,27 @@ const NightMode = {
                 localStorage.setItem("nightMode-p", document.body.classList.contains("nightMode"))
             },
         })
-        dropdownList.insertBefore(nightModeToggle, dropdownList.firstChild)
+        dropdown_list.insertBefore(night_mode_toggle, dropdown_list.firstChild)
     },
 }
 // =============================================================================
 // AdvisorDetails Module
 // =============================================================================
 const AdvisorDetails = {
-    advisor_info: null,
-    init(advisor_info){
-        this.advisor_info = advisor_info
+    advisorInfo: null,
+    /**
+     * Initialize the advisor details module
+     * @param {Object} advisorInfo - The advisor information object
+     */
+    init(advisorInfo){
+        this.advisorInfo = advisorInfo
         this.addTags()
         this.addPreviewLinkIcon()
         this.addViewRevisionsButton()
         this.Archives.init()
     },
     addTags(){
-        const tags = this.advisor_info.settings.broker_tags || []
+        const tags = this.advisorInfo.settings.broker_tags || []
         // Add tags to the UI
         const tag_container = createElement("div",{
             class: "advisor-tags secondary center",
@@ -177,7 +193,7 @@ const AdvisorDetails = {
     },
     addPreviewLinkIcon(){
         const preview_link_icon = createElement("li", {
-            html: `<a href="https://${this.advisor_info.site.settings.subdomain}.app.twentyoverten.com" class="tot_tip top center" data-content="View Preview Website" target="_blank">
+            html: `<a href="https://${this.advisorInfo.site.settings.subdomain}.app.twentyoverten.com" class="tot_tip top center" data-content="View Preview Website" target="_blank">
                 <svg class="action-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="48" height="48" style="display:inline-block; vertical-align:middle; fill:currentColor;">
                     <mask id="browser-mask" x="0" y="0" width="24" height="24">
                         <circle cx="12" cy="12" r="12" fill="white"/>
@@ -196,7 +212,7 @@ const AdvisorDetails = {
     addViewRevisionsButton(){
         const open_revisions = createElement("a", {
             href: `/manage/revisions?email=${encodeURIComponent(
-                this.advisor_info.email)}`,
+                this.advisorInfo.email)}`,
             target: "_blank",
             html: `View Revisions`,
             class: "btn btn--action-default"
@@ -307,12 +323,12 @@ const AdvisorDetails = {
          * @param {string} note - The note content to append.
          */
         appendNoteToItem(item, note) {
-            const complianceNote = createElement("div", {
+            const compliance_note = createElement("div", {
                 class: "compliance-notes",
                 style: "font-size: 14px; width: 100%;",
                 html: note,
             })
-            item.appendChild(complianceNote)
+            item.appendChild(compliance_note)
             item.querySelectorAll("span.small").forEach((span) => {
                 span.style.fontSize = "12px"
             })
@@ -322,8 +338,211 @@ const AdvisorDetails = {
 }
 
 // =============================================================================
-// Chat Module
+// SearchBar Module
 // =============================================================================
+const SearchBar = {
+    config: null,
+    isInitialized: false,
+
+    /**
+     * Initialize SearchBar with the given configuration
+     * Since only one SearchBar is active per page, uses singleton pattern
+     * @param {Object} config - Configuration object
+     * @param {Element} config.container - Container element for the search bar
+     * @param {string} config.inputId - ID for the search input element
+     * @param {string} config.buttonId - ID for the search button element
+     * @param {string} config.tableSelector - CSS selector for the table element
+     * @param {string} config.label - Label text for the search input
+     * @param {string} config.buttonText - Text for the search button
+     * @param {string} config.buttonDataCover - Data-cover attribute for the button
+     * @param {string} config.helpContent - Help content for the search functionality
+     * @param {number} config.debounceDelay - Delay in milliseconds for debounced search
+     * @param {boolean} config.enableHelpDialog - Whether to enable help dialog
+     * @param {Function} config.searchFunction - Function to handle search operations
+     * @param {Function} config.hideTableFunction - Function to hide the table
+     * @param {Function} config.showTableFunction - Function to show the table
+     * @param {Function} config.clearTableFunction - Function to clear table content
+     * @param {string} config.customClass - Custom CSS classes for styling
+     * @param {Object} config.customStyles - Custom inline styles object
+     */
+    init(config = {}) {
+        const defaultConfig = {
+            // Container and IDs
+            container: null,
+            inputId: 'search-input',
+            buttonId: 'search-button',
+            tableSelector: '.search-bar table',
+            
+            // Labels and placeholders
+            label: 'Search',
+            buttonText: 'Search',
+            buttonDataCover: 'Search',
+            
+            // Help content
+            helpContent: 'Basic search functionality',
+            
+            // Search behavior
+            debounceDelay: 400,
+            enableHelpDialog: true,
+            searchFunction: null,
+            
+            // Table management
+            hideTableFunction: null,
+            showTableFunction: null,
+            clearTableFunction: null,
+            
+            // Styling
+            customClass: '',
+            customStyles: {}
+        }
+
+        this.config = { ...defaultConfig, ...config }
+        
+        if (this.isInitialized) {
+            this.destroy()
+        }
+        
+        this.addSearchBar()
+        this.setupEventListeners()
+        this.isInitialized = true
+    },
+
+    /**
+     * Add the search bar to the DOM
+     */
+    addSearchBar() {
+        if (!this.config.container) {
+            console.error('SearchBar: No container specified')
+            return
+        }
+
+        const search_bar = createElement("div", {
+            class: `search-bar ${this.config.customClass}`,
+            style: Object.entries(this.config.customStyles).map(([k,v]) => `${k}: ${v}`).join('; '),
+            html: `
+                <div class="text-control" aria-required="true" style="margin: 10px 0 0 0; flex-basis: 80%; padding-right: 15px">
+                    <input required type="text" 
+                           id="${this.config.inputId}" 
+                           name="${this.config.inputId}" 
+                           class="form-control" 
+                           title="${this.config.label}">
+                    <label for="${this.config.inputId}">${this.config.label}</label>
+                    ${this.config.enableHelpDialog ? 
+                        `<div data-content="${this.config.helpContent.replace(/"/g, '&quot;')}" class="tot_tip top search-help">?</div>` : 
+                        ''}
+                </div>
+                <div class="btn-control" aria-required="true" style="margin: 0; flex-basis:20%">
+                    <input type="button" 
+                           style="height:100%; width:100%" 
+                           class="btn primary btn--action-review" 
+                           value="${this.config.buttonText}" 
+                           id="${this.config.buttonId}" 
+                           data-cover="${this.config.buttonDataCover}">
+                </div>
+                <table class="table" style="margin: .5rem 0; width: 100%"></table>
+            `,
+        })
+
+        this.config.container.prepend(search_bar)
+    },
+
+    /**
+     * Setup event listeners for the search bar
+     */
+    setupEventListeners() {
+        const input = document.querySelector(`#${this.config.inputId}`)
+        const button = document.querySelector(`#${this.config.buttonId}`)
+
+        if (!input || !button) {
+            console.error('SearchBar: Could not find input or button elements')
+            return
+        }
+
+        // Debounced search on keyup
+        input.addEventListener(
+            "keyup",
+            delay(() => {
+                button.click()
+            }, this.config.debounceDelay)
+        )
+
+        // Search on button click
+        button.addEventListener("click", () => this.handleSearch())
+    },
+
+    /**
+     * Handle search functionality
+     */
+    async handleSearch() {
+        const input = document.querySelector(`#${this.config.inputId}`)
+        const search_term = input?.value
+
+        this.clearSearchTable()
+        
+        if (!search_term || search_term.length === 0) {
+            this.showTable()
+            return
+        }
+
+        if (this.config.searchFunction) {
+            await this.config.searchFunction.call(this, search_term)
+        } else {
+            console.warn('SearchBar: No search function provided')
+        }
+    },
+
+    resetSearchTable(){
+        const input = document.querySelector(`#${this.config.inputId}`)
+        if (input) input.value = ""
+
+        this.clearSearchTable()
+        this.showTable()
+    },
+
+    /**
+     * Clear the search results table
+     */
+    clearSearchTable() {
+        if (this.config.clearTableFunction) {
+            this.config.clearTableFunction.call(this)
+        } else {
+            const table = document.querySelector(this.config.tableSelector)
+            if (table) table.innerHTML = ""
+        }
+    },
+
+    /**
+     * Hide the main content table
+     */
+    hideTable() {
+        if (this.config.hideTableFunction) {
+            this.config.hideTableFunction.call(this)
+        }
+    },
+
+    /**
+     * Show the main content table
+     */
+    showTable() {
+        if (this.config.showTableFunction) {
+            this.config.showTableFunction.call(this)
+        }
+    },
+
+    /**
+     * Destroy the current search bar instance
+     */
+    destroy() {
+        if (this.config?.container) {
+            const search_bar = this.config.container.querySelector('.search-bar')
+            if (search_bar) {
+                search_bar.remove()
+            }
+        }
+        this.config = null
+        this.isInitialized = false
+    }
+}
 const Chat = {
     /**
      * Initialize the chat module.
@@ -361,22 +580,22 @@ const Chat = {
                 if (!e.target.matches(".rejection-completed")) return
 
                 const checkbox = e.target
-                const rejectionWrapper = checkbox.closest(".rejection-notice")
-                if (!rejectionWrapper) return
+                const rejection_wrapper = checkbox.closest(".rejection-notice")
+                if (!rejection_wrapper) return
 
-                const rejectionId = rejectionWrapper.dataset.id
-                const advisorId = document.querySelector("#live-chat").getAttribute("data-advisor_id")
+                const rejection_id = rejection_wrapper.dataset.id
+                const advisor_id = document.querySelector("#live-chat").getAttribute("data-advisor_id")
 
-                if (!rejectionId || !advisorId) {
+                if (!rejection_id || !advisor_id) {
                     console.warn("Missing rejection or advisor ID for rejection change")
                     return
                 }
 
-                const rejectionArray = Array.from(rejectionWrapper.querySelectorAll(".rejected-item")).map(
+                const rejection_array = Array.from(rejection_wrapper.querySelectorAll(".rejected-item")).map(
                     (item) => item.querySelector(".rejection-completed").checked
                 )
 
-                database.updateRejection(advisorId, rejectionId, rejectionArray)
+                database.updateRejection(advisor_id, rejection_id, rejection_array)
             }
         )
     },
@@ -384,9 +603,9 @@ const Chat = {
 
         const advisor_id = document.querySelector("#live-chat").getAttribute("data-advisor_id")
         if (!document.querySelector(".chat-wrapper .view-profile-chat")) {
-            const chatWrapper = document.querySelector(".chat-wrapper")
-            if (chatWrapper) {
-                const profileLink = createElement("a", {
+            const chat_wrapper = document.querySelector(".chat-wrapper")
+            if (chat_wrapper) {
+                const profile_link = createElement("a", {
                     target: "_blank",
                     href: `/manage/advisor/${advisor_id}`,
                     class: "tot_tip bottom view-profile-chat",
@@ -395,7 +614,7 @@ const Chat = {
                     html: '<i class="fas fa-user"></i>',
                 })
 
-                chatWrapper.append(profileLink)
+                chat_wrapper.append(profile_link)
             }
         } else document.querySelector(".chat-wrapper .view-profile-chat").href = `/manage/advisor/${advisor_id}`
     },
@@ -450,36 +669,36 @@ const Chat = {
         )
 
         // Setup search input listener with debouncing
-        const searchInput = document.querySelector(".chat-search-input-wrapper input")
-        const searchButton = document.querySelector(".chat-search-input-search i")
-        const searchResults = document.querySelector(".chat-search-results")
+        const search_input = document.querySelector(".chat-search-input-wrapper input")
+        const search_button = document.querySelector(".chat-search-input-search i")
+        const search_results = document.querySelector(".chat-search-results")
 
-        searchInput.addEventListener(
+        search_input.addEventListener(
             "keyup",
             delay((e) => {
-                const searchName = searchInput.value
-                if (searchName.length >= 3) {
+                const search_name = search_input.value
+                if (search_name.length >= 3) {
                     this.performChatSearch()
                 } else {
-                    searchResults.innerHTML = ""
+                    search_results.innerHTML = ""
                 }
             }, 500)
         )
 
         // Setup search button listener
-        searchButton.addEventListener("click", () => this.performChatSearch())
+        search_button.addEventListener("click", () => this.performChatSearch())
     },
 
     /**
      * Perform chat user search
      */
     performChatSearch() {
-        const searchInput = document.querySelector(".chat-search-input-wrapper input")
-        const searchResults = document.querySelector(".chat-search-results")
-        const searchName = searchInput.value.toLowerCase()
+        const search_input = document.querySelector(".chat-search-input-wrapper input")
+        const search_results = document.querySelector(".chat-search-results")
+        const search_name = search_input.value.toLowerCase()
 
-        if (!searchName) {
-            searchResults.innerHTML = ""
+        if (!search_name) {
+            search_results.innerHTML = ""
             return
         }
 
@@ -487,7 +706,7 @@ const Chat = {
         const users = document.querySelectorAll(".chat-users-list-wrapper .user")
         const results = Array.from(users).filter((user) => {
             const content = user.getAttribute("data-content")
-            return content && content.toLowerCase().includes(searchName)
+            return content && content.toLowerCase().includes(search_name)
         })
 
         // If exactly one result, click it automatically
@@ -497,11 +716,11 @@ const Chat = {
         }
 
         // Show result count
-        searchResults.innerHTML = results.length
+        search_results.innerHTML = results.length
 
         // Clear results if search is empty or only one result was found
-        if (searchName.length === 0 || results.length === 1) {
-            searchResults.innerHTML = ""
+        if (search_name.length === 0 || results.length === 1) {
+            search_results.innerHTML = ""
         }
     },
 
@@ -510,10 +729,10 @@ const Chat = {
      */
     async waitForChatLoad() {
         await waitForCondition(() => {
-            const chatWrapper = document.querySelector(".chat-wrapper")
+            const chat_wrapper = document.querySelector(".chat-wrapper")
             return (
-                chatWrapper &&
-                !chatWrapper.classList.contains("loading") &&
+                chat_wrapper &&
+                !chat_wrapper.classList.contains("loading") &&
                 document.querySelector("body").classList.contains("chat-open")
             )
         })
@@ -525,17 +744,17 @@ const Chat = {
      */
     async setupRejectionHandling() {
         const advisor_id = document.querySelector("#live-chat").getAttribute("data-advisor_id")
-        const startTime = performance.now()
+        const start_time = performance.now()
         const rejections = await database.getRejections(advisor_id)
-        const elapsedTime = performance.now() - startTime
+        const elapsed_time = performance.now() - start_time
 
         // Calculate remaining wait time to reach 500ms total
         const WAIT_TIME = 500
-        const remainingWaitTime = Math.max(0, WAIT_TIME - elapsedTime)
+        const remaining_wait_time = Math.max(0, WAIT_TIME - elapsed_time)
 
         setTimeout(() => {
             this.addRejectionCheckboxes(rejections, advisor_id)
-        }, remainingWaitTime)
+        }, remaining_wait_time)
     },
 
     /**
@@ -544,15 +763,15 @@ const Chat = {
      */
     addRejectionCheckboxes(rejections) {
         document.querySelectorAll(".rejection-notice").forEach((notice) => {
-            const rejectionId = notice.dataset.id
-            const rejectionItem = rejections.find((item) => item.rejectionId === rejectionId) || []
+            const rejection_id = notice.dataset.id
+            const rejection_item = rejections.find((item) => item.rejectionId === rejection_id) || []
 
             notice.querySelectorAll(".rejected-item").forEach((item, i) => {
-                const isCompleted = rejectionItem?.rejection?.[i] || false
+                const is_completed = rejection_item?.rejection?.[i] || false
                 const checkbox = createElement("input", {
                     class: "rejection-completed",
                     type: "checkbox",
-                    checked: isCompleted,
+                    checked: is_completed,
                 })
                 item.insertBefore(checkbox, item.firstChild)
             })
@@ -563,12 +782,12 @@ const Chat = {
      * Setup saved message handling.
      */
     setupSavedMessageHandling() {
-        const savedMsg = localStorage.getItem("savedChatMsg")
-        const chatMessage = document.querySelector("#chatMessage")
+        const saved_msg = localStorage.getItem("savedChatMsg")
+        const chat_message = document.querySelector("#chatMessage")
 
-        if (savedMsg) {
-            chatMessage.querySelector(".fr-wrapper").classList.remove("show-placeholder")
-            chatMessage.querySelector(".fr-element").innerHTML = savedMsg
+        if (saved_msg) {
+            chat_message.querySelector(".fr-wrapper").classList.remove("show-placeholder")
+            chat_message.querySelector(".fr-element").innerHTML = saved_msg
         }
     },
 
@@ -576,10 +795,10 @@ const Chat = {
      * Setup chat event listeners.
      */
     setupChatEventListeners() {
-        const chatMessage = document.querySelector("#chatMessage")
+        const chat_message = document.querySelector("#chatMessage")
 
         document.querySelector(".close-chat").addEventListener("click", () => {
-            localStorage.setItem("savedChatMsg", chatMessage.querySelector(".fr-element").innerHTML)
+            localStorage.setItem("savedChatMsg", chat_message.querySelector(".fr-element").innerHTML)
             document.querySelector("#live-chat").setAttribute("data-advisor_id", null)
         })
 
@@ -602,9 +821,131 @@ const Manage = {
         this.setupEventListeners()
         this.adjustItemsPerPage()
         this.checkFilterWarning()
-        this.SearchBar.init()
+        this.setupSearchBar()
         this.AdvisorList.init()
         this.ReviewList.init()
+    },
+
+    /**
+     * Setup the search bar for advisor management
+     */
+    setupSearchBar() {
+        const search_config = {
+            container: document.querySelector(".providence-overview--list"),
+            inputId: 'search-advisor',
+            buttonId: 'search-advisor-btn',
+            label: 'Search Advisors',
+            buttonText: 'Search',
+            buttonDataCover: 'Search for Advisor',
+            helpContent: 'Search for &quot;?&quot; for assistance.',
+            searchFunction: this.performAdvisorSearch.bind(this),
+            hideTableFunction: () => {
+                const table = document.querySelector("#advisorsList_wrapper")
+                if (table) table.style.display = "none"
+            },
+            showTableFunction: () => {
+                const table = document.querySelector("#advisorsList_wrapper")
+                if (table) table.style.display = "block"
+            }
+        }
+
+        SearchBar.init(search_config)
+        
+        // Setup reset listeners specific to advisor search
+        this.setupResetListeners()
+    },
+
+    /**
+     * Setup reset listeners for advisor search
+     */
+    setupResetListeners() {
+        const reset_selectors = ['.providence-overview--nav a']
+        reset_selectors.forEach(selector => {
+            document.querySelectorAll(selector).forEach(element => {
+                element.addEventListener("click", () => SearchBar.resetSearchTable())
+            })
+        })
+    },
+
+
+    /**
+     * Perform advisor search (bound to SearchBar instance)
+     */
+    async performAdvisorSearch(search_term) {
+        const requesting_all = search_term.indexOf("*") === 0
+        const requesting_number = search_term.indexOf("#") === 0
+        if (requesting_all || requesting_number) {
+            search_term = search_term.substring(1)
+        }
+
+        const table = document.querySelector(".search-bar table")
+        if (!table) return
+
+        SearchBar.hideTable()
+
+        if (search_term === "?") {
+            table.innerHTML = `<tr><td><h1>Searching can be done by Name, Email, Tags, Status, or Officer.</h1> 
+                <table style="width: 100%">
+                    <tr><th>Expressions</th><th>Results</th><th>Example</th></tr> 
+                    <tr><td>|</td><td>OR</td><td>Published|Submitted</td></tr> 
+                    <tr><td>,</td><td>AND</td><td>Published,SiteForward</td></tr> 
+                    <tr><td>!</td><td>NOT</td><td>!Published</td></tr>
+                </table>
+                <h1>There are some extra searching as well</h1>
+                <table style="width: 100%">
+                    <tr><th>Search</th><th>Results</th><th>Example</th></tr> 
+                    <tr><td>published</td><td>Shows all published sites</td><td></td></tr> 
+                    <tr><td>submitted</td><td>Shows all submitted sites</td><td></td></tr> 
+                    <tr><td>approved</td><td>Shows all approved sites</td><td></td></tr> 
+                    <tr><td>pending review</td><td>Shows all sites needing revisions</td><td></td></tr> 
+                    <tr><td>revisions needed</td><td>Shows all published sites</td><td></td></tr> 
+                    <tr><td>rejected</td><td>Shows all rejected sites</td><td></td></tr> 
+                    <tr><td colspan="3"></td></tr> 
+                    <tr><td>is_siteforward</td><td>Shows all sites assigned to SiteForward</td><td></td></tr> 
+                    <tr><td>is_compliance</td><td>Shows all sites assigned to Compliance</td><td></td></tr> 
+                    <tr><td>is_mlssalescompliance</td><td>Shows all sites assigned to MLS Sales Communication</td><td></td></tr> 
+                    <tr><td>is_msicompliance</td><td>Shows all sites assigned to Insurance Compliance</td><td></td></tr> 
+                    <tr><td>is_onhold</td><td>Shows all sites on hold</td><td></td></tr> 
+                    <tr><td colspan="3"></td></tr> 
+                    <tr><td>created_at:&lt;year&gt;/[month]/[day]</td><td>Shows sites created at that time</td><td>created_at:2019/08</td></tr> 
+                    <tr><td>updated_at:&lt;year&gt;/[month]/[day]</td><td>Shows sites updated at that time</td><td>created_at:2019/08/01</td></tr> 
+                    <tr><td>published_at:&lt;year&gt;/[month]/[day]</td><td>Shows sites published at that time</td><td>created_at:2020</td></tr> 
+                    <tr><td>submitted_at:&lt;year&gt;/[month]/[day]</td><td>Shows sites submitted at that time</td><td>created_at:2020/01</td></tr> 
+                    <tr><td colspan="3"></td></tr> 
+                    <tr><td>#</td><td>Shows the number of sites that match</td><td>#Published</td></tr> 
+                    <tr><td>*</td><td>Shows all sites that match regardless of number</td><td>*Published</td></tr>
+                </table></td></tr>`
+            return
+        }
+
+        table.innerHTML = `<thead> 
+            <tr role="row">
+                <th class="" tabindex="0" aria-controls="advisorsList" rowspan="1" colspan="1">#</th>
+                <th class="" tabindex="0" aria-controls="advisorsList" rowspan="1" colspan="1" aria-label="">Name</th>
+                <th class="" tabindex="0" aria-controls="advisorsList" rowspan="1" colspan="1" aria-label="">Email</th>
+                <th class="has-state sorting" tabindex="0" aria-controls="advisorsList" rowspan="1" colspan="1" aria-label="">Status</th>
+                <th class="" tabindex="0" aria-controls="advisorsList" rowspan="1" colspan="1" aria-label="" aria-sort="descending">Last Submitted</th>
+                <th class="" rowspan="1" colspan="1" aria-label="Assigned">Assigned</th>
+                <th class="" rowspan="1" colspan="1" aria-label="Actions">Actions</th>
+            </tr> 
+        </thead>`
+
+        const results = this.performSearch(search_term)
+        if (results.length === 0) {
+            table.innerHTML += `<tr><td colspan="7">No results found</td></tr>`
+            return
+        }
+        
+        if (requesting_number || results.length > 100) {
+            table.innerHTML += `<tr><td colspan="7">Number of results: ${results.length}</td></tr>`
+        } else {
+            const tbody = document.createElement("tbody")
+            results.forEach((advisor, i) => {
+                advisor.prepend(createElement("td", { html: `${i + 1}.` }))
+                tbody.appendChild(advisor)
+            })
+            table.appendChild(tbody)
+        }
     },
 
     /**
@@ -635,9 +976,9 @@ const Manage = {
 
         // Wait until the button exists before adding the event listener
         const waitForFilterBtn = setInterval(() => {
-            const filterBtn = document.querySelector("#filterAdvisors .btn")
-            if (filterBtn) {
-                filterBtn.addEventListener("click", () => this.checkFilterWarning())
+            const filter_btn = document.querySelector("#filterAdvisors .btn")
+            if (filter_btn) {
+                filter_btn.addEventListener("click", () => this.checkFilterWarning())
                 clearInterval(waitForFilterBtn)
             }
         }, 500)
@@ -645,8 +986,8 @@ const Manage = {
         // Custom chat opening buttons
         document.addEventListener("click", (e) => {
             if (e.target.matches(".open-chat-extension")) {
-                const advisorId = e.target.getAttribute("data-advisor_id")
-                document.querySelector("#live-chat").setAttribute("data-advisor_id", advisorId)
+                const advisor_id = e.target.getAttribute("data-advisor_id")
+                document.querySelector("#live-chat").setAttribute("data-advisor_id", advisor_id)
                 document.querySelector("#open-chat").click()
             }
         })
@@ -657,10 +998,10 @@ const Manage = {
      */
     changeToShowAll() {
         const waitForShowAllBtn = setInterval(() => {
-            const showAllBtn = document.getElementById("showAllAdvisors")
-            if (showAllBtn) {
-                if (!showAllBtn.classList.contains("active")) {
-                    showAllBtn.click()
+            const show_all_btn = document.getElementById("showAllAdvisors")
+            if (show_all_btn) {
+                if (!show_all_btn.classList.contains("active")) {
+                    show_all_btn.click()
                 }
                 clearInterval(waitForShowAllBtn)
             }
@@ -679,241 +1020,106 @@ const Manage = {
         }, 1000)
     },
 
-    // ======================= Search Bar =======================
-    SearchBar: {
-        /**
-         * Initialize the SearchBar module.
-         */
-        init() {
-            this.addSearchBar()
-            this.setupEventListeners()
-        },
+    /**
+     * Perform a search based on the provided search string.
+     * Supports:
+     * - Full-text search on advisor names, emails, and IDs
+     * - Date-based filtering (created_at, updated_at, etc.)
+     * - Special commands (e.g., ".")
+     * @param {string} searchString - The search string to use for filtering results.
+     * @returns {Array} - An array of search results matching the search criteria.
+     */
+    performSearch(searchString) {
+        const search_patterns = {
+            datePattern: /^(created|updated|published|submitted)_at:(\d{4})(?:\/(\d{1,2})(?:\/(\d{1,2}))?)?$/,
+            specialCommands: {
+                ".": (data) => isRandysList(data),
+                published: (data) => data.published_date !== "NA",
+                submitted: (data) => data.submitted_date !== "NA",
+                "not published": (data) => notPublished(data),
+                "advisor revisions needed": (data) => hasStatus("review completed", data),
+                is_siteforward: (data) => isSiteForward(data.officer_id),
+                is_compliance: (data) => isCompliance(data.officer_id),
+                is_mlssalescompliance: (data) => isMLSSalesCompliance(data.officer_id),
+                is_msicompliance: (data) => isMSICompliance(data.officer_id),
+                is_onhold: (data) => isOnHold(data.officer_id),
+            },
+        }
 
-        /**
-         * Add the search bar to the DOM.
-         */
-        addSearchBar() {
-            const searchBar = createElement("div", {
-                class: "search-bar",
-                html: `
-                    <div class="text-control" aria-required="true" style="margin: 10px 0 0 0; flex-basis: 80%; padding-right: 15px">
-                        <input required type="text" id="search-advisor" name="search-advisor" class="form-control" title="Search">
-                        <label for="search-advisor">Search</label>
-                        <div data-content="Search for &quot;?&quot; for assistance." class="tot_tip top search-help">?</div>
-                    </div>
-                    <div class="btn-control" aria-required="true" style="margin: 0; flex-basis:20%">
-                        <input type="button" style="height:100%; width:100%" 
-                            class="btn primary btn--action-review" 
-                            value="Search" 
-                            id="search-advisor-btn" 
-                            data-cover="Search for Advisor">
-                    </div>
-                    <table class="table" style="margin: .5rem 0; width: 100%"></table>
-                `,
-            })
-
-            const listContainer = document.querySelector(".providence-overview--list")
-            if (listContainer) {
-                listContainer.prepend(searchBar)
-            }
-        },
-
-        /**
-         * Setup event listeners for the SearchBar module.
-         */
-        setupEventListeners() {
-            document.querySelector("#search-advisor").addEventListener(
-                "keyup",
-                delay(() => {
-                    document.querySelector("#search-advisor-btn").click()
-                }, 400)
+        // Helper function to check if item matches date criteria
+        const matchesDateCriteria = (data, type, year, month = null, day = null) => {
+            const date = new Date(Date.parse(data.site[type]))
+            return (
+                (!year || date.getFullYear().toString() === year) &&
+                (!month || date.getMonth() === parseInt(month) - 1) &&
+                (!day || date.getDate() === parseInt(day))
             )
+        }
 
-            document.querySelector("#search-advisor-btn").addEventListener("click", () => this.handleSearch())
-            document
-                .querySelectorAll(".providence-overview--nav a")
-                .forEach((e) => e.addEventListener("click", () => this.resetSearch()))
-        },
+        // Helper function to check if item matches a search term
+        const matchesTerm = (item, search) => {
+            const data = item.data()
+            const search_lower = search.replace("&", "&amp;").toLowerCase()
 
-        /**
-         * Handle the search functionality.
-         */
-        async handleSearch() {
-            const searchInput = document.getElementById("search-advisor")
-            const searchTerm = searchInput?.value
-
-            this.clearSearchTable()
-            if (!searchTerm || searchTerm.length == 0) {
-                this.showAdvisorListTable()
-                return
+            // Check special commands first
+            if (search_patterns.specialCommands[search]) {
+                return search_patterns.specialCommands[search](data)
             }
 
-            const requestingAll = searchTerm.indexOf("*") == 0
-            const requestingNumber = searchTerm.indexOf("#") == 0
-            if (requestingAll || requestingNumber) searchInput = searchInput.substring(1)
-
-            const table = document.querySelector(".search-bar table")
-            if (!table) return
-
-            this.hideAdvisorListTable()
-
-            if (searchTerm === "?") {
-                table.innerHTML += `<tr><td><h1>Searching can be done by Name, Email, Tags, Status, or Officer.</h1> <table style="width: 100%"><tr><th>Expressions</th><th>Results</th><th>Example</th></tr> <tr><td>|</td><td>OR</td><td>Published|Submitted</td></tr> <tr><td>,</td><td>AND</td><td>Published,SiteForward</td></tr> <tr><td>!</td><td>NOT</td><td>!Published</td></tr></table><h1>There are some extra searching as well</h1><table style="width: 100%"><tr> <th>Search</th> <th>Results</th> <th>Example</th> </tr> <tr> <td>published</td> <td>Shows all published sites</td> <td></td> </tr> <tr> <td>submitted</td> <td>Shows all submitted sites</td> <td></td> </tr> <tr> <td>approved</td> <td>Shows all approved sites</td> <td></td> </tr> <tr> <td>pending review</td> <td>Shows all sites needing revisions</td> <td></td> </tr> <tr> <td>revisions needed</td> <td>Shows all published sites</td> <td></td> </tr> <tr> <td>rejected</td> <td>Shows all rejected sites</td> <td></td> </tr> <tr> <td colspan="3"></td> </tr> <tr> <td>is_siteforward</td> <td>Shows all sites assigned to SiteForward</td> <td></td> </tr> <tr> <td>is_compliance</td> <td>Shows all sites assigned to Compliance</td> <td></td> </tr> <tr> <td>is_mlssalescompliance</td> <td>Shows all sites assigned to MLS Sales Communication</td> <td></td> </tr> <tr> <td>is_msicompliance</td> <td>Shows all sites assigned to Insurance Compliance</td> <td></td> </tr> <tr> <td>is_onhold</td> <td>Shows all sites on hold</td> <td></td> </tr> <tr> <td colspan="3"></td> </tr> <tr> <td>created_at:&lt;year&gt;/[month]/[day]</td> <td>Shows sites created at that time</td> <td>created_at:2019/08</td> </tr> <tr> <td>updated_at:&lt;year&gt;/[month]/[day]</td> <td>Shows sites updated at that time</td> <td>created_at:2019/08/01</td> </tr> <tr> <td>published_at:&lt;year&gt;/[month]/[day]</td> <td>Shows sites published at that time</td> <td>created_at:2020</td> </tr> <tr> <td>submitted_at:&lt;year&gt;/[month]/[day]</td> <td>Shows sites submitted at that time</td> <td>created_at:2020/01</td> </tr> <tr> <td colspan="3"></td> </tr> <tr> <td>#</td> <td>Shows the number of sites that match</td> <td>#Published</td> </tr> <tr> <td>*</td> <td>Shows all sites that match regardless of number</td> <td>*Published</td> </tr>`
-                return
-            }
-            table.innerHTML = `<thead> <tr role="row"><th class="" tabindex="0" aria-controls="advisorsList" rowspan="1" colspan="1">#</th><th class="" tabindex="0" aria-controls="advisorsList" rowspan="1" colspan="1" aria-label="">Name</th><th class="" tabindex="0" aria-controls="advisorsList" rowspan="1" colspan="1" aria-label="">Email</th><th class="has-state sorting" tabindex="0" aria-controls="advisorsList" rowspan="1" colspan="1" aria-label="">Status</th><th class="" tabindex="0" aria-controls="advisorsList" rowspan="1" colspan="1" aria-label="" aria-sort="descending">Last Submitted</th><th class="" rowspan="1" colspan="1" aria-label="Assigned">Assigned</th><th class="" rowspan="1" colspan="1" aria-label="Actions">Actions</th></tr> </thead>`
-
-            const results = this.performSearch(searchTerm)
-            if (results.length == 0) {
-                table.innerHTML += `<tr><td colspan="7">No results found</td></tr>`
-                return
-            }
-            if (requestingNumber || results.length > 100)
-                table.innerHTML += `<tr><td colspan="7">Number of results: ${results.length}</td></tr>`
-            else {
-                let tbody = document.createElement("tbody")
-                results.forEach((advisor, i) => {
-                    advisor.prepend(createElement("td", { html: i + 1 }))
-                    tbody.appendChild(advisor)
-                })
-                table.appendChild(tbody)
-            }
-        },
-
-        /**
-         * Reset the search input and show the full advisor list.
-         */
-        resetSearch() {
-            document.querySelector("#search-advisor").value = ""
-            this.clearSearchTable()
-            this.showAdvisorListTable()
-        },
-
-        /**
-         * Clear the search results table.
-         */
-        clearSearchTable() {
-            const searchTable = document.querySelector(".search-bar table")
-            if (searchTable) searchTable.innerHTML = ""
-        },
-
-        /**
-         * Hide the advisor list table.
-         */
-        hideAdvisorListTable() {
-            const advisorListTable = document.querySelector("#advisorsList_wrapper")
-            if (advisorListTable) advisorListTable.style.display = "none"
-        },
-
-        /**
-         * Show the advisor list table.
-         */
-        showAdvisorListTable() {
-            const advisorListTable = document.querySelector("#advisorsList_wrapper")
-            if (advisorListTable) advisorListTable.style.display = "block"
-        },
-
-        /**
-         * Perform a search based on the provided search string.
-         * Supports:
-         * - Full-text search on advisor names, emails, and IDs
-         * - Date-based filtering (created_at, updated_at, etc.)
-         * - Special commands (e.g., ".")
-         * @param {string} searchString - The search string to use for filtering results.
-         * @returns {Array} - An array of search results matching the search criteria.
-         */
-        performSearch(searchString) {
-            const searchPatterns = {
-                datePattern: /^(created|updated|published|submitted)_at:(\d{4})(?:\/(\d{1,2})(?:\/(\d{1,2}))?)?$/,
-                specialCommands: {
-                    ".": (data) => isRandysList(data),
-                    published: (data) => data.published_date !== "NA",
-                    submitted: (data) => data.submitted_date !== "NA",
-                    "not published": (data) => notPublished(data),
-                    "advisor revisions needed": (data) => hasStatus("review completed", data),
-                    is_siteforward: (data) => isSiteForward(data.officer_id),
-                    is_compliance: (data) => isCompliance(data.officer_id),
-                    is_mlssalescompliance: (data) => isMLSSalesCompliance(data.officer_id),
-                    is_msicompliance: (data) => isMSICompliance(data.officer_id),
-                    is_onhold: (data) => isOnHold(data.officer_id),
-                },
+            // Check date pattern
+            const date_match = search.match(search_patterns.datePattern)
+            if (date_match) {
+                const [_, type, year, month, day] = date_match
+                return matchesDateCriteria(data, type + "_at", year, month, day)
             }
 
-            // Helper function to check if item matches date criteria
-            const matchesDateCriteria = (data, type, year, month = null, day = null) => {
-                const date = new Date(Date.parse(data.site[type]))
-                return (
-                    (!year || date.getFullYear().toString() === year) &&
-                    (!month || date.getMonth() === parseInt(month) - 1) &&
-                    (!day || date.getDate() === parseInt(day))
-                )
-            }
+            // Standard text search
+            return (
+                data.display_name.toLowerCase().includes(search_lower) ||
+                data.email.toLowerCase().includes(search_lower) ||
+                data._id.toLowerCase().includes(search_lower) ||
+                hasTag(search_lower, data) ||
+                hasStatus(search_lower, data) ||
+                getOfficerName(data.officer_id).toLowerCase().includes(search_lower)
+            )
+        }
 
-            // Helper function to check if item matches a search term
-            const matchesTerm = (item, search) => {
-                const data = item.data()
-                const searchLower = search.replace("&", "&amp;").toLowerCase()
+        // Helper function to check if an item is in Randy's list
+        const isRandysList = (data) => {
+            return (
+                (isSiteForward(data.officer_id) && hasStatus("review completed", data)) ||
+                (isCompliance(data.officer_id) &&
+                    (hasStatus("editing", data) || hasStatus("review completed", data))) ||
+                isOnHold(data.officer_id)
+            )
+        }
 
-                // Check special commands first
-                if (searchPatterns.specialCommands[search]) {
-                    return searchPatterns.specialCommands[search](data)
-                }
+        // Get all rows from DataTable
+        const rows = []
+        const table = document.querySelector("#advisorsList")
+        const data_table = $(table).DataTable()
+        data_table.rows().every(function () {
+            rows.push(this)
+        })
 
-                // Check date pattern
-                const dateMatch = search.match(searchPatterns.datePattern)
-                if (dateMatch) {
-                    const [_, type, year, month, day] = dateMatch
-                    return matchesDateCriteria(data, type + "_at", year, month, day)
-                }
+        // Process each search term (split by comma for AND operations)
+        return searchString
+            .split(",")
+            .reduce((filtered_rows, search_group) => {
+                search_group = search_group.trim()
 
-                // Standard text search
-                return (
-                    data.display_name.toLowerCase().includes(searchLower) ||
-                    data.email.toLowerCase().includes(searchLower) ||
-                    data._id.toLowerCase().includes(searchLower) ||
-                    hasTag(searchLower, data) ||
-                    hasStatus(searchLower, data) ||
-                    getOfficerName(data.officer_id).toLowerCase().includes(searchLower)
-                )
-            }
-
-            // Helper function to check if an item is in Randy's list
-            const isRandysList = (data) => {
-                return (
-                    (isSiteForward(data.officer_id) && hasStatus("review completed", data)) ||
-                    (isCompliance(data.officer_id) &&
-                        (hasStatus("editing", data) || hasStatus("review completed", data))) ||
-                    isOnHold(data.officer_id)
-                )
-            }
-
-            // Get all rows from DataTable
-            const rows = []
-            const table = document.querySelector("#advisorsList")
-            const dataTable = $(table).DataTable()
-            dataTable.rows().every(function () {
-                rows.push(this)
-            })
-
-            // Process each search term (split by comma for AND operations)
-            return searchString
-                .split(",")
-                .reduce((filteredRows, searchGroup) => {
-                    searchGroup = searchGroup.trim()
-
-                    // Process OR operations (split by |)
-                    return filteredRows.filter((row) => {
-                        return searchGroup.split("|").some((term) => {
-                            term = term.trim()
-                            const invert = term.startsWith("!")
-                            const searchTerm = invert ? term.slice(1) : term
-                            const matches = matchesTerm(row, searchTerm)
-                            return invert ? !matches : matches
-                        })
+                // Process OR operations (split by |)
+                return filtered_rows.filter((row) => {
+                    return search_group.split("|").some((term) => {
+                        term = term.trim()
+                        const invert = term.startsWith("!")
+                        const search_term = invert ? term.slice(1) : term
+                        const matches = matchesTerm(row, search_term)
+                        return invert ? !matches : matches
                     })
-                }, rows)
-                .map((row) => row.node().cloneNode(true))
-        },
+                })
+            }, rows)
+            .map((row) => row.node().cloneNode(true))
     },
     // ======================= Advisor List ==========================
     AdvisorList: {
@@ -927,10 +1133,8 @@ const Manage = {
             $("#advisorsList").on(
                 "draw.dt",
                 delay(() => {
-                    if (document.getElementById("showAllAdvisors").classList.contains("active")) {
+                    if (document.getElementById("showAllAdvisors").classList.contains("active"))
                         document.querySelector(".providence-overview--list")?.classList.add("loadedAll")
-                        this.updateAdvisorInfo()
-                    }
 
                     this.updateDropdowns()
                     this.updateOfficerList()
@@ -945,14 +1149,14 @@ const Manage = {
         checkForUnPublished() {
             let rows = document.querySelectorAll("#advisorsList tbody tr")
             rows.forEach((row) => {
-                const advisor = getAdvisorInfoFromTable(row._id)
-                let isUnPublished = false
+                const advisor = getAdvisorInfoFromList(row._id)
+                let is_unpublished = false
                 if (hasStatus("approved", advisor)) {
-                    let dateA = Date.parse(advisor.site.published_at),
-                        dateB = Date.parse(advisor.site.submitted_at)
-                    isUnPublished = dateA < dateB
+                    let date_a = Date.parse(advisor.site.published_at),
+                        date_b = Date.parse(advisor.site.submitted_at)
+                    is_unpublished = date_a < date_b
                 }
-                if (isUnPublished) {
+                if (is_unpublished) {
                     let state = row.querySelector(".has-state")
                     state.append(
                         "<p style=\"font-size: .75em;color: #1fe9ae;text-align: center;margin: 5px 0 0 0; font-family: 'Anonymous Pro', Courier, monospace;\">Not Published</p>"
@@ -980,7 +1184,7 @@ const Manage = {
                 if (dropdown.childElementCount > 3) continue // Skip if dropdown already has items
 
                 // Get advisor info from DataTable
-                let advisor_info = getAdvisorInfoFromTable(advisor_id)
+                let advisor_info = getAdvisorInfoFromList(advisor_id)
                 if (!advisor_info) continue
 
                 // Add Open Chat
@@ -1017,34 +1221,13 @@ const Manage = {
                 }
             }
         },
-        /**
-         * Update list of advisor info, allows being able to see full list when not showing in table
-         */
-        updateAdvisorInfo() {
-            advisorInfo = []
-            $("#advisorsList")
-                .DataTable()
-                .rows()
-                .data()
-                .each((e, i) => {
-                    advisorInfo.push(e)
-                })
-            localStorage.setItem("advisorList", JSON.stringify(advisorInfo))
-            // Notify other scripts that the advisor list was updated
-            try {
-                const evt = new CustomEvent("advisorListUpdated", { detail: advisorInfo })
-                document.dispatchEvent(evt)
-            } catch (err) {
-                console.warn("advisorListUpdated dispatch failed", err)
-            }
-        },
-
+        
         /**
          * Update officer dropdowns with organized optgroups
          */
         updateOfficerList() {
-            document.querySelectorAll(".form-item--control.assigned_officer").forEach((selectElement) => {
-                if (selectElement.classList.contains("optGroupsAdded")) return
+            document.querySelectorAll(".form-item--control.assigned_officer").forEach((select_element) => {
+                if (select_element.classList.contains("optGroupsAdded")) return
 
                 const officers = {
                     Teams: [],
@@ -1056,7 +1239,7 @@ const Manage = {
                 }
 
                 // Organize options into groups
-                selectElement.querySelectorAll("option").forEach((option) => {
+                select_element.querySelectorAll("option").forEach((option) => {
                     const id = option.value.substring(option.value.indexOf("|") + 1)
                     option.setAttribute("data-id", id)
 
@@ -1093,38 +1276,38 @@ const Manage = {
                         })
 
                     if (optgroup.children.length > 0) {
-                        selectElement.appendChild(optgroup)
+                        select_element.appendChild(optgroup)
                     }
                 })
 
                 // Clean up any remaining ungrouped options
-                selectElement.querySelectorAll(":scope > option").forEach((option) => option.remove())
+                select_element.querySelectorAll(":scope > option").forEach((option) => option.remove())
 
                 // Remove empty optgroups
-                selectElement.querySelectorAll("optgroup").forEach((optgroup) => {
+                select_element.querySelectorAll("optgroup").forEach((optgroup) => {
                     if (optgroup.children.length === 0) optgroup.remove()
                 })
 
                 // Set default selection if none exists
-                if (!selectElement.querySelector("option[selected]")) {
-                    const allOption = selectElement.querySelector("option[value*='all']")
-                    if (allOption) selectElement.value = allOption.value
+                if (!select_element.querySelector("option[selected]")) {
+                    const all_option = select_element.querySelector("option[value*='all']")
+                    if (all_option) select_element.value = all_option.value
                 }
 
-                selectElement.classList.add("optGroupsAdded")
+                select_element.classList.add("optGroupsAdded")
 
                 // Hide assignees based on advisor tags
-                const tagsElement = selectElement.closest("tr")?.querySelector(".advisor-tags")
+                const tagsElement = select_element.closest("tr")?.querySelector(".advisor-tags")
                 if (tagsElement) {
                     const tags = tagsElement.textContent
-                    const optgroups = selectElement.querySelectorAll("optgroup")
+                    const optgroups = select_element.querySelectorAll("optgroup")
 
                     // Hide MLS options if no dealer tags
                     if (!tags.includes("IIROC") && !tags.includes("MFDA")) {
                         // Hide MLS option in Teams group
-                        const teamsGroup = optgroups[0]
-                        if (teamsGroup?.querySelectorAll("option")[1]) {
-                            teamsGroup.querySelectorAll("option")[1].style.display = "none"
+                        const teams_group = optgroups[0]
+                        if (teams_group?.querySelectorAll("option")[1]) {
+                            teams_group.querySelectorAll("option")[1].style.display = "none"
                         }
                         // Hide MLS Sales Communication group
                         if (optgroups[2]) {
@@ -1135,9 +1318,9 @@ const Manage = {
                     // Hide MSI options if no insurance
                     if (tags.includes("Insurance: None")) {
                         // Hide MSI option in Teams group
-                        const teamsGroup = optgroups[0]
-                        if (teamsGroup?.querySelectorAll("option")[2]) {
-                            teamsGroup.querySelectorAll("option")[2].style.display = "none"
+                        const teams_group = optgroups[0]
+                        if (teams_group?.querySelectorAll("option")[2]) {
+                            teams_group.querySelectorAll("option")[2].style.display = "none"
                         }
                         // Hide Insurance Compliance group
                         if (optgroups[3]) {
@@ -1150,7 +1333,7 @@ const Manage = {
     },
     // ======================= Review List =======================
     ReviewList: {
-        important_tag_list: [
+        importantTagList: [
             "Migrating",
             "Brand New",
             "Post-Review",
@@ -1160,18 +1343,18 @@ const Manage = {
         ],
         reviewCount: {},
         init() {
+            
             this.setupEventListeners()
+            
+            this.sortReviewCards()
+            this.addDetailsToCards()
+            this.setupRevisionCount()
+            this.filterReviewCards()
         },
 
         setupEventListeners() {
-            document.addEventListener("advisorListUpdated", (event) => {
-                if (event.detail.length > 0) {
-                    this.sortReviewCards()
-                    this.addDetailsToCards()
-                    this.setupRevisionCount()
-                    this.filterReviewCards()
-                }
-            })
+            
+               
             document.addEventListener("click", (e) => {
                 if (e.target.matches(".review-table tbody tr td")) {
                     const table = e.target.closest(".review-table")
@@ -1207,39 +1390,39 @@ const Manage = {
          * Sort advisor review cards by priority and time
          */
         sortReviewCards() {
-            const advisorCards = document.querySelectorAll(".advisor-card")
-            if (advisorCards.length === 0) return
+            const advisor_cards = document.querySelectorAll(".advisor-card")
+            if (advisor_cards.length === 0) return
 
             // Convert to array and sort
-            const sortedCards = Array.from(advisorCards).sort((a, b) => {
+            const sorted_cards = Array.from(advisor_cards).sort((a, b) => {
                 // Get advisor names from cards
-                const nameA = a.dataset.name
-                const nameB = b.dataset.name
+                const name_a = a.dataset.name
+                const name_b = b.dataset.name
 
                 // Load advisor info from DataTable
-                const infoA = getAdvisorInfoByNameFromTable(nameA)
-                const infoB = getAdvisorInfoByNameFromTable(nameB)
+                const info_a = getAdvisorInfoByNameFromList(name_a)
+                const info_b = getAdvisorInfoByNameFromList(name_b)
 
                 // Get current times for both cards in minutes
-                const timeA = this.parseTimeToMinutes(a.querySelector(".submitted")?.textContent || "")
-                const timeB = this.parseTimeToMinutes(b.querySelector(".submitted")?.textContent || "")
+                const time_a = this.parseTimeToMinutes(a.querySelector(".submitted")?.textContent || "")
+                const time_b = this.parseTimeToMinutes(b.querySelector(".submitted")?.textContent || "")
 
                 // Check if either card is a construction page
-                const isConstructionA = hasTag("Construction", infoA)
-                const isConstructionB = hasTag("Construction", infoB)
+                const is_construction_a = hasTag("Construction", info_a)
+                const is_construction_b = hasTag("Construction", info_b)
 
                 // Construction Pages come first
-                if (isConstructionA && !isConstructionB) return -1
-                if (isConstructionB && !isConstructionA) return 1
+                if (is_construction_a && !is_construction_b) return -1
+                if (is_construction_b && !is_construction_a) return 1
 
                 // Compare time (newer submissions first)
-                return timeA < timeB ? 1 : timeA > timeB ? -1 : 0
+                return time_a < time_b ? 1 : time_a > time_b ? -1 : 0
             })
 
             // Re-append sorted cards to the container
             const container = document.querySelector(".providence-pending--list")
             if (container) {
-                sortedCards.forEach((card) => container.appendChild(card))
+                sorted_cards.forEach((card) => container.appendChild(card))
             }
         },
 
@@ -1322,7 +1505,7 @@ const Manage = {
             })
         },
         updateReviewTable() {
-            const reviewFilter = createElement("div", {
+            const review_filter = createElement("div", {
                 class: "review-filter",
                 html: `
                 <h2>Pending Reviews</h2>
@@ -1344,7 +1527,7 @@ const Manage = {
                 <tbody class="tags important-tags">
                 ${Object.entries(this.reviewCount.tags)
                     .filter(([tag, data]) => {
-                        return this.important_tag_list.some((importantTag) => tag.indexOf(importantTag) > -1)
+                        return this.importantTagList.some((importantTag) => tag.indexOf(importantTag) > -1)
                     })
                     .sort(([tagA], [tagB]) => tagA.localeCompare(tagB))
                     .map(([tag, data]) => {
@@ -1355,7 +1538,7 @@ const Manage = {
                 <tbody class="tags other-tags" style="display:none">
                 ${Object.entries(this.reviewCount.tags)
                     .filter(([tag, data]) => {
-                        return !this.important_tag_list.some((importantTag) => tag.indexOf(importantTag) > -1)
+                        return !this.importantTagList.some((importantTag) => tag.indexOf(importantTag) > -1)
                     })
                     .sort(([tagA], [tagB]) => tagA.localeCompare(tagB))
                     .map(([tag, data]) => {
@@ -1366,7 +1549,7 @@ const Manage = {
 
                 </table>`,
             })
-            document.querySelector(".providence-pending--title").innerHTML = reviewFilter.outerHTML
+            document.querySelector(".providence-pending--title").innerHTML = review_filter.outerHTML
             document.querySelector(".expand-toggle").addEventListener("click", (e) => {
                 document.querySelector(".tags.other-tags").style.display = e.target.innerHTML === "▼" ? "table-row-group" : "none"
                 e.target.innerHTML = e.target.innerHTML === "▼" ? "▲" : "▼"
@@ -1394,45 +1577,45 @@ const Manage = {
          * Add details to each advisor card
          */
         addDetailsToCards() {
-            document.querySelectorAll(".advisor-card").forEach((card) => {
+            document.querySelectorAll(".advisor-card").forEach(async (card) => {
                 // Add card status section
                 if (!card.querySelector(".card-status")) {
-                    const cardContent = card.querySelector(".card-content")
-                    const cardStatus = createElement("div", { class: "card-status" })
-                    cardContent?.prepend(cardStatus)
+                    const card_content = card.querySelector(".card-content")
+                    const card_status = createElement("div", { class: "card-status" })
+                    card_content?.prepend(card_status)
 
                     // Move submitted and changes elements to card status
                     const submitted = card.querySelector(".submitted")
                     const changes = card.querySelector(".card-changes")
-                    if (submitted) cardStatus.appendChild(submitted)
-                    if (changes) cardStatus.appendChild(changes)
+                    if (submitted) card_status.appendChild(submitted)
+                    if (changes) card_status.appendChild(changes)
                 }
 
                 // Add card title section
                 if (!card.querySelector(".card-title")) {
-                    const cardTitle = createElement("div", { class: "card-title" })
-                    card.prepend(cardTitle)
+                    const card_title = createElement("div", { class: "card-title" })
+                    card.prepend(card_title)
 
                     // Move advisor profile and h4 to card title
-                    const advisorProfile = card.querySelector(".advisor-profile")
+                    const advisor_profile = card.querySelector(".advisor-profile")
                     const h4 = card.querySelector("h4")
-                    if (advisorProfile) cardTitle.appendChild(advisorProfile)
-                    if (h4) cardTitle.appendChild(h4)
+                    if (advisor_profile) card_title.appendChild(advisor_profile)
+                    if (h4) card_title.appendChild(h4)
                 }
 
                 const advisor_id = card.querySelector(".btn--action-review")?.href.split("/").pop()
-                const advisor_info = getAdvisorInfoFromTable(advisor_id)
+                const advisor_info = getAdvisorInfoFromList(advisor_id)
                 card.setAttribute("advisor_id", advisor_id)
 
                 // Add card changes section
                 if (!card.querySelector(".card-changes")) {
                     const submitted = card.querySelector(".submitted")
                     if (submitted) {
-                        const cardChanges = createElement("div", {
+                        const card_changes = createElement("div", {
                             class: "card-changes",
                             html: '<span><span class="cardApprovals"></span> - <span class="cardPending"></span> - <span class="cardRejections"></span></div>',
                         })
-                        submitted.insertAdjacentElement("afterend", cardChanges)
+                        submitted.insertAdjacentElement("afterend", card_changes)
                     }
                 }
                 
@@ -1440,7 +1623,7 @@ const Manage = {
                 let all_tags = ""
 
                 advisor_info.settings.broker_tags.forEach((tag) => {
-                    if (this.important_tag_list.some((importantTag) => tag.name.indexOf(importantTag) > -1))
+                    if (this.importantTagList.some((important_tag) => tag.name.indexOf(important_tag) > -1))
                         important_tags += `<span class="tag">${tag.name}</span>, `
                     all_tags += `<span class="tag">${tag.name}</span>, `
                 })
@@ -1456,21 +1639,21 @@ const Manage = {
                 if (!card.querySelector(".card-extras")) {
                     const officer_name = getOfficerName(advisor_info.officer_id)
 
-                    const cardContent = card.querySelector(".card-content")
-                    const cardExtras = createElement("div", {
+                    const card_content = card.querySelector(".card-content")
+                    const card_extras = createElement("div", {
                         class: "card-extras",
                         html: `<p class="cardOfficer" style="margin: 0">${officer_name}</p><p class="cardImportantTags" style="line-height: 1; margin: 0">${important_tags}</p>`,
                     })
-                    cardContent?.appendChild(cardExtras)
+                    card_content?.appendChild(card_extras)
                 }
 
                 // Add the Open chat button to the card
                 if (!card.querySelector(".open-chat-extension")) {
-                    const reviewBtn = card.querySelector(".card-action .btn--action-review")
-                    if (reviewBtn) {
-                        reviewBtn.target = "_blank"
+                    const review_btn = card.querySelector(".card-action .btn--action-review")
+                    if (review_btn) {
+                        review_btn.target = "_blank"
 
-                        const chatBtn = createElement("a", {
+                        const chat_btn = createElement("a", {
                             href: "#messages",
                             style: "margin-left: 5px;flex-grow:1",
                             class: "btn pill primary btn--action-review open-chat-extension",
@@ -1479,8 +1662,8 @@ const Manage = {
                             html: "Open Chat",
                         })
 
-                        const cardAction = card.querySelector(".card-action")
-                        cardAction?.appendChild(chatBtn)
+                        const card_action = card.querySelector(".card-action")
+                        card_action?.appendChild(chat_btn)
                     }
                 }
             })
@@ -1492,15 +1675,15 @@ const Manage = {
 // Advisor Page Module
 // =============================================================================
 const Advisor = {
-    advisor_id: null,
-    advisor_info: null,
+    advisorId: null,
+    advisorInfo: null,
     init(){
-        this.advisor_id = urlParts[5]
-        if (this.advisor_id[this.advisor_id.length - 1] === "#")
-            this.advisor_id = this.advisor_id.slice(0, -1)
+        this.advisorId = url_parts[5]
+        if (this.advisorId[this.advisorId.length - 1] === "#")
+            this.advisorId = this.advisorId.slice(0, -1)
 
-        this.advisor_info = getAdvisorInfoFromTable(this.advisor_id)
-        AdvisorDetails.init(this.advisor_info)
+        this.advisorInfo = getAdvisorInfoFromList(this.advisorId)
+        AdvisorDetails.init(this.advisorInfo)
 
         this.setupEventListeners()
         this.setupAlwaysShowReviewSubmission()
@@ -1511,7 +1694,7 @@ const Advisor = {
         this.checkEmptyReview()
         this.setupLastReviewed()
 
-        this.InternalDB.init(this.advisor_id)
+        this.InternalDB.init(this.advisorId)
     },
     setupEventListeners(){
         document.addEventListener("click", async (e) => {
@@ -1648,14 +1831,14 @@ const Advisor = {
                 class: "review-item-preview",
                 html: `
                 <p class="review-details"><span class="officer">Reviewed by: ${officer}</span> - <span class="date">${date}</span></p>
-                ${note ? `<div class="review-note"><h3>Review Note</h3><div class="review-html">${note}</div></div>` : ""}
-                ${rejection ? `<div class="review-rejection"><h3>Rejection Note</h3><div class="review-html">${rejection}</div></div>` : ""}
+                ${note ? `<div class="review-note"><h3>Internal Review Note</h3><div class="review-html">${note}</div></div>` : ""}
+                ${rejection ? `<div class="review-rejection"><h3>${status == "Rejected" ? "Previous " : ""}Rejection Note</h3><div class="review-html">${rejection}</div></div>` : ""}
                 `
             })
             review_item.appendChild(review_item_preview)
     },
     async getReviewInfoFromRevisionsPage(review_id){
-        let response = await fetch(`${baseUrl}/manage/revisions/${this.advisor_id}/${review_id}`)
+        let response = await fetch(`${baseUrl}/manage/revisions/${this.advisorId}/${review_id}`)
         if (!response.ok) return {}
         const text = await response.text()
         const doc = new DOMParser().parseFromString(text, "text/html")
@@ -1680,47 +1863,39 @@ const Advisor = {
         }, 1000)
     },
 
-    // ======================= Review List =======================
-    ReviewList:{
-        init(){
-            this.setupEventListeners()
-            this.loadNotes()
-            this.updateLastReviewed()
-        },
-        setupEventListeners(){
-            // Setup event listeners for the review list
-        },
-        updateLastReviewed(){
-          localStorage.setItem("last_reviewed_id", urlParts[6])  
-        },
-        loadNotes(){
-            const review_items = document.querySelectorAll(".review-item")
-            review_items.forEach(async (item) => {
-                const review_id = item.querySelector("[data-id]").getAttribute("data-id")
-                const notes = await this.fetchReviewInfo(review_id)
-            })
-        },
-        async fetchReviewInfo(review_id){
-            const response = await fetch(`${baseUrl}/api/rvisions/${review_id}`)
-            this.reviewInfo = await response.json()
-            return this.reviewInfo
-        }
-    },
-
     // ======================= InternalDB =======================
     InternalDB:{
-        advisor_id: null,
-        notes_loaded: false,
-        statuses_loaded: false,
+        advisorId: null,
+        notesLoaded: false,
+        statusesLoaded: false,
+
         init(advisor_id){
+            this.advisorId = advisor_id
             this.setupEventListeners()
             this.setupNotes()
             this.setupStatuses()
-            this.advisor_id = advisor_id
 
         },
         setupEventListeners(){
-            // Setup event listeners for the internal database
+
+
+            document.addEventListener("click", (e) => {
+                if(e.target.matches(".advisor-statuses .sidebar-module-message-icon i")){
+                     let confirmation = confirm("Are you sure you want to delete this status?");
+                     if (confirmation == true) {
+                        const messageModule = e.target.closest(".sidebar-module-message");
+                        let timeStamp = messageModule.querySelector("[data-time]").dataset.time;
+                        console.log(`Deleting status for advisor ${this.advisorId} at ${timeStamp}`); // TODO: Fix, getting an error on below
+                        database.deleteStatus(this.advisorId, timeStamp)
+                           .then(data => {
+                              messageModule.remove();
+                           })
+                           .catch(err => {
+                              alert("Unable to delete status.");
+                           })
+                     }
+                  }
+            });
         },
         setupNotes(){
             const note_button = createElement("div",{
@@ -1741,7 +1916,7 @@ const Advisor = {
                         <button class="btn updateNotes-button" style="display: none">Save</button>
                     </div>
                 </div>`,
-                onclick: async ()=>{
+                onclick: ()=>{
                     this.loadNotes()
                 }
             })
@@ -1751,7 +1926,7 @@ const Advisor = {
                 const textarea = document.querySelector(".updateNotes-textarea")
                 e.target.innerHTML = "Updating Notes..."
                 const notes = textarea.value
-                await database.updateNotes(this.advisor_id, notes)
+                await database.updateNotes(this.advisorId, notes)
                 e.target.innerHTML = "Notes Updated"
                 setTimeout(() => {
                     e.target.innerHTML = "Save"
@@ -1759,15 +1934,15 @@ const Advisor = {
             })
         },
         async loadNotes(){
-            if (this.notes_loaded) return
+            if (this.notesLoaded) return
             const textarea = document.querySelector(".updateNotes-textarea")
             textarea.placeholder = "There are no notes for this website.\nClick here to add some."
             try{
-                const res = await database.getNotes(this.advisor_id)
+                const res = await database.getNotes(this.advisorId)
                 if (res){
+                    this.notesLoaded = true
                     if(res.message)
                         textarea.value = res.message
-                    this.notes_loaded = true
                 }
             }catch (error) {
                 textarea.placeholder = "Unable to load notes."
@@ -1776,6 +1951,7 @@ const Advisor = {
         setupStatuses(){
             const statuses_button = createElement("div", {
                 class: "sidebar-module advisor-statuses",
+                tabindex: "0",
                 html: `
                 <div class="sidebar-module-icon"><i class="far fa-comments-alt"></i><span>Status</span></div>
                 <div class="sidebar-module-wrapper">
@@ -1791,26 +1967,105 @@ const Advisor = {
                     </div>
                 </div>
                 `,
-                onclick: async (e) => {
-                    const textarea = e.target.closest(".sidebar-module").querySelector(".addStatus-input")
-                    const status = textarea.value
-                    if (status) {
-                       this.loadStatuses()
-                    }
+                onclick: () => {
+                    this.loadStatuses()
                 }
             })
             document.querySelector("#advisor-details").prepend(statuses_button)
         },
         async loadStatuses(){
-            if(this.statuses_loaded) return
-            try{
-                const res = await database.getStatuses(this.advisor_id)
+            if (this.statusesLoaded) return;
+            
+            try {
+                const res = await database.getStatuses(this.advisorId);
                 if (res) {
-                    this.statuses_loaded = true
+                    this.statusesLoaded = true;
+                    if (res.length > 0) {
+                        const statuses = res.sort((status_a, status_b) => status_a.timestamp > status_b.timestamp ? -1 : 1);
+                        for (const status of statuses) {
+                            this.addStatusNode(status.officer, status.timestamp, status.message);
+                        }
+                    } else {
+                        document.querySelector(".advisor-statuses .sidebar-module-message-content").innerHTML = "There are no statuses for this website.";
+                    }
                 }
-            }catch (error) {
-                console.error("Error loading statuses:", error)
+            } catch (error) {
+                console.error("Error loading statuses:", error);
+                document.querySelector(".advisor-statuses .sidebar-module-message-content").innerHTML = "Unable to load statuses.";
             }
+            
+            this.setupAddStatusButton();
+        },
+        
+        setupAddStatusButton() {
+            const addStatusButton = document.querySelector(".advisor-statuses .addStatus-button");
+            
+            addStatusButton.addEventListener("click", async (e) => {
+                const messageInput = document.querySelector(".advisor-statuses .addStatus-input");
+                const message = messageInput.value.trim();
+                
+                if (message) {
+                    e.target.innerHTML = "Sending...";
+                    document.querySelector(".advisor-statuses .statusPlaceholder")?.remove();
+                    messageInput.value = "";
+                    
+                    const date = new Date().getTime();
+                    const officer = document.querySelector("#header").querySelector(".display-name + small").textContent;
+
+                    try {
+                        await database.addStatus(this.advisorId, date, officer, message);
+                        this.addStatusNode(officer, date, message);
+                        e.target.innerHTML = "Send";
+                    } catch (error) {
+                        console.error("Error adding status:", error);
+                        e.target.innerHTML = "Error";
+                        setTimeout(() => {
+                            e.target.innerHTML = "Send";
+                        }, 2000);
+                    }
+                }
+            });
+        },
+        addStatusNode(officer, timestamp, message) {
+            // Remove placeholder if it exists
+            document.querySelector(".advisor-statuses .statusPlaceholder")?.remove();
+            
+            const date = new Date(timestamp);
+            const formattedDate = this.formatStatusDate(date);
+            
+            const statusElement = createElement("div", {
+                class: "sidebar-module-message",
+                html: `
+                    <div class="sidebar-module-message-icon"><i class="fas fa-trash-alt"></i></div>
+                    <div class="sidebar-module-message-info">
+                        <span class="sidebar-module-message-name">${officer}</span>
+                        <span class="sidebar-module-message-time" data-time="${timestamp}">${formattedDate}</span>
+                    </div>
+                    <div class="sidebar-module-message-content">${message}</div>
+                `
+            });
+            
+            const statusContainer = document.querySelector(".advisor-statuses .sidebar-module-body");
+            // Add to element sorted by timestamp
+            const existingStatuses = Array.from(statusContainer.children);
+            const insertBefore = existingStatuses.find(status => {
+                const statusTime = parseInt(status.querySelector(".sidebar-module-message-time").dataset.time, 10);
+                return statusTime < timestamp;
+            });
+            statusContainer?.insertBefore(statusElement, insertBefore || null);
+        },
+        
+        formatStatusDate(date) {
+            const month = date.getMonth() + 1;
+            const day = date.getDate();
+            const year = date.getFullYear();
+            const hours = date.getHours();
+            const minutes = date.getMinutes();
+            const ampm = hours < 12 ? "am" : "pm";
+            const displayHours = ((hours % 12) || 12);
+            const displayMinutes = minutes < 10 ? `0${minutes}` : minutes;
+            
+            return `${month}/${day}/${year} - ${displayHours}:${displayMinutes}${ampm}`;
         }
     }
 }
@@ -1819,61 +2074,61 @@ const Advisor = {
 // Review Page Module
 // =============================================================================
 const Review = {
-    advisor_id: null,
-    advisor_info: null,
-    review_id: null,
+    advisorId: null,
+    advisorInfo: null,
+    reviewId: null,
     async init(){
-        this.advisor_id = urlParts[5]
-        if (this.advisor_id[this.advisor_id.length - 1] === "#")
-            this.advisor_id = this.advisor_id.slice(0, -1)
-        this.review_id = urlParts[6]
-        if (this.review_id[this.review_id.length - 1] === "#")
-            this.review_id = this.review_id.slice(0, -1)
+        this.advisorId = url_parts[5]
+        if (this.advisorId[this.advisorId.length - 1] === "#")
+            this.advisorId = this.advisorId.slice(0, -1)
+        this.reviewId = url_parts[6]
+        if (this.reviewId[this.reviewId.length - 1] === "#")
+            this.reviewId = this.reviewId.slice(0, -1)
 
-        this.advisor_info = getAdvisorInfoFromTable(this.advisor_id)
-        AdvisorDetails.init(this.advisor_info)
-        localStorage.setItem("last_reviewed_id", this.review_id)
+        this.advisorInfo = getAdvisorInfoFromList(this.advisorId)
+        AdvisorDetails.init(this.advisorInfo)
+        localStorage.setItem("last_reviewed_id", this.reviewId)
 
         this.setupEventListeners()
         this.addAddExtraButton()
-        this.FloatingTools.init(review_id)
+        this.FloatingTools.init(this.reviewId)
     },
     setupEventListeners(){
         // Setup event listeners for the review page
     },
     addAddExtraButton(){
-        const addNoteButton = createElement("button", {
+        const add_note_btn = createElement("button", {
             class: "btn btn--action-default revision-note",
             html: "Add Note",
             onclick: () => {
-                fetch(`${baseUrl}/api/revisions/${this.review_id}`, {
+                fetch(`${baseUrl}/api/revisions/${this.reviewId}`, {
                     method: "PUT",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ internal_notes: note })
                 })
             }
         })
-        document.querySelector(".review-tools").appendChild(addNoteButton)
+        document.querySelector(".review-tools").appendChild(add_note_btn)
 
         if (document.querySelector(".review-tools a.active")) {
-            const addViewRevisionsButton = createElement("a", {
+            const view_revisions_btn = createElement("a", {
                 class: "btn pill secondary btn-sm primary btn--action-review",
                 target: "_blank",
                 html: "View Revisions",
                 href: window.location.href.replace("review", "revisions")
             })
-            document.querySelector(".review-tools").appendChild(addViewRevisionsButton)
+            document.querySelector(".review-tools").appendChild(view_revisions_btn)
         }
     },
     FloatingTools: {
-        review_id: null,
-        floating_tools: null,
+        reviewId: null,
+        floatingTools: null,
         init(review_id){
-            this.review_id = review_id
-            this.floating_tools = createElement("div", {
+            this.reviewId = review_id
+            this.floatingTools = createElement("div", {
                 class: "floating-review-item-wrapper"
             })
-            document.querySelector(".review-header").appendChild(this.floating_tools)
+            document.querySelector(".review-header").appendChild(this.floatingTools)
 
             this.setupEventListeners()
             this.addNightModeToggle()
@@ -1883,7 +2138,7 @@ const Review = {
             // Setup event listeners for the floating tools
         },
         addNightModeToggle(){
-            const nightModeToggle = createElement("button", {
+            const dark_toggle_btn = createElement("button", {
                 class: "floating-review-item dark-toggle",
                 title: "Toggle page preview darkness",
                 html: `<i class="fas fa-moon"></i>`,
@@ -1893,16 +2148,16 @@ const Review = {
                     document.querySelector(".change-item").classList.toggle("darken")
                 }
             })
-            this.floating_tools.appendChild(nightModeToggle)
+            this.floatingTools.appendChild(dark_toggle_btn)
         },
         setupContentReview() {
-            this.checkIfContent(this.review_id).then((result) => {
+            this.checkIfContent(this.reviewId).then((result) => {
                 if (!result.is_post) return
 
-                const contentInfo = this.analyzeContentSource(result)
-                this.updateContentButton(contentInfo, result)
+                const content_info = this.analyzeContentSource(result)
+                this.updateContentButton(content_info, result)
                 
-                if (contentInfo.was_edited) {
+                if (content_info.was_edited) {
                     this.setupDifferencesDialog(result.edits)
                 }
             })
@@ -2055,9 +2310,9 @@ const Review = {
         async checkIfContent(revisionId) {
             try {
                 const current_item = await fetch(`${baseUrl}/api/revisions/${revisionId}`)
-                const itemData = await current_item.json()
+                const item_data = await current_item.json()
                 
-                if (itemData.location !== "post") {
+                if (item_data.location !== "post") {
                     return { is_post: false }
                 }
 
@@ -2067,17 +2322,17 @@ const Review = {
                     '<button class="floating-review-item open-differences" title="Checking the file source"><i class="fas fa-spinner"></i></button>'
                 )
 
-                const is_custom = itemData.content_id == null
+                const is_custom = item_data.content_id == null
                 const [from_siteforward, from_vendor] = await Promise.all([
-                    this.getContent(itemData, `${baseUrl}/api/content/broker`),
-                    this.getContent(itemData, `${baseUrl}/api/content`)
+                    this.getContent(item_data, `${baseUrl}/api/content/broker`),
+                    this.getContent(item_data, `${baseUrl}/api/content`)
                 ])
 
                 let edits = null
                 let found_article = Object.keys(from_siteforward).length > 0 ? from_siteforward : from_vendor
 
                 if (found_article && Object.keys(found_article).length > 0) {
-                    const current_formatted = { title: itemData.title, html: itemData.content }
+                    const current_formatted = { title: item_data.title, html: item_data.content }
                     edits = {
                         title: this.getArrayDifferences(
                             this.parseHTML(found_article.title),
@@ -2095,7 +2350,7 @@ const Review = {
                     is_custom: found_article ? false : is_custom,
                     from_siteforward,
                     from_vendor,
-                    current_item: itemData,
+                    current_item: item_data,
                     edits
                 }
             } catch (error) {
@@ -2173,57 +2428,46 @@ const Review = {
          */
         getArrayDifferences(arr1, arr2) {
             const differences = []
-            const maxLength = Math.max(arr1.length, arr2.length)
-            let inDifference = false
+            const max_length = Math.max(arr1.length, arr2.length)
+            let in_difference = false
 
-            for (let i = 0; i < maxLength; i++) {
+            for (let i = 0; i < max_length; i++) {
                 if (arr1[i] !== arr2[i]) {
-                    if (!inDifference) {
-                        const vendorText = arr1[i] || ""
-                        const advisorText = arr2[i] || ""
-                        const diffIndex = this.findDifferenceIndex(vendorText, advisorText)
+                    if (!in_difference) {
+                        const vendor_text = arr1[i] || ""
+                        const advisor_text = arr2[i] || ""
+                        const diff_index = this.findDifferenceIndex(vendor_text, advisor_text)
 
                         differences.push({
-                            vendor: vendorText.slice(0, diffIndex) + "[[" + vendorText.slice(diffIndex) + "]]",
-                            advisor: advisorText.slice(0, diffIndex) + "[[" + advisorText.slice(diffIndex) + "]]"
+                            vendor: vendor_text.slice(0, diff_index) + "[[" + vendor_text.slice(diff_index) + "]]",
+                            advisor: advisor_text.slice(0, diff_index) + "[[" + advisor_text.slice(diff_index) + "]]"
                         })
 
-                        inDifference = true
+                        in_difference = true
                     }
                 } else {
-                    inDifference = false
+                    in_difference = false
                 }
             }
             return differences
         }
-    },
-
-    //TODO: Implement the rest - starts line #2267
+    }
 }
 
+// ============================================================================
+// Revisions Module
+// ============================================================================
+const Revisions = {
+    init(){
+        this.checkEmailInURL()
+        this.adjustItemsPerPage()
+    },
+    checkEmailInURL(){
+        const url_params = new URLSearchParams(window.location.search)
+        const email = url_params.get("email")
 
-
-
-
-// ==================================================== OLD CODE ============================================================
-
-function oldready() {
-    //Get the URL Parts
-    let urlParts = window.location.href.split("/")
-
-
-    // Revisions Page
-     if (
-        (urlParts.length > 4 && urlParts[4].indexOf("revisions") == 0) ||
-        (urlParts.length > 4 && urlParts[4].indexOf("revisions#") == 0)
-    ) {
-        // Check if an email was provided in the URL
-        var email = null
-        var urlParams = new URLSearchParams(window.location.search)
-        email = urlParams.get("email")
-
-        //If an email was provided, force a search of the revisions table
         if (email) {
+            // If an email was provided, force a search of the revisions table
             var prefixs = ["siteforwardprogram+", "digitaladvisorprogram+"]
             prefixs.forEach((prefix) => {
                 if (email.indexOf(prefix) == 0) email = email.substr(prefix.length, email.length)
@@ -2231,321 +2475,217 @@ function oldready() {
 
             // Wait 2 seconds after the page loads to ensure the revisions load
             setTimeout(() => {
-                //Search the table, and re-drawn it
+                // Search the table, and re-drawn it
                 $("#revisions-list").DataTable().search(email).draw()
             }, 2000)
         }
-
-        $(".providence--page-title").after(
-            '<a class="btn primary btn--action-review" id="reportorize-btn" style="    position: fixed; z-index:100; bottom: 20px;  right: 20px;">Reportorize It</a>'
-        )
-
-        //When DataTable gets drawn
-        $("#revisions-list").on("page.dt", function () {
-            $("#reportorize-btn")[0].text = "Reportorize It"
-        })
-
-        $("#reportorize-btn").on("click", function () {
-            $("#revisions-list_filter").hide()
-            $(".reports-toolbar").hide()
-            if (this.text == "Copy Table") {
-                selectElementContents($(".table")[0])
-                document.execCommand("copy")
-
-                function selectElementContents(el) {
-                    let body = document.body,
-                        range,
-                        sel
-                    if (document.createRange && window.getSelection) {
-                        range = document.createRange()
-                        sel = window.getSelection()
-                        sel.removeAllRanges()
-                        range.selectNode(el)
-                        sel.addRange(range)
-                    } else if (body.createTextRange) {
-                        range = body.createTextRange()
-                        range.moveToElementText(el)
-                        range.select()
-                    }
-                }
-            } else if (this.text == "Loading...") {
-            } else {
-                let $tableHeader = $(".dataTable").find("thead")
-                if ($tableHeader.find("th:contains(Email)").length == 0) {
-                    $($tableHeader.find("th")[0]).after("<th>Email</th>")
-                    $($tableHeader.find("th")[1]).after("<th>Tags</th>")
-                    $($tableHeader.find("th")[2]).after("<th>Domain</th>")
-                    $($tableHeader.find("th")[4]).after('<th style="min-width:250px">Page Title</th>')
-                    $($tableHeader.find("th")[5]).after('<th style="min-width:500px">Note</th>')
-                    $($tableHeader.find("th")[6]).after('<th style="min-width:500px">Rejections</th>')
-                    $($tableHeader.find("th")[11]).remove()
-                }
-
-                $(".dataTable")
-                    .find("tbody")
-                    .find("tr")
-                    .each(function (i) {
-                        let $row = $(this)
-                        let $columns = $row.find("td")
-                        let data = $(".dataTable").DataTable().row(i).data()
-
-                        let advisorId = data.advisor._id,
-                            reviewId = data._id,
-                            email = data.advisor.email,
-                            domain = data.site.settings.domains[0],
-                            pageTitle =
-                                data.meta && data.meta.name
-                                    ? data.meta.name +
-                                      (data.title
-                                          ? '<span class="revisions-page-title"> (' + data.title + ")</span>"
-                                          : "")
-                                    : data.title
-                                    ? data.title
-                                    : "",
-                            notes = data.internal_notes
-                                ? data.internal_notes
-                                      .replace(/<\/[^>]*>?/gm, "</span>")
-                                      .replace(/<[^>]*>?/gm, '<span class="revisions-notes-note">')
-                                : "",
-                            rejections = data.notes
-                                ? data.notes
-                                      .replace(/<\/[^>]*>?/gm, "</span>")
-                                      .replace(/<[^>]*>?/gm, '<span class="revisions-notes-note">')
-                                : ""
-
-                        let allTags = ""
-                        data.advisor.settings.broker_tags.forEach(
-                            (i) => (allTags += "<span class='revisions-tags-tag'>" + i.name + ", </span>")
-                        )
-                        allTags = allTags.substr(0, allTags.length - 2)
-
-                        $($row.find("td")[0]).after('<td class="revisions-email">' + email + "</td>")
-                        $($row.find("td")[1]).after('<td class="revisions-tags">' + allTags + "</td>")
-                        $($row.find("td")[2]).after('<td class="revisions-domains">' + domain + "</td>")
-                        $($row.find("td")[4]).after('<td class="revisions-page">' + pageTitle + "</td>")
-                        $($row.find("td")[5]).after('<td class="revisions-notes">' + notes + "</td>")
-                        $($row.find("td")[6]).after('<td class="revisions-notes">' + rejections + "</td>")
-                        $row.find(".advisor-tags").remove()
-                        $row.find("td")[11].remove()
-                    })
-
-                $(".wrapper").css("width", "100%").css("max-width", "unset").css("margin", "5px")
-
-                $(".dataTable").addClass("reportorized")
-                $(".dataTable").css("font-size", ".75em")
-                $($(".dataTable").find("thead").find("th")[3]).css("min-width", "150px")
-
-                var btn = this
-                btn.text = "Loading..."
-                setTimeout(function () {
-                    btn.text = "Copy Table"
-                }, 1000)
-            }
-        })
-        $("#revisions-list_length")
-            .find("option")
-            .last()
-            .after(
-                '<option value="500">500</option><option value="1000">1000</option><option value="2000">2000</option><option value="999999">All</option>'
-            )
-    }
-
-    //Content Assist page
-    else if (urlParts.length > 4 && urlParts[4].indexOf("content") == 0) {
-        let is_SiteForward_Bucket = urlParts[5]?.indexOf("custom") == 0 || false
-        document
-            .querySelector(is_SiteForward_Bucket ? ".siteforward_content_assist" : ".vendor_content_assist")
-            .parentNode.classList.add("active")
-
-        $("#content-list_wrapper, #custom-content-list_wrapper").prepend(
-            '<div class="search-bar">' +
-                '<div class="text-control" aria-required="true" style=" margin: 10px 0 0 0; flex-basis: 80%; padding-right: 15px"> ' +
-                '<input required type="text" id="search-content" name="search-content" class="form-control" title="Search"> <label for="search-content">Search ( Make sure to set entries to all )</label> ' +
-                '<div data-content="Search by Name or Categories &nbsp; &nbsp; - &nbsp; &nbsp; [! = Not] &nbsp; &nbsp; [, = And] &nbsp; &nbsp; [| = Or]" class="tot_tip top  search-help">?</div>' +
-                "</div>" +
-                '<div class="btn-control" aria-required="true" style=" margin: 0;flex-basis:20%"> ' +
-                '<input type="button" style="height:100%;width:100%" class="btn primary btn--action-review" value="Search" id="search-content-btn" data-cover="Search for Content">' +
-                "</div>" +
-                '<table class="table" style="margin: .5rem 0;  width: 100%"></table>' +
-                "</div>"
-        )
-        $(".add-custom-content")
-            .wrap('<div style="display: flex; flex-flow: column">')
-            .parent()
-            .prepend(
-                '<a href="../content" class="btn btn--action-default-outlined add-custom-content" style="margin-bottom: 10px;">Back to Content Assist</a>'
-            )
-        $("#custom-content-list_length, #content-list_length")
-            .find("option")
-            .last()
-            .after(
-                '<option value="200">200</option><option value="500">500</option><option value="999999">All</option>'
-            )
-
-        //Remove Lead Pilot content
-        $("#content-list").on(
-            "init.dt",
-            delay((e) => {
-                console.log(ready)
-                $("#content-list tr").each(function (i, e) {
-                    console.log(i)
-                    if ($(e).find(".content-cat")[0].textContent == "Lead Pilot") $(e).hide()
-                })
-            }, 750)
-        )
-
-        //When enter is pressed when typing in search
-        $("#search-content").on(
-            "keyup",
-            delay((e) => {
-                let searchTerm = $("#search-content").val()
-                if (
-                    (searchTerm.length > 2 &&
-                        (searchTerm.indexOf("*") != 0 || searchTerm.indexOf("#") != 0) &&
-                        getNodes(searchTerm).length < 50) ||
-                    e.which === 13
-                )
-                    $("#search-content-btn")[0].click()
-                if (searchTerm.length <= 2 && e.which == 8) {
-                    let table = $(".search-bar table")
-                    table.empty()
-
-                    $("#content-list, #custom-content-list").show()
-                }
-            }, 500)
-        )
-
-        //When search button is clicked
-        $("#search-content-btn").on("click", () => {
-            let searchTerm = $("#search-content").val()
-
-            let showAll = searchTerm.indexOf("*") === 0
-            let onlyNumber = searchTerm.indexOf("#") === 0
-            if (showAll || onlyNumber) searchTerm = searchTerm.substr(1, searchTerm.length)
-
-            //Empty current search results
-            let table = $(".search-bar table")
-            table.empty()
-            table.append(
-                '<thead> <tr role="row"><th class="" tabindex="0" aria-controls="advisorsList" rowspan="1" colspan="1">#</th><th class="" tabindex="0" aria-controls="advisorsList" rowspan="1" colspan="1" aria-label="">Thumbnail</th><th class="" tabindex="0" aria-controls="advisorsList" rowspan="1" colspan="1" aria-label="">Title</th><th class="" tabindex="0" aria-controls="advisorsList" rowspan="1" colspan="1" aria-label="">Date Added</th><th class="has-state sorting" tabindex="0" aria-controls="advisorsList" rowspan="1" colspan="1" aria-label="">Availability</th><th class="" tabindex="0" aria-controls="advisorsList" rowspan="1" colspan="1" aria-label="" aria-sort="descending">Status</th><th class="" rowspan="1" colspan="1" aria-label="Actions">Actions</th></tr> </thead>'
-            )
-
-            $("#content-list, #custom-content-list").hide()
-
-            //Get all nodes that match the search
-            let nodes = getNodes(searchTerm)
-
-            //Inform if no nodes are found
-            if (nodes.length === 0) {
-                table.append('<tr><td colspan="7">No results found</td></tr>')
-            }
-            //Display only the number of results
-            else if (onlyNumber) {
-                table.append('<tr><td colspan="7">Results: (' + nodes.length + ")</td></tr>")
-            }
-            //Display nodes if under 100 results
-            else if (showAll || nodes.length <= 100) {
-                //Add nodes to table
-                table.append(nodes)
-                nodes.forEach(function (e, i) {
-                    let row = $(table.find("tr")[i + 1])
-                    row.prepend("<td>" + (i + 1) + ".</td>")
-                })
-                table.find("td").css("border", "none")
-            }
-
-            //If more than 100 results are found
-            else {
-                table.append("<tr><td>To many results (" + nodes.length + ")</td></tr>")
-            }
-        })
-
-        //Get the node results
-        function getNodes(searchString) {
-            //Apply filter to rows and return new array of rows
-            function filter(rows, search) {
-                let newRows = []
-
-                //Perform filter
-                rows.forEach(function (rowItem) {
-                    function matches(item, search, invert) {
-                        let match =
-                            item.data().title.toLowerCase().indexOf(search.toLowerCase()) >= 0 ||
-                            item.data()._id.toLowerCase().indexOf(search.toLowerCase()) >= 0 ||
-                            (item.data().categories && hasCategory(search.toLowerCase(), item.data())) ||
-                            (item.data().availability &&
-                                item.data().availability.toLowerCase().indexOf(search.toLowerCase()) >= 0)
-                        function hasCategory(tag, item) {
-                            if (item && item.categories)
-                                return item
-                                    ? item.categories.some((e) => {
-                                          return e.name && e.name.toLowerCase().indexOf(tag.toLowerCase()) >= 0
-                                      })
-                                    : false
-                            return false
-                        }
-
-                        if (invert && !match) return true
-                        else if (!invert && match) return true
-                        else return false
-                    }
-
-                    let searchTerms = search.split("|")
-                    let match = false
-
-                    searchTerms.forEach(function (term) {
-                        term = term.trim()
-                        let invert = term.indexOf("!") === 0
-                        if (invert) term = term.substr(1, search.length)
-                        if (matches(rowItem, term, invert)) match = true
-                    })
-
-                    if (match) newRows.push(rowItem)
-                })
-                return newRows
-            }
-
-            //Split search at every ,
-            let searchList = searchString.split(",")
-
-            //Gather rows
-            let rows = []
-            $(".dataTable")
-                .DataTable()
-                .rows()
-                .every(function () {
-                    rows.push(this)
-                })
-            //Apply filter to current rows(recursion.... sort of...)
-            searchList.forEach(function (e) {
-                let search = e.trim()
-
-                //Apply filter/search
-                rows = filter(rows, search)
+    },/**
+     * Function to adjust the number of items displayed per page.
+     */
+    adjustItemsPerPage() {
+        setTimeout(() => {
+            const select = document.querySelector("#revisions-list_length select")
+            ;["200", "500", "999999"].forEach((val) => {
+                select.appendChild(createElement("option", { value: val, html: val === "999999" ? "All" : val }))
             })
-
-            //Turn filtered rows into nodes, clone, and remove useless column
-            let nodes = []
-            rows.forEach((e) => {
-                let node = e.node().cloneNode(true)
-                // let select = $(node).find("select");
-                // let status = $(node).find("option:selected").text();
-                // select.parent().removeClass("is-select");
-                // select.parent().css("text-align", "center");
-                // select.after(status == "Default" ? "---" : status);
-                // select.remove();
-
-                //node.deleteCell(4);
-                nodes.push(node)
-            })
-            return nodes
-        }
-    }
-
-   
+        }, 1000)
+    },
 }
 
-//Check if the tag exists in the advisor's tags(NOT Exact match)
+// ============================================================================
+// Content Module
+// ============================================================================
+const Content = {
+    isBrokerBucket: false,
+    async init(){
+
+        this.isBrokerBucket = url_parts[5]?.indexOf("custom") == 0
+
+        this.adjustItemsPerPage()
+        this.setupEventListeners()
+        this.updateCustomContentNav()
+        this.setupSearchBar()
+        if(!this.isBrokerBucket) this.hideLeadPilotContent()
+        else this.addBackToVendorContentButton()
+    },
+
+    setupEventListeners(){
+        // Add event listeners for content-specific actions
+         $("#content-list").on(
+            "draw.dt",
+            delay((e) => {
+                if(!this.isBrokerBucket) this.hideLeadPilotContent()
+                SearchBar.resetSearchTable()
+            }, 100)
+        )
+    },
+    /**
+     * Function to adjust the number of items displayed per page.
+     */
+    adjustItemsPerPage() {
+        setTimeout(() => {
+            const select = document.querySelector("#content-list_length select")
+            ;["200", "500", "999999"].forEach((val) => {
+                select.appendChild(createElement("option", { value: val, html: val === "999999" ? "All" : val }))
+            })
+        }, 1000)
+    },
+
+    addBackToVendorContentButton() {
+        const add_custom_content_element = document.querySelector(".add-custom-content");
+        if (add_custom_content_element) {
+            const wrapper = createElement("div", {
+                style: "display: flex; flex-flow: column"
+            });
+            
+            const back_button = createElement("a", {
+                href: "../content",
+                class: "btn btn--action-default-outlined add-custom-content",
+                style: "margin-bottom: 10px;",
+                html: "Back to Vendor Content"
+            });
+            
+            add_custom_content_element.parentNode.insertBefore(wrapper, add_custom_content_element);
+            wrapper.appendChild(back_button);
+            wrapper.appendChild(add_custom_content_element);
+        }
+    },
+
+    updateCustomContentNav(){
+        if (this.isBrokerBucket) document.querySelector(".siteforward_content_assist").parentNode.classList.add("active")
+        else document.querySelector(".vendor_content_assist").parentNode.classList.add("active")
+    },
+
+    hideLeadPilotContent(){
+        let hidden_lead_pilot = 0
+        document.querySelectorAll("#content-list tr").forEach((row) => {
+            if (row.querySelector(".content-cat").textContent == "Lead Pilot") {
+                row.style.display = "none"
+                hidden_lead_pilot++
+            }
+        })
+        document.querySelector("#content-list_info").textContent += ` | Hidden Lead Pilot content: ${hidden_lead_pilot}`
+    },
+
+    /**
+     * Setup the search bar for content management
+     */
+    setupSearchBar() {
+        const search_config = {
+            container: document.querySelector(".dataTables_wrapper "),
+            inputId: 'search-content',
+            buttonId: 'search-content-btn',
+            label: 'Search Content',
+            placeholder: 'Search content...',
+            buttonText: 'Search',
+            buttonDataCover: 'Search for Content',
+            helpContent: 'Search by Name or Categories &nbsp; &nbsp; - &nbsp; &nbsp; [! = Not] &nbsp; &nbsp; [, = And] &nbsp; &nbsp; [| = Or]',
+            searchFunction: this.performContentSearch.bind(this),
+            hideTableFunction: () => {
+                const table = document.querySelector(".dataTable ")
+                if (table) table.style.display = "none"
+            },
+            showTableFunction: () => {
+                const table = document.querySelector(".dataTable ")
+                if (table) table.style.display = "block"
+            }
+        }
+
+        SearchBar.init(search_config)
+    },
+
+    /**
+     * Perform content search (bound to SearchBar instance)
+     */
+    async performContentSearch(search_term) {
+        const requesting_all = search_term.indexOf("*") === 0
+        const requesting_number = search_term.indexOf("#") === 0
+        if (requesting_all || requesting_number) {
+            search_term = search_term.substring(1)
+        }
+
+        const table = document.querySelector(".search-bar table")
+        if (!table) return
+
+        SearchBar.hideTable()
+
+
+        table.innerHTML = `<thead> 
+            <tr role="row">
+                <th class="" tabindex="0" rowspan="1" colspan="1">#</th>
+                <th class="" tabindex="0" rowspan="1" colspan="1" aria-label="">Thumbnail</th>
+                <th class="" tabindex="0" rowspan="1" colspan="1" aria-label="">Title</th>
+                <th class="" tabindex="0" rowspan="1" colspan="1" aria-label="">Category</th>
+                <th class="" tabindex="0" rowspan="1" colspan="1" aria-label="">Created</th>
+                <th class="" tabindex="0" rowspan="1" colspan="1" aria-label="">Status</th>
+                <th class="" rowspan="1" colspan="1" aria-label="Actions">Actions</th>
+            </tr> 
+        </thead>`
+
+        const results = this.performContentTableSearch(search_term)
+        if (results.length === 0) {
+            table.innerHTML += `<tr><td colspan="5">No results found - This search can only view whats on the page.<br><strong>Make sure you've changed the "Entries per page" to "All"</strong></td></tr>`
+            return
+        }
+        
+        if (requesting_number || results.length > 100) {
+            table.innerHTML += `<tr><td colspan="5">Number of results: ${results.length}</td></tr>`
+        } else {
+            const tbody = document.createElement("tbody")
+            results.forEach((content, i) => {
+                content.prepend(createElement("td", { html: `${i + 1}.` }))
+                tbody.appendChild(content)
+            })
+            table.appendChild(tbody)
+        }
+    },
+
+    /**
+     * Perform content search based on search string
+     * @param {string} searchString - The search string
+     * @returns {Array} - Array of matching content items
+     */
+    performContentTableSearch(searchString) {
+        // Helper function to check if item matches a search term
+        const matchesTerm = (row, search) => {
+            const title = row.querySelector('.content-title')?.textContent?.toLowerCase() || ''
+            const category = row.querySelector('.content-cat')?.textContent?.toLowerCase() || row.querySelector('.advisor-tags')?.textContent?.toLowerCase() || ''
+            const searchLower = search.toLowerCase()
+
+            return title.includes(searchLower) || category.includes(searchLower)
+        }
+
+        // Get all rows from content table
+        const rows = Array.from(document.querySelectorAll(".dataTable tbody tr"))
+
+        // Process each search term (split by comma for AND operations)
+        return searchString
+            .split(",")
+            .reduce((filtered_rows, search_group) => {
+                search_group = search_group.trim()
+
+                // Process OR operations (split by |)
+                return filtered_rows.filter((row) => {
+                    return search_group.split("|").some((term) => {
+                        term = term.trim()
+                        const invert = term.startsWith("!")
+                        const search_term = invert ? term.slice(1) : term
+                        const matches = matchesTerm(row, search_term)
+                        return invert ? !matches : matches
+                    })
+                })
+            }, rows)
+            .map((row) => row.cloneNode(true))
+    }
+}
+
+
+/**
+ * Check if the tag exists in the advisor's tags (NOT exact match)
+ * @param {string} tag - The tag to check
+ * @param {Object} advisor - The advisor object
+ * @returns {boolean} - True if the tag exists, false otherwise
+ */
 function hasTag(tag, advisor) {
     if (advisor && advisor.settings && advisor.settings.broker_tags)
         return advisor
@@ -2556,34 +2696,71 @@ function hasTag(tag, advisor) {
     return false
 }
 
-// check if status matches the advisor's current status
+/**
+ * Check if status matches the advisor's current status
+ * @param {string} status - The status to check
+ * @param {Object} advisor - The advisor object
+ * @returns {boolean} - True if status matches, false otherwise
+ */
 function hasStatus(status, advisor) {
     status = status.toLowerCase()
     if (advisor && advisor.display_state) {
-        let advisorStatus = advisor.display_state.toLowerCase()
+        let advisor_status = advisor.display_state.toLowerCase()
         if (advisor.site.status === "taken_down") {
-            advisorStatus = "taken down"
+            advisor_status = "taken down"
         } else if (advisor.site.broker_reviewed && advisor.display_state === "pending_review") {
-            advisorStatus = "review completed"
+            advisor_status = "review completed"
         } else if (advisor.display_state === "pending_review") {
-            advisorStatus = "pending review"
+            advisor_status = "pending review"
         } else if (advisor.display_state === "approved") {
-            advisorStatus = "approved"
+            advisor_status = "approved"
         } else if (advisor.display_state === "editing") {
-            advisorStatus = "editing"
+            advisor_status = "editing"
         }
-        return advisorStatus.indexOf(status) >= 0
+        return advisor_status.indexOf(status) >= 0
     } else return false
 }
 
-//Get the officer name from their ID
-function getOfficerName(id) {
-    //If ID is null, it means it's assigned to "All Officers"
-    if (!id) id = "all"
+/**
+ * Async Fetch the list of officers
+ * @returns {Promise<Object>} - A map containing {officerId: officerName}
+ */
+async function getOfficerList() {
+    const officer_map = {}
+    const unique_officer_ids = [...new Set(advisor_list.map(advisor => advisor.officer_id))]
+    
+    const officer_promises = unique_officer_ids.map(async (officer_id) => {
+        const name = await fetchOfficerName(officer_id)
+        officer_map[officer_id] = name
+        return { id: officer_id, name }
+    })
+    
+    await Promise.all(officer_promises)
+    return officer_map
+}
 
-    //Get the officer
-    let officer = $(".assigned_officer")
-        .first()
-        .find('option[value*="' + id + '"]')
-    return $(officer).text()
+/**
+ * Async fetch the officer's name by ID
+ * @param {string} id - The officer's ID
+ * @returns {Promise<string>} - The Officer's name
+ */
+async function fetchOfficerName(id) {
+    try {
+        const response = await fetch(`${baseUrl}/manage/advisor/one/${id}`)
+        const officer = await response.json()
+        return officer?.display_name || "Unknown Officer"
+    } catch (error) {
+        console.error(`Failed to fetch officer ${id}:`, error)
+        return "Unknown Officer"
+    }
+}
+
+//Get the officer name from their ID
+/**
+ * Get the officer name from their ID
+ * @param {string} id - The officer's ID
+ * @returns {string|undefined} - The officer's name or undefined if not found
+ */
+function getOfficerName(id) {
+    if (officer_list[id]) return officer_list[id]
 }

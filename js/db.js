@@ -43,7 +43,7 @@ class DatabaseClient {
 
         try {
             const data = await this.docClient.get(params).promise()
-            return data.Item || null
+            return data.Item || {}
         } catch (error) {
             console.error(`Failed to get notes for advisor ${advisorId}:`, error)
             throw error
@@ -111,13 +111,13 @@ class DatabaseClient {
     /**
      * Add a new status for an advisor
      * @param {string} advisorId - The advisor's ID
+     * @param {number} timestamp - The timestamp of the status
      * @param {string} officer - The officer adding the status
      * @param {string} message - The status message
      * @returns {Promise<void>}
      */
-    async addStatus(advisorId, officer, message) {
+    async addStatus(advisorId, timestamp, officer, message) {
       this.init()
-        const timestamp = Date.now()
         const params = {
             TableName: 'Statuses',
             Item: {
