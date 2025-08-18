@@ -141,29 +141,6 @@ function createElement(tag, options = {}) {
 }
 
 /**
- * Wait for a specific condition to be met.
- * @param {*} conditionFn - The condition function to evaluate.
- * @param {*} timeout - The maximum time to wait (in milliseconds).
- * @param {*} interval - The interval between checks (in milliseconds).
- * @returns {Promise} - A promise that resolves when the condition is met.
- */
-function waitForCondition(conditionFn, timeout = 2000, interval = 50) {
-    return new Promise((resolve, reject) => {
-        const start = Date.now()
-        function check() {
-            if (conditionFn()) {
-                resolve()
-            } else if (Date.now() - start >= timeout) {
-                reject(new Error("Condition timeout"))
-            } else {
-                setTimeout(check, interval)
-            }
-        }
-        check()
-    })
-}
-
-/**
  * Wait for a specific style change on an element.
  * @param {*} shouldBe - The expected state (true/false) of the style.
  * @param {*} element - The target element to observe.
