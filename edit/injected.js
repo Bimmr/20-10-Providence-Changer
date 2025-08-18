@@ -1,12 +1,38 @@
+let database = null
+
 $(async function () {
     try {
-        await waitForCondition(() => typeof isSiteForward === "function", 2000)
+        await waitForCondition(() => typeof isSiteForward === "function", 5000)
+        database = new DatabaseClient()
         console.log("Providence Changer Loaded")
         ready()
     } catch (error) {
         alert("Unable to load Extension, please reload the page to try enabling the extension again.")
     }
 })
+
+/**
+ * Wait for a specific condition to be met.
+ * @param {*} conditionFn - The condition function to evaluate.
+ * @param {*} timeout - The maximum time to wait (in milliseconds).
+ * @param {*} interval - The interval between checks (in milliseconds).
+ * @returns {Promise} - A promise that resolves when the condition is met.
+ */
+function waitForCondition(conditionFn, timeout = 2000, interval = 50) {
+    return new Promise((resolve, reject) => {
+        const start = Date.now()
+        function check() {
+            if (conditionFn()) {
+                resolve()
+            } else if (Date.now() - start >= timeout) {
+                reject(new Error("Condition timeout"))
+            } else {
+                setTimeout(check, interval)
+            }
+        }
+        check()
+    })
+}
 
 // Function to initialize the page
 async function ready() {
@@ -385,10 +411,9 @@ const Chat = {
      */
     async setupRejectionHandling() {
         const advisorId = window.loggedInUser
-        const rejections = await getRejections(advisorId)
+        const rejections = await database.getRejections(advisorId)
 
         this.addRejectionCheckboxes(rejections, advisorId)
-        this.initRejectionChangeListener()
     },
 
     /**
@@ -414,40 +439,6 @@ const Chat = {
         })
     },
 
-    /**
-     * Initialize rejection change listener.
-     * Sets up a single global event listener for all rejection checkboxes.
-     */
-    initRejectionChangeListener() {
-        // Only set up the listener once
-        if (!this.rejectionListenerInitialized) {
-            document.addEventListener(
-                "change",
-                (e) => {
-                    if (!e.target.matches(".rejection-completed")) return;
-                    
-                    const checkbox = e.target;
-                    const rejectionWrapper = checkbox.closest(".rejection-notice");
-                    if (!rejectionWrapper) return;
-
-                    const rejectionId = rejectionWrapper.dataset.id;
-                    const advisorId = rejectionWrapper.dataset.advisorId;
-                    
-                    if (!rejectionId || !advisorId) {
-                        console.warn("Missing rejection or advisor ID for rejection change");
-                        return;
-                    }
-
-                    const rejectionArray = Array.from(rejectionWrapper.querySelectorAll(".rejected-item"))
-                        .map(item => item.querySelector(".rejection-completed").checked);
-
-                    updateRejection(advisorId, rejectionId, rejectionArray);
-                },
-                { capture: true }
-            );
-            this.rejectionListenerInitialized = true;
-        }
-    },
 
     /**
      * Setup saved message handling.
@@ -476,6 +467,30 @@ const Chat = {
             localStorage.setItem("savedChatMsg", null)
             document.getElementById("loadLastMessage").style.display = "none"
         })
+
+        document.addEventListener(
+                "change",
+                (e) => {
+                    if (!e.target.matches(".rejection-completed")) return;
+                    
+                    const checkbox = e.target;
+                    const rejectionWrapper = checkbox.closest(".rejection-notice");
+                    if (!rejectionWrapper) return;
+
+                    const rejectionId = rejectionWrapper.dataset.id;
+                    const advisorId = rejectionWrapper.dataset.advisorId;
+                    
+                    if (!rejectionId || !advisorId) {
+                        console.warn("Missing rejection or advisor ID for rejection change");
+                        return;
+                    }
+
+                    const rejectionArray = Array.from(rejectionWrapper.querySelectorAll(".rejected-item"))
+                        .map(item => item.querySelector(".rejection-completed").checked);
+
+                    database.updateRejection(advisorId, rejectionId, rejectionArray);
+                }
+            );
     },
 }
 
