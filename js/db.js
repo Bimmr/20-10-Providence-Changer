@@ -1,171 +1,224 @@
-var dynamodb = null;
-var docClient = null;
+/**
+ * AWS DynamoDB client wrapper for Providence extension
+ * Provides a clean interface for database operations
+ */
 
-function init(){
-  if(!dynamodb){
-    AWS.config.region = 'ca-central-1';
-    AWS.config.credentials = new AWS.CognitoIdentityCredentials({
-        IdentityPoolId: DYNAMO_DB_ID,
-    });
-
-    dynamodb = new AWS.DynamoDB();
-    docClient = new AWS.DynamoDB.DocumentClient();
-  }
-}
-
-// Notes
-async function getNotes(advisorId){
-  init();
-  let params = {
-    TableName: 'Notes',
-    Key :{
-      AdvisorId: advisorId
+class DatabaseClient {
+    constructor() {
+        this.dynamodb = null
+        this.docClient = null
+        this.region = 'ca-central-1'
     }
-  }
-  return new Promise ((resolve, reject) => {
-    docClient.get(params, function(err, data){
-      if(!err)
-        resolve(data.Item);
-      else
-        reject(err);
-    })
-  })
-}
 
-async function updateNotes(advisorId, message){
-  init();
-  let params = {
-    TableName: 'Notes',
-    Key :{
-      AdvisorId: advisorId
-    },
-    UpdateExpression: "set message = :m",
-        ExpressionAttributeValues:{
-            ":m": message
-        },
-        ReturnValues:"UPDATED_NEW"
-    };
+    /**
+     * Initialize AWS DynamoDB connection
+     */
+    init() {
+        if (!this.dynamodb) {
+            AWS.config.region = this.region
+            AWS.config.credentials = new AWS.CognitoIdentityCredentials({
+                IdentityPoolId: DYNAMO_DB_ID,
+            })
 
-  return new Promise ((resolve, reject) => {
-    docClient.update(params, function(err, data){
-      if(!err)
-        resolve(data.Item);
-      else
-        reject(err);
-    })
-  })
-}
-
-// Status
-async function getStatuses(advisorId){
-  init();
-  let params = {
-    TableName: 'Statuses',
-    KeyConditionExpression: "#id = :aid",
-        ExpressionAttributeNames:{
-            "#id": "advisorId"
-        },
-        ExpressionAttributeValues: {
-            ":aid":advisorId
+            this.dynamodb = new AWS.DynamoDB()
+            this.docClient = new AWS.DynamoDB.DocumentClient()
         }
-  }
-  return new Promise ((resolve, reject) => {
-    docClient.query(params, function(err, data){
-      if(!err)
-        resolve(data.Items);
-      else
-        reject(err);
-    })
-  })
-}
-
-async function addStatus(advisorId, officer, message){
-  init();
-  let timestamp = new Date().getTime();
-  let params = {
-    TableName: 'Statuses',
-    Item : {
-      advisorId,
-      timestamp,
-      officer,
-      message
     }
-  }
 
-  return new Promise ((resolve, reject) => {
-    docClient.put(params, function(err, data){
-      if(!err)
-        resolve();
-      else
-        reject(err);
-    })
-  })
-}
+    // ======================= Notes Operations =======================
 
-async function delStatus(advisorId, timestamp){
-  init();
-  let params = {
-    TableName: 'Statuses',
-    Key : {
-      advisorId,
-      timestamp
-    }
-  }
-
-  return new Promise ((resolve, reject) => {
-    docClient.delete(params, function(err, data){
-      if(!err)
-        resolve();
-      else
-        reject(err);
-    })
-  })
-}
-
-// Rejections
-async function getRejections(advisorId){
-  init();
-  let params = {
-    TableName: 'Rejections',
-    KeyConditionExpression: "#id = :aid",
-        ExpressionAttributeNames:{
-            "#id": "advisorId"
-        },
-        ExpressionAttributeValues: {
-            ":aid":advisorId
+    /**
+     * Get notes for a specific advisor
+     * @param {string} advisorId - The advisor's ID
+     * @returns {Promise<Object|null>} - Notes object or null if not found
+     */
+    async getNotes(advisorId) {
+      this.init()
+        const params = {
+            TableName: 'Notes',
+            Key: {
+                AdvisorId: advisorId
+            }
         }
-  }
-  return new Promise ((resolve, reject) => {
-    docClient.query(params, function(err, data){
-      if(!err)
-        resolve(data.Items);
-      else
-        reject(err, advisorId);
-    })
-  })
-}
 
-async function updateRejection(advisorId, rejectionId, completedArray){
-    init();
-    let params = {
-      TableName: 'Rejections',
-      Key :{
-        advisorId,
-        rejectionId
-      },
-      UpdateExpression: 'set rejection = :completedArray',
-      ExpressionAttributeValues: {
-        ":completedArray": completedArray
-      },
-      ReturnValues:"UPDATED_NEW"
-    };
+        try {
+            const data = await this.docClient.get(params).promise()
+            return data.Item || null
+        } catch (error) {
+            console.error(`Failed to get notes for advisor ${advisorId}:`, error)
+            throw error
+        }
+    }
 
-    return new Promise ((resolve, reject) => {
-      docClient.update(params, function(err, data){
-        if(!err)
-          resolve(data.Item);
-        else
-          reject(err);
-      })
-    })
+    /**
+     * Update notes for a specific advisor
+     * @param {string} advisorId - The advisor's ID
+     * @param {string} message - The note message
+     * @returns {Promise<Object>} - Updated item
+     */
+    async updateNotes(advisorId, message) {
+      this.init()
+        const params = {
+            TableName: 'Notes',
+            Key: {
+                AdvisorId: advisorId
+            },
+            UpdateExpression: "set message = :m",
+            ExpressionAttributeValues: {
+                ":m": message
+            },
+            ReturnValues: "UPDATED_NEW"
+        }
+
+        try {
+            const data = await this.docClient.update(params).promise()
+            return data.Attributes
+        } catch (error) {
+            console.error(`Failed to update notes for advisor ${advisorId}:`, error)
+            throw error
+        }
+    }
+
+    // ======================= Status Operations =======================
+
+    /**
+     * Get all statuses for a specific advisor
+     * @param {string} advisorId - The advisor's ID
+     * @returns {Promise<Array>} - Array of status objects
+     */
+    async getStatuses(advisorId) {
+      this.init()
+        const params = {
+            TableName: 'Statuses',
+            KeyConditionExpression: "#id = :aid",
+            ExpressionAttributeNames: {
+                "#id": "advisorId"
+            },
+            ExpressionAttributeValues: {
+                ":aid": advisorId
+            }
+        }
+
+        try {
+            const data = await this.docClient.query(params).promise()
+            return data.Items || []
+        } catch (error) {
+            console.error(`Failed to get statuses for advisor ${advisorId}:`, error)
+            throw error
+        }
+    }
+
+    /**
+     * Add a new status for an advisor
+     * @param {string} advisorId - The advisor's ID
+     * @param {string} officer - The officer adding the status
+     * @param {string} message - The status message
+     * @returns {Promise<void>}
+     */
+    async addStatus(advisorId, officer, message) {
+      this.init()
+        const timestamp = Date.now()
+        const params = {
+            TableName: 'Statuses',
+            Item: {
+                advisorId,
+                timestamp,
+                officer,
+                message
+            }
+        }
+
+        try {
+          await this.docClient.put(params).promise()
+          return true
+        } catch (error) {
+            console.error(`Failed to add status for advisor ${advisorId}:`, error)
+            throw error
+        }
+    }
+
+    /**
+     * Delete a status for an advisor
+     * @param {string} advisorId - The advisor's ID
+     * @param {number} timestamp - The timestamp of the status to delete
+     * @returns {Promise<void>}
+     */
+    async deleteStatus(advisorId, timestamp) {
+      this.init()
+        const params = {
+            TableName: 'Statuses',
+            Key: {
+                advisorId,
+                timestamp
+            }
+        }
+
+        try {
+            await this.docClient.delete(params).promise()
+            return true
+        } catch (error) {
+            console.error(`Failed to delete status for advisor ${advisorId}:`, error)
+            throw error
+        }
+    }
+
+    // ======================= Rejections Operations =======================
+
+    /**
+     * Get all rejections for a specific advisor
+     * @param {string} advisorId - The advisor's ID
+     * @returns {Promise<Array>} - Array of rejection objects
+     */
+    async getRejections(advisorId) {
+      this.init()
+        const params = {
+            TableName: 'Rejections',
+            KeyConditionExpression: "#id = :aid",
+            ExpressionAttributeNames: {
+                "#id": "advisorId"
+            },
+            ExpressionAttributeValues: {
+                ":aid": advisorId
+            }
+        }
+
+        try {
+            const data = await this.docClient.query(params).promise()
+            return data.Items || []
+        } catch (error) {
+            console.error(`Failed to get rejections for advisor ${advisorId}:`, error)
+            throw error
+        }
+    }
+
+    /**
+     * Update rejection status for an advisor
+     * @param {string} advisorId - The advisor's ID
+     * @param {string} rejectionId - The rejection ID
+     * @param {Array} completedArray - Array of completion statuses
+     * @returns {Promise<Object>} - Updated item
+     */
+    async updateRejection(advisorId, rejectionId, completedArray) {
+      this.init()
+        const params = {
+            TableName: 'Rejections',
+            Key: {
+                advisorId,
+                rejectionId
+            },
+            UpdateExpression: 'set rejection = :completedArray',
+            ExpressionAttributeValues: {
+                ":completedArray": completedArray
+            },
+            ReturnValues: "UPDATED_NEW"
+        }
+
+        try {
+            const data = await this.docClient.update(params).promise()
+            return data.Attributes
+        } catch (error) {
+            console.error(`Failed to update rejection for advisor ${advisorId}:`, error)
+            throw error
+        }
+    }
 }
