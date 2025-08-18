@@ -3,7 +3,7 @@ let baseUrl = "https://app.twentyoverten.com"
 
 // Global Info
 let advisorInfo = []
-let tableData
+let urlParts = ""
 
 $(async function () {
     try {
@@ -38,10 +38,18 @@ async function ready() {
     Chat.init()
 
     // Get the URL Parts
-    let urlParts = window.location.href.split("/")
+    urlParts = window.location.href.split("/")
 
     // Load the page modules
+
+    // [https:]//[][app.twentyoverten.com]/[manage] -> Dashboard Home
     if (urlParts.length == 4 && urlParts[3].includes("manage")) Manage.init()
+    
+    // [https:]//[][app.twentyoverten.com]/[manage]/[advisor]/[###advisor_id###] -> Advisor Profile
+    else if (urlParts.length == 6 && urlParts[4].includes("advisor"))  Advisor.init()
+
+    // [https:]//[][app.twentyoverten.com]/[manage]/[review]/[###advisor_id###]/[###item_id###] -> Item Review
+    else if (urlParts.length == 7 && urlParts[4].includes("review"))  Review.init()
 }
 
 // ============================================================================
@@ -118,6 +126,163 @@ const NightMode = {
         })
         dropdownList.insertBefore(nightModeToggle, dropdownList.firstChild)
     },
+}
+// =============================================================================
+// AdvisorDetails Module
+// =============================================================================
+const AdvisorDetails = {
+    advisor_info: null,
+    init(advisor_info){
+        this.advisor_info = advisor_info
+        this.addTags()
+        this.addPreviewLinkIcon()
+        this.addViewRevisionsButton()
+        this.Archives.init()
+    },
+    addTags(){
+        const tags = this.advisor_info.settings.broker_tags || []
+        // Add tags to the UI
+        const tag_container = createElement("div",{
+            class: "advisor-tags secondary center",
+            html: `${tags.map(tag => tag.name).join("<br>")}`
+        })
+        //Add tag_container after "".details-wrapper header" using es6
+        document.querySelector(".details-wrapper header").insertAdjacentElement("afterend", tag_container)
+    },
+    addPreviewLinkIcon(){
+        const preview_link_icon = createElement("li", {
+            html: `<a href="https://${this.advisor_info.site.settings.subdomain}.app.twentyoverten.com" class="tot_tip top center" data-content="View Preview Website"><svg id="icon-preview-website" viewBox="0 0 24 24" class="action-icon"> <path d="M8.617,12.682H5.9a6.149,6.149,0,0,0,4.544,5.258,12.465,12.465,0,0,1-1.207-2.378A9.792,9.792,0,0,1,8.617,12.682Z"> </path> <path d="M10.444,6.062A6.147,6.147,0,0,0,5.9,11.318H8.617A10.69,10.69,0,0,1,10.444,6.062Z"></path> <path d="M9.981,11.32h4.038A8.453,8.453,0,0,0,13.8,9.956a9.382,9.382,0,0,0-.376-1.207,10.325,10.325,0,0,0-.479-1.036q-0.271-.511-0.49-0.841T12,6.237q-0.235.3-.45,0.637t-0.49.844a9.048,9.048,0,0,0-.858,2.24A8.275,8.275,0,0,0,9.981,11.32Z"> </path> <path d="M12,0A12,12,0,1,0,24,12,12,12,0,0,0,12,0Zm7.242,13.947a7.416,7.416,0,0,1-1.843,3.26,7.431,7.431,0,0,1-1.457,1.18,7.514,7.514,0,0,1-1.728.781,7.408,7.408,0,0,1-1.925.327Q12.192,19.5,12,19.5t-0.288-.005a7.514,7.514,0,0,1-6.235-3.787,7.6,7.6,0,0,1-.719-1.76,7.461,7.461,0,0,1,0-3.893A7.416,7.416,0,0,1,6.6,6.794a7.431,7.431,0,0,1,1.457-1.18,7.514,7.514,0,0,1,1.728-.781,7.408,7.408,0,0,1,1.925-.327Q11.808,4.5,12,4.5t0.288,0.005a7.514,7.514,0,0,1,6.235,3.787,7.6,7.6,0,0,1,.719,1.76A7.461,7.461,0,0,1,19.242,13.947Z"> </path> <path d="M13.556,6.061h0a10.792,10.792,0,0,1,1.833,5.258H18.1A6.149,6.149,0,0,0,13.556,6.061Z"></path> <path d="M13.555,17.94A6.15,6.15,0,0,0,18.1,12.682H15.387A10.782,10.782,0,0,1,13.555,17.94Z"></path> <path d="M14.019,12.682H9.981a8.453,8.453,0,0,0,.221,1.364,9.381,9.381,0,0,0,.376,1.207,10.312,10.312,0,0,0,.479,1.036q0.271,0.511.49,0.841T12,17.765q0.235-.3.453-0.637t0.49-.844a10.017,10.017,0,0,0,.479-1.036,9.631,9.631,0,0,0,.376-1.2A8.274,8.274,0,0,0,14.019,12.682Z"> </path> </svg></a>`
+        })
+        document.querySelector(".advisor-actions").appendChild(preview_link_icon)
+    },
+    addViewRevisionsButton(){
+        const open_revisions = createElement("a", {
+            href: `/manage/revisions?email=${encodeURIComponent(
+                this.advisor_info.email)}`,
+            target: "_blank",
+            html: `View Revisions`,
+            class: "btn btn--action-default"
+        })
+        document.querySelector(".details-wrapper .btn-container").appendChild(open_revisions)
+    },
+    
+// =============================================================================
+// Archives Sub-Module
+// =============================================================================
+    Archives: {
+        /**
+         * Initialize the archives module.
+         */
+        init() {
+            this.setupArchiveOpenListener()
+        },
+
+        /**
+         * Setup archive open listener.
+         */
+        setupArchiveOpenListener() {
+            document.querySelector(".open-archives").addEventListener("click", async () => {
+                try {
+                    await this.waitForArchivesOverlay()
+                    await this.processArchiveItems()
+                } catch (err) {
+                    console.error("Error initializing archives:", err)
+                }
+            })
+        },
+
+        /**
+         * Wait for the archives overlay to load.
+         */
+        async waitForArchivesOverlay() {
+            try {
+                await waitForCondition(() => {
+                    const archivesOverlay = document.querySelector("#archives-overlay")
+                    return archivesOverlay && !archivesOverlay.classList.contains("loading")
+                })
+            } catch (error) {
+                alert("Unable to load Archives.\nThis is a known bug, to fix it please log in as the account then refresh this page or view the archives in the website engine.\n\nCause: Dashboard currently sees that you're logged in as another advisor.")
+            }
+        },
+
+        /**
+         * Process archive items.
+         */
+        async processArchiveItems() {
+            const items = document.querySelectorAll(".archive-item")
+            for (const item of items) {
+                this.styleArchiveItem(item)
+                const url = item.querySelector(".btn-group a").href
+                await this.addArchiveNotes(item, url)
+            }
+        },
+
+        /**
+         * Style an archive item.
+         * @param {HTMLElement} item - The archive item element.
+         */
+        styleArchiveItem(item) {
+            Object.assign(item.style, { flexFlow: "row wrap" })
+            Object.assign(item.querySelector(".archive-actions").style, {
+                position: "absolute",
+                top: "20px",
+                right: "20px",
+            })
+        },
+
+        /**
+         * Add archive notes to an item.
+         * @param {HTMLElement} item - The archive item element.
+         * @param {string} url - The URL to fetch notes from.
+         */
+        async addArchiveNotes(item, url) {
+            const note = await this.fetchNotes(url)
+            if (note) {
+                this.appendNoteToItem(item, note)
+            }
+        },
+
+        /**
+         * Fetch notes from a URL.
+         * @param {string} url - The URL to fetch notes from.
+         * @returns {Promise<string|null>} - The fetched notes or null if not found.
+         */
+        async fetchNotes(url) {
+            try {
+                const response = await fetch(url)
+                const text = await response.text()
+                const doc = new DOMParser().parseFromString(text, "text/html")
+
+                let notes = doc.querySelector(".is-compliance-notes")?.innerHTML
+                if (!notes) {
+                    const timestamp = doc.querySelectorAll(".print-timestamp-title + span")[2]?.innerHTML
+                    notes = `<span class="small">Approved By: ${timestamp}</span>`
+                }
+                return notes
+            } catch (error) {
+                console.error("Error fetching notes:", error)
+                return null
+            }
+        },
+
+        /**
+         * Append a note to an archive item.
+         * @param {HTMLElement} item - The archive item element.
+         * @param {string} note - The note content to append.
+         */
+        appendNoteToItem(item, note) {
+            const complianceNote = createElement("div", {
+                class: "compliance-notes",
+                style: "font-size: 14px; width: 100%;",
+                html: note,
+            })
+            item.appendChild(complianceNote)
+            item.querySelectorAll("span.small").forEach((span) => {
+                span.style.fontSize = "12px"
+            })
+        },
+    }
+
 }
 
 // =============================================================================
@@ -947,8 +1112,17 @@ const Manage = {
         },
     },
     // ======================= Review List =======================
-    // TODO: Add review overview
     ReviewList: {
+        importantTagsList: [
+            "Migrating",
+            "Brand New",
+            "Post-Review",
+            "Redesign",
+            "Construction",
+            "Not On Program",
+            "Tier",
+        ],
+        reviewCount: {},
         init() {
             this.setupEventListeners()
         },
@@ -961,6 +1135,34 @@ const Manage = {
                     this.setupRevisionCount()
                 }
             })
+            document.addEventListener("click", (e) => {
+                if (e.target.matches(".review-table tbody tr td")) {
+                    const table = e.target.closest(".review-table")
+                    const clicked_row = e.target.closest("tr")
+                    const clicked_category = e.target.closest("tbody").classList[0]
+                    table.querySelector(".active").classList.remove("active")
+                    clicked_row.classList.add("active")
+                    this.filterReviewCards(clicked_category, clicked_row.children[0].textContent)
+                }
+            })
+        },
+        filterReviewCards(clicked_category, clicked_text){
+            console.log("Filtering for ", clicked_category, clicked_text)
+            const cards = document.querySelectorAll(".advisor-card")
+            if (cards.length === 0) return
+            cards.forEach((card) => {
+                if (clicked_category == "officers")
+                    if(card.querySelector(".cardOfficer").textContent == clicked_text)
+                        card.style.display = "block"
+                    else
+                        card.style.display = "none"
+                else if (clicked_category == "tags")
+                    if(card.querySelectorAll(".tag").length > 0 && [...card.querySelectorAll(".tag")].some(tag=> tag.textContent == clicked_text))
+                        card.style.display = "block"
+                    else
+                        card.style.display = "none"
+            })
+
         },
 
         /**
@@ -1046,19 +1248,77 @@ const Manage = {
         },
         setupRevisionCount() {
             const advisor_cards = document.querySelectorAll(".advisor-card")
+            this.reviewCount = { all: { sites: 0, pending: 0, total: 0 }, tags: {}, officers: {} }
             advisor_cards.forEach(async (card) => {
                 const revisions = await this.getRevisions(card.getAttribute("advisor_id"))
                 card.querySelector(".cardApprovals").textContent = revisions.approved
                 card.querySelector(".cardPending").textContent = revisions.pending
                 card.querySelector(".cardRejections").textContent = revisions.rejected
 
-                //TODO: Add review counts to overview
+                // Update overall review count
+                this.reviewCount.all.sites += 1
+                this.reviewCount.all.pending += revisions.pending
+                this.reviewCount.all.total += revisions.approved + revisions.pending + revisions.rejected
+
+                // Update tag review count
+                const tags = card.querySelectorAll(".tag")
+                tags.forEach((tag) => {
+                    let tag_name = tag.textContent
+                    if (!this.reviewCount.tags[tag_name])
+                        this.reviewCount.tags[tag_name] = { sites: 0, pending: 0, total: 0 }
+                    this.reviewCount.tags[tag_name].sites += 1
+                    this.reviewCount.tags[tag_name].pending += revisions.pending
+                    this.reviewCount.tags[tag_name].total += revisions.approved + revisions.pending + revisions.rejected
+                })
+
+                // Update officer review count
+                const officer_name = card.querySelector(".cardOfficer")?.textContent
+                if (!this.reviewCount.officers[officer_name])
+                    this.reviewCount.officers[officer_name] = { sites: 0, pending: 0, total: 0 }
+                this.reviewCount.officers[officer_name].sites += 1
+                this.reviewCount.officers[officer_name].pending += revisions.pending
+                this.reviewCount.officers[officer_name].total +=
+                    revisions.approved + revisions.pending + revisions.rejected
+
+                this.updateReviewTable()
             })
         },
+        updateReviewTable() {
+            const reviewFilter = createElement("div", {
+                class: "review-filter",
+                html: `
+                <h2>Pending Reviews</h2>
+                <table class="review-table">
+                 <thead><tr><th>Filter</th><th>Sites</th><th>Pending</th></tr></thead><thead>
+                 <tbody class="all">
+                    <tr class="active"><td>All in Review</td><td>${this.reviewCount.all.sites}</td><td>${this.reviewCount.all.pending}</td></tr>
+                 </tbody>
+                
+                <thead><tr><th>Filter by Officer</th></tr></thead>
+                <tbody class="officers">
+                ${Object.entries(this.reviewCount.officers)
+                    .map(([officer, data]) => {
+                        return `<tr><td>${officer}</td><td>${data.sites}</td><td>${data.pending}</td></tr>`
+                    })
+                    .join("")}
+                </tbody>
+                <thead><tr><th>Filter by Tags</th></tr></thead>
+                <tbody class="tags">
+                ${Object.entries(this.reviewCount.tags)
+                    .map(([tag, data]) => {
+                        return `<tr><td>${tag}</td><td>${data.sites}</td><td>${data.pending}</td></tr>`
+                    })
+                    .join("")}
+                </tbody>
+                </table>`,
+            })
+            document.querySelector(".providence-pending--title").innerHTML = reviewFilter.outerHTML
+        },
+
         /**
          * Get the revisions for a specific advisor's review
-         * @param {*} advisor_id 
-         * @returns 
+         * @param {*} advisor_id
+         * @returns
          */
         async getRevisions(advisor_id) {
             const data = await fetch(`${baseUrl}/manage/advisor/${advisor_id}`)
@@ -1069,7 +1329,7 @@ const Manage = {
             const approved = doc.querySelectorAll(".review-item.approved-status").length
             const rejected = doc.querySelectorAll(".review-item.rejected-status").length
             const pending = doc.querySelectorAll(".review-item").length - approved - rejected
-          return { approved, pending, rejected }
+            return { approved, pending, rejected }
         },
 
         /**
@@ -1082,7 +1342,7 @@ const Manage = {
                     const cardContent = card.querySelector(".card-content")
                     const cardStatus = createElement("div", { class: "card-status" })
                     cardContent?.prepend(cardStatus)
-                    
+
                     // Move submitted and changes elements to card status
                     const submitted = card.querySelector(".submitted")
                     const changes = card.querySelector(".card-changes")
@@ -1094,7 +1354,7 @@ const Manage = {
                 if (!card.querySelector(".card-title")) {
                     const cardTitle = createElement("div", { class: "card-title" })
                     card.prepend(cardTitle)
-                    
+
                     // Move advisor profile and h4 to card title
                     const advisorProfile = card.querySelector(".advisor-profile")
                     const h4 = card.querySelector("h4")
@@ -1124,7 +1384,7 @@ const Manage = {
                     if (submitted) {
                         const cardChanges = createElement("div", {
                             class: "card-changes",
-                            html: '<span><span class="cardApprovals"></span> - <span class="cardPending"></span> - <span class="cardRejections"></span></div>'
+                            html: '<span><span class="cardApprovals"></span> - <span class="cardPending"></span> - <span class="cardRejections"></span></div>',
                         })
                         submitted.insertAdjacentElement("afterend", cardChanges)
                     }
@@ -1135,27 +1395,16 @@ const Manage = {
                     const officer_name = getOfficerName(advisor_info.officer_id)
                     let important_tags = ""
 
-                    // Important Tags List
-                    const importantTagsList = [
-                        "Migrating",
-                        "Brand New",
-                        "Post-Review",
-                        "Redesign",
-                        "Construction",
-                        "Dealer OBA",
-                        "Not On Program",
-                        "Tier"
-                    ]
                     advisor_info.settings.broker_tags.forEach((tag) => {
-                        if (importantTagsList.some((importantTag) => tag.name.indexOf(importantTag) > -1))
+                        if (this.importantTagsList.some((importantTag) => tag.name.indexOf(importantTag) > -1))
                             important_tags += `<span class="tag">${tag.name}</span>, `
                     })
-                    important_tags = important_tags.slice(0, -1) // Remove trailing comma
+                    important_tags = important_tags.slice(0, -2) // Remove trailing comma and space
 
                     const cardContent = card.querySelector(".card-content")
                     const cardExtras = createElement("div", {
                         class: "card-extras",
-                        html: `<p class="cardOfficer" style="margin: 0">${officer_name}</p><p class="cardImportantTags" style="line-height: 1; margin: 0">${important_tags}</p>`
+                        html: `<p class="cardOfficer" style="margin: 0">${officer_name}</p><p class="cardImportantTags" style="line-height: 1; margin: 0">${important_tags}</p>`,
                     })
                     cardContent?.appendChild(cardExtras)
                 }
@@ -1165,16 +1414,16 @@ const Manage = {
                     const reviewBtn = card.querySelector(".card-action .btn--action-review")
                     if (reviewBtn) {
                         reviewBtn.target = "_blank"
-                        
+
                         const chatBtn = createElement("a", {
                             href: "#messages",
                             style: "margin-left: 5px;flex-grow:1",
                             class: "btn pill primary btn--action-review open-chat-extension",
                             "data-advisor_id": advisor_id,
                             "data-cover": "Open Chat",
-                            html: "Open Chat"
+                            html: "Open Chat",
                         })
-                        
+
                         const cardAction = card.querySelector(".card-action")
                         cardAction?.appendChild(chatBtn)
                     }
@@ -1184,51 +1433,250 @@ const Manage = {
     },
 }
 
+// =============================================================================
+// Advisor Page Module
+// =============================================================================
+const Advisor = {
+    advisor_id: null,
+    advisor_info: null,
+    init(){
+        this.advisor_id = urlParts[5]
+        if (this.advisor_id[this.advisor_id.length - 1] === "#")
+            this.advisor_id = this.advisor_id.slice(0, -1)
 
+        this.advisor_info = getAdvisorInfoFromTable(this.advisor_id)
+        AdvisorDetails.init(this.advisor_info)
 
+        this.setupEventListeners()
+        this.setupAlwaysShowReviewSubmission()
+        this.addPendingCount()
+        this.addSiteForwardControls()
+        this.setupReviewItemNotes()
+        this.updateViewButtonText()
+        this.checkEmptyReview()
 
+        // this.InternalDB.init()
+    },
+    setupEventListeners(){
+        document.addEventListener("click", async (e) => {
+            if(e.target.matches(".btn-clear-state")){
+                const review_id = e.target.closest(".review-item").querySelector("[data-id]").getAttribute("data-id")
+                await fetch(`${baseUrl}/api/revisions/${review_id}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ state: "", internal_notes: "", notes: "" })
+                })
+                window.location.reload()
+            }
+        })
+        document.addEventListener("click", async (e) => {
+            if(e.target.matches("#revision-note-overlay .save")){
+                const overlay = document.querySelector("#revision-note-overlay")
+                await waitForClassAsync(true, overlay, "velocity-animating")
+                await waitForClassAsync(false, overlay, "velocity-animating")
+                const review_id = e.target.getAttribute("data-id")
+                this.addReviewItemNotesToPage(review_id)
+            }
+        })
+        document.addEventListener("click", (e)=>{
+            if(e.target.matches(".btn--action-approve, .btn--action-reject"))
+                setTimeout(this.addPendingCount, 100)
+        })
+    },
+    setupAlwaysShowReviewSubmission(){
+        document.querySelector(".review-submission").classList.add("showing")
+    },
+    checkEmptyReview(){
+        if(document.querySelector(".changes-list")?.children?.length == 0)
+            document.querySelector(".changes-header").append(
+                createElement("div",{
+                    html: `<h3>Something was put into draft mode</h3><p>This is a bug in the platform and shouldn't have come in for review.</p>`
+                })
+            )
+    },
+    addPendingCount(){
+        document.querySelector(".pending-count")?.remove() // Remove if already there
+        const pending_count = createElement('div',{
+            class: "approved-count pending-count",
+            html: `<span class="active">${$(".review-item:not(.approved-status):not(.rejected-status)").length}</span> Pending Changes`
+        })
+        document.querySelector(".approved-count").insertAdjacentElement("afterend", pending_count)
+    },
+    updateViewButtonText(){
+        const review_items = document.querySelectorAll(".review-item")
+        review_items.forEach((item) => {
+            if(item.querySelector(".review-actions a").textContent.includes("Link")){
+                const link = item.querySelector(".review-actions a")
+                if(link.href.indexOf("http") == 0)
+                    link.text = "Visit External Link"
+                else if (link.href.indexOf("#") == 0){
+                    link.text = "Visit Section Link"
+                    link.href = link.href.replace("app.twentyoverten.com/manage/advisor/", "")
+                }else{
+                    link.innerHTML = "Navigation Link"
+                    link.removeAttribute("href")
+                    link.style = "cursor: no-drop"
+                    link.classList.add("approve-item")
+                    link.classList.add("active")
+                    link.title = "Just a navigation link, has no content."
+                }
+            }
+        })
+    },
+    addSiteForwardControls(){
+        const approve_all_btn = createElement("a",{
+            href: '#',
+            class: "btn pill btn--action-approve btn-approve-all",
+            html: "Approve All",
+            onclick: () => {
+                document.querySelectorAll(".review-actions .approve-item").forEach((btn) => btn.click())
+            }
+        })
+        document.querySelector(".changes-header .btn-group").appendChild(approve_all_btn)
 
+        const add_note_to_all_btn = createElement("a", {
+            href: '#',
+            class: "btn pill btn--action-review btn-add-note-all",
+            html: "Add Note to All",
+            onclick: () => {
+                const note = prompt("Add your note")
+                if (!note) return
 
+                const revisionIds = [...document.querySelectorAll(".revision-note")].map(rev => 
+                    rev.getAttribute("data-id")
+                )
 
+                const updatePromises = revisionIds.map(id => 
+                    fetch(`${baseUrl}/api/revisions/${id}`, {
+                        method: "PUT",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ internal_notes: note })
+                    })
+                )
 
+                Promise.all(updatePromises).then(() => {
+                    window.location.reload()
+                }).catch(error => {
+                    console.error("Failed to update some revisions:", error)
+                })
+            }
+        })
+        document.querySelector(".changes-header .btn-group").appendChild(add_note_to_all_btn)
 
+        const clear_state = createElement("a", {
+            href: '#',
+            class: "btn pill btn--action-default btn-clear-state",
+            html: "Clear State",
+            title: "Clear the state and all notes"
+        })
+        document.querySelectorAll(".review-actions").forEach((action) => {
+            action.appendChild(clear_state.cloneNode(true))
+        })
+    },
+    setupReviewItemNotes(){
+        const review_items = document.querySelectorAll(".review-item")
+        review_items.forEach((item) => {
+            const review_id = item.querySelector("[data-id]").getAttribute("data-id")
+            item.setAttribute("data-id", review_id)
+            this.addReviewItemNotesToPage(review_id)
+        })
+    },
+    async addReviewItemNotesToPage(review_id){
+        const { status, officer, date, note, rejection } = await this.getReviewInfoFromRevisionsPage(review_id)
+        if (!status) return
+        const review_item = document.querySelector(`.review-item[data-id="${review_id}"]`)
 
+        // Remove if already existing
+        review_item.querySelector(`.review-item-preview`)?.remove()
+        const review_item_preview = createElement("div", {
+                class: "review-item-preview",
+                html: `
+                <p class="review-details"><span class="officer">Reviewed by: ${officer}</span> - <span class="date">${date}</span></p>
+                ${note ? `<div class="review-note"><h3>Review Note</h3><div class="review-html">${note}</div></div>` : ""}
+                ${rejection ? `<div class="review-rejection"><h3>Rejection Note</h3><div class="review-html">${rejection}</div></div>` : ""}
+                `
+            })
+            review_item.appendChild(review_item_preview)
+    },
+    async getReviewInfoFromRevisionsPage(review_id){
+        let response = await fetch(`${baseUrl}/manage/revisions/${this.advisor_id}/${review_id}`)
+        if (!response.ok) return {}
+        const text = await response.text()
+        const doc = new DOMParser().parseFromString(text, "text/html")
+        const info = doc.querySelectorAll(".print-timestamp-title + span")
+        const date = info[0].textContent
+        const officer = info[1].textContent
+        const status = info[2].textContent
+        const note = doc.querySelector(".is-compliance-notes")?.innerHTML
+        const rejection = doc.querySelector(".is-rejection-notes")?.innerHTML
+        return { status, officer, date, note, rejection }
+    },
+    setupLastReviewed(){
+        const last_reviewed_id = localStorage.getItem("last_reviewed_id")
+        if (!last_reviewed_id) return
 
+        const last_reviewed_item = document.querySelector(`.review-item[data-id="${last_reviewed_id}"]`)
+        if (!last_reviewed_item) return
 
+        last_reviewed_item.scrollIntoView({ behavior: "smooth" })
+        localStorage.removeItem("last_reviewed_id")
+    },
 
+    // ======================= Review List =======================
+    ReviewList:{
+        init(){
+            this.setupEventListeners()
+            this.loadNotes()
+            this.updateLastReviewed()
+        },
+        setupEventListeners(){
+            // Setup event listeners for the review list
+        },
+        updateLastReviewed(){
+          localStorage.setItem("last_reviewed_id", urlParts[6])  
+        },
+        loadNotes(){
+            const review_items = document.querySelectorAll(".review-item")
+            review_items.forEach(async (item) => {
+                const review_id = item.querySelector("[data-id]").getAttribute("data-id")
+                const notes = await this.fetchReviewInfo(review_id)
+            })
+        },
+        async fetchReviewInfo(review_id){
+            const response = await fetch(`${baseUrl}/api/rvisions/${review_id}`)
+            this.reviewInfo = await response.json()
+            return this.reviewInfo
+        }
+    },
 
+    // ======================= InternalDB =======================
+    InternalDB:{
+        init(){
 
+        }
+    }
+}
 
+// =============================================================================
+// Review Page Module
+// =============================================================================
+const Review = {
+    advisorInfo: null,
+    async init(){
+        let advisor_id = urlParts[5]
+        if (advisor_id[advisor_id.length - 1] === "#")
+            advisor_id = advisor_id.slice(0, -1)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        this.advisorInfo = getAdvisorInfoFromTable(advisor_id)
+        AdvisorDetails.init(this.advisorInfo)
+        
+        this.setupEventListeners()
+    },
+    setupEventListeners(){
+        // Setup event listeners for the review page
+    }
+    //TODO: Implement the rest - starts line #2267
+}
 
 
 
@@ -2382,68 +2830,6 @@ function hasStatus(status, advisor) {
     } else return false
 }
 
-async function displayReviewer(url, container, cb) {
-    let review = await getReviewer(url)
-
-    if (review && review[0]) {
-        let reviewText = '<div class="review-item-preview"><div >'
-        reviewText +=
-            '<p class="approvedByNote" style="font-size: 12px;' +
-            (review[2] == "Rejected" ? "color: #c2001e;" : "color: #007750;") +
-            '">' +
-            review[2] +
-            " By: " +
-            review[1] +
-            " - " +
-            review[0] +
-            "</p>"
-        reviewText += "</div>"
-        reviewText += "<div>"
-        reviewText += '<div class="note" style="font-size: 12px;">' + review[3] + "</div>"
-        reviewText += "</div></div>"
-        container.find(".review-item-preview").remove()
-        container.append(reviewText)
-        if (cb) cb()
-    }
-    async function getReviewer(url) {
-        return new Promise(function (resolve) {
-            $.get(url).done((data) => {
-                let $data = $(data)
-                let review = []
-                review.push($($data.find(".print-timestamp-title + span")[0]).html())
-                review.push($($data.find(".print-timestamp-title + span")[1]).html())
-                review.push($($data.find(".print-timestamp-title + span")[2]).html())
-
-                let msgText = ""
-                let $msg = null
-
-                //Get Compliance Notes
-                $msg = $data.find(".is-compliance-notes")[0]
-                if ($msg) {
-                    msgText += '<div class="review-item-note">'
-                    msgText += "<h4><strong>Notes:</strong></h4>"
-                    Array.from($msg.children).forEach((i) => (msgText += i.outerHTML))
-                    msgText += "</div>"
-                }
-
-                //Get Rejection Notes
-                $msg = $data.find(".is-rejection-notes")[0]
-                if ($msg) {
-                    msgText += msgText.length > 0 ? "<br>" : ""
-                    msgText += '<div class="review-item-note-rejection">'
-                    msgText += "<h4><strong>Rejections:</strong></h4>"
-                    Array.from($msg.children).forEach((i) => (msgText += i.outerHTML))
-                    msgText += "</div>"
-                }
-
-                review.push(msgText)
-
-                resolve(review)
-            })
-        })
-    }
-}
-
 //Get the officer name from their ID
 function getOfficerName(id) {
     //If ID is null, it means it's assigned to "All Officers"
@@ -2454,293 +2840,4 @@ function getOfficerName(id) {
         .first()
         .find('option[value*="' + id + '"]')
     return $(officer).text()
-}
-
-function updateSlideCardCount() {
-    //{Name, Items, Pending Changes, Total Changes}
-    var reviewers = [["All In Review", 0, 0, 0]]
-    var tags = [
-        ["Normal Reviews", 0, "-"],
-        ["Construction", 0, "-"],
-        ["Migrating", 0, "-"],
-        ["Brand New", 0, "-"],
-        ["Redesign", 0, "-"],
-        ["Post-Review", 0, "-"],
-    ]
-
-    $(".advisor-card").each((i, e) => {
-        var reviewName = $(e).data("officer")
-        var isConstruction = $(e).data("importanttags").indexOf("Construction") >= 0
-        var isMigrating = $(e).data("importanttags").indexOf("Migrating") >= 0
-        var isBrandNew = $(e).data("importanttags").indexOf("Brand New") >= 0
-        var isRedesign = $(e).data("importanttags").indexOf("Redesign") >= 0
-        var isPostReview = $(e).data("importanttags").indexOf("Post-Review") >= 0
-
-        if (isConstruction) tags[1][1] = tags[1][1] + 1
-        else if (isMigrating) tags[2][1] = tags[2][1] + 1
-        else if (isBrandNew) tags[3][1] = tags[3][1] + 1
-        else if (isRedesign) tags[4][1] = tags[4][1] + 1
-        else tags[0][1] = tags[0][1] + 1
-
-        //Show duplicate in post-review (Post-Reviews will always be brand new as well)
-        if (isPostReview) tags[5][1] = tags[5][1] + 1
-
-        var found = 0
-        reviewers.forEach((e, i) => {
-            if (e[0].indexOf(reviewName) >= 0) {
-                e[1] = e[1] + 1
-                found = i
-            }
-        })
-        if (found == 0) {
-            reviewers.push([reviewName, 1, 0, 0])
-            found = reviewers.length - 1
-        }
-        reviewers[0][1] = reviewers[0][1] + 1
-
-        if ($(e).find(".card-changes").length > 0) {
-            var changes = $(e).data("pending")
-            var approvals = $(e).data("approvals")
-            var rejections = $(e).data("rejections")
-
-            changes = parseInt(changes)
-            approvals = parseInt(approvals)
-            rejections = parseInt(rejections)
-            reviewers[0][2] = reviewers[0][2] + changes
-            reviewers[0][3] = reviewers[0][3] + approvals + rejections + changes
-            reviewers[found][2] = reviewers[found][2] + changes
-            reviewers[found][3] = reviewers[found][3] + approvals + rejections + changes
-        }
-    })
-    var reviewersText = '<table style="width: 100%; text-align:left">'
-    reviewersText +=
-        '<thead style="border-bottom: 1px solid rgba(88, 88, 88, 1);"><th>Filter by Officer/Status</th><th style="text-align:right">Sites </th><th style="text-align:right"> Items</th></thead>'
-    reviewersText += '<tr><td colspan="3" style="padding-bottom: 5px"></td></tr>'
-
-    reviewers.forEach((e, i) => {
-        if (e[1] != 0) {
-            reviewersText +=
-                "<tr " +
-                (i == 0 ? 'class="active"' : "") +
-                '><td><a href="#" class="filter-cards">' +
-                e[0] +
-                '</a></td><td style="text-align:right">' +
-                e[1] +
-                '</td><td style="text-align:right"> ' +
-                e[2] +
-                "</td></tr>"
-            //Add underline to all in review line
-            if (i == 0)
-                reviewersText +=
-                    '<tr><td colspan="3" style="padding-bottom: 5px"></td></tr><tr class="seperator"><td colspan="3" style="padding-bottom: 5px"></td></tr>'
-        }
-    })
-
-    reviewersText +=
-        '<tr><td colspan="3" style="padding-bottom: 5px"></td></tr><tr class="seperator"><td colspan="3" style="padding-bottom: 5px"></td></tr>'
-    tags.forEach((e, i) => {
-        if (e[1] != 0) {
-            reviewersText += "<tr>"
-            reviewersText +=
-                '<td><a href="#" class="filter-cards">' +
-                e[0] +
-                '</a></td><td style="text-align:right">' +
-                e[1] +
-                '</td><td style="text-align:right"> ' +
-                e[2] +
-                "</td>"
-        }
-    })
-    reviewersText += "</table>"
-    $(".providence-pending--title").html(
-        '<h2>Pending Reviews</h2> <div class="review-filter">' + reviewersText + "</div>"
-    )
-
-    $(".filter-cards")
-        .off()
-        .on("click", function () {
-            var filterName = this.innerHTML
-            $(".review-filter .active").removeClass("active")
-            $(this).parent().parent().addClass("active")
-
-            if (filterName.indexOf(reviewers[0][0]) == 0) {
-                $(".advisor-card").show()
-                $(".review-filter .active").removeClass("active")
-                $(this).parent().parent().addClass("active")
-            } else {
-                $(".advisor-card").hide()
-                $(".advisor-card")
-                    .filter(function () {
-                        return (
-                            $(this).data("officer").indexOf(filterName) >= 0 ||
-                            $(this).data("tags").indexOf(filterName) >= 0 ||
-                            (filterName == "Normal Reviews" &&
-                                $(this).data("importanttags").indexOf("Brand New") == -1 &&
-                                $(this).data("importanttags").indexOf("Migrating") == -1 &&
-                                $(this).data("importanttags").indexOf("Construction") == -1 &&
-                                $(this).data("importanttags").indexOf("Redesign") == -1 &&
-                                $(this).data("importanttags").indexOf("PostReview") == -1)
-                        )
-                    })
-                    .show()
-            }
-        })
-}
-
-//Update extra card information
-function updateSlider() {
-    //Async get the number of revisions and update the card
-    async function updateRevisions(card, id, cb) {
-        let revisions = await getRevisions(id)
-
-        //If the chanages span doesn't exist, make a new one, otherwise update existing
-        let approvals = revisions[0],
-            rejections = revisions[1],
-            pending = revisions[2]
-
-        card.attr("data-approvals", approvals)
-        card.attr("data-rejections", rejections)
-        card.attr("data-pending", pending)
-
-        card.find(".cardApprovals").html(approvals)
-        card.find(".cardPending").html(pending)
-        card.find(".cardRejections").html(rejections)
-
-        if (cb) {
-            cb()
-        }
-
-        //Get the HTML page and query for review items
-        function getRevisions(id) {
-            return new Promise(function (resolve) {
-                $.get(baseUrl + "manage/advisor/" + id).done((data) => {
-                    let $data = $(data)
-                    let approved = $data.find(".review-item.approved-status").length,
-                        rejected = $data.find(".review-item.rejected-status").length,
-                        reviews = $data.find(".review-item").length - approved - rejected
-
-                    resolve([approved, rejected, reviews])
-                })
-            })
-        }
-    }
-    $(".advisor-card").each(function (i, card) {
-        //Edit card
-        if (!$(this).find(".card-status").length) {
-            $(this).find(".card-content").prepend('<div class="card-status"></div>')
-            $(this).find(".submitted").appendTo($(this).find(".card-status"))
-            $(this).find(".card-changes").appendTo($(this).find(".card-status"))
-        }
-        if (!$(this).find(".card-title").length) {
-            $(this).prepend('<div class="card-title" ></div>')
-            $(this).find(".advisor-profile").appendTo($(this).find(".card-title"))
-            $(this).find("h4").appendTo($(this).find(".card-title"))
-        }
-
-        //Find the card's name and row in table
-        let name = $(this).find(".card-title h4").text()
-        let info = getAdvisorInfo(name)
-        if (!$(this).find(".card-tags").length) $(this).find(".card-content").append('<div class="card-tags"></p>')
-
-        if (!$(this).find(".card-tier").length) $(this).find(".card-content").append('<div class="card-tier"></p>')
-
-        if (!$(this).find(".card-changes").length)
-            $(this)
-                .find(".submitted")
-                .after(
-                    '<div class="card-changes"><span><span class="cardApprovals"></span> - <span class="cardPending"></span> - <span class="cardRejections"></span></div>'
-                )
-
-        if (!$(this).find(".card-extras").length)
-            $(this)
-                .find(".card-content")
-                .append(
-                    '<div class="card-extras"><p class="cardOfficer" style="margin: 0"></p><p class="cardImportantTags" style="line-height: 1; margin: 0"></p></div>'
-                )
-
-        //Find who's assigned to the current card
-        let assigned = info ? getOfficerName(info.officer_id) : ""
-
-        // Important Tags List
-        let importantTagsList = [
-            "Migrating",
-            "Brand New",
-            "Post-Review",
-            "Redesign",
-            "Construction",
-            "Dealer OBA",
-            "Not On Program",
-            "Tier",
-        ]
-
-        let tier = ""
-        let importantTagsString = ""
-        let nonImportantTagsString = ""
-        let allTagsString = ""
-
-        if (info && info.settings && info.settings.broker_tags) {
-            info.settings.broker_tags.forEach((allTag) => {
-                allTag = allTag.name
-                if (allTag.indexOf("Tier") >= 0) tier = "Tier: " + allTag.substr(5)
-                else if (importantTagsList.some((impTag) => allTag.indexOf(impTag) >= 0))
-                    importantTagsString += allTag + ", "
-                else if (!importantTagsList.some((impTag) => allTag.indexOf(impTag) >= 0))
-                    nonImportantTagsString += allTag + ", "
-
-                allTagsString += allTag + ", "
-            })
-        }
-
-        if (importantTagsString.length > 0)
-            importantTagsString = importantTagsString.substr(0, importantTagsString.length - 2)
-
-        if (nonImportantTagsString.length > 0)
-            nonImportantTagsString = nonImportantTagsString.substr(0, nonImportantTagsString.length - 2)
-
-        //Check if the person assigned to the advisor is found
-        if (assigned.length > 0) {
-            name = name.replace("&amp;", "&")
-            $(this).find(".card-title h4").text(name)
-
-            $(this).attr("data-name", name)
-            $(this).attr("data-officer", assigned)
-            $(this).attr("data-importantTags", importantTagsString)
-            $(this).attr("data-nonimportantTags", nonImportantTagsString)
-            $(this).attr("data-tags", allTagsString)
-            $(this).attr("data-id", info._id)
-
-            $(this)
-                .find(".cardOfficer")
-                .html("<span>" + assigned + "</span>")
-            $(this)
-                .find(".cardImportantTags")
-                .html("<span>" + importantTagsString.replace(/\, /g, "<br>") + "</span>")
-            $(this)
-                .find(".card-tags")
-                .html("<span>" + allTagsString + "</span>")
-            $(this)
-                .find(".card-tier")
-                .html("<span>" + tier + "</span>")
-
-            //Add the Open chat button to the card
-            if (!$(this).find(".open-chat-extension").length) {
-                $(this).find(".card-action").find(".btn--action-review")[0].target = "_blank"
-                $(this)
-                    .find(".card-action")
-                    .append(
-                        '<a href="#messages" style="margin-left: 5px;flex-grow:1" class="btn pill primary btn--action-review open-chat-extension" data-advisor_id="' +
-                            info._id +
-                            '" data-cover="Open Chat">Open Chat</a>'
-                    )
-            }
-
-            updateRevisions(
-                $(this),
-                info._id,
-                delay((e) => updateSlideCardCount()),
-                1000
-            )
-        }
-    })
-    updateCustomEvents()
 }
