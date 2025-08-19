@@ -821,131 +821,8 @@ const Manage = {
         this.setupEventListeners()
         this.adjustItemsPerPage()
         this.checkFilterWarning()
-        this.setupSearchBar()
         this.AdvisorList.init()
         this.ReviewList.init()
-    },
-
-    /**
-     * Setup the search bar for advisor management
-     */
-    setupSearchBar() {
-        const search_config = {
-            container: document.querySelector(".providence-overview--list"),
-            inputId: 'search-advisor',
-            buttonId: 'search-advisor-btn',
-            label: 'Search Advisors',
-            buttonText: 'Search',
-            buttonDataCover: 'Search for Advisor',
-            helpContent: 'Search for &quot;?&quot; for assistance.',
-            searchFunction: this.performAdvisorSearch.bind(this),
-            hideTableFunction: () => {
-                const table = document.querySelector("#advisorsList_wrapper")
-                if (table) table.style.display = "none"
-            },
-            showTableFunction: () => {
-                const table = document.querySelector("#advisorsList_wrapper")
-                if (table) table.style.display = "block"
-            }
-        }
-
-        SearchBar.init(search_config)
-        
-        // Setup reset listeners specific to advisor search
-        this.setupResetListeners()
-    },
-
-    /**
-     * Setup reset listeners for advisor search
-     */
-    setupResetListeners() {
-        const reset_selectors = ['.providence-overview--nav a']
-        reset_selectors.forEach(selector => {
-            document.querySelectorAll(selector).forEach(element => {
-                element.addEventListener("click", () => SearchBar.resetSearchTable())
-            })
-        })
-    },
-
-
-    /**
-     * Perform advisor search (bound to SearchBar instance)
-     */
-    async performAdvisorSearch(search_term) {
-        const requesting_all = search_term.indexOf("*") === 0
-        const requesting_number = search_term.indexOf("#") === 0
-        if (requesting_all || requesting_number) {
-            search_term = search_term.substring(1)
-        }
-
-        const table = document.querySelector(".search-bar table")
-        if (!table) return
-
-        SearchBar.hideTable()
-
-        if (search_term === "?") {
-            table.innerHTML = `<tr><td><h1>Searching can be done by Name, Email, Tags, Status, or Officer.</h1> 
-                <table style="width: 100%">
-                    <tr><th>Expressions</th><th>Results</th><th>Example</th></tr> 
-                    <tr><td>|</td><td>OR</td><td>Published|Submitted</td></tr> 
-                    <tr><td>,</td><td>AND</td><td>Published,SiteForward</td></tr> 
-                    <tr><td>!</td><td>NOT</td><td>!Published</td></tr>
-                </table>
-                <h1>There are some extra searching as well</h1>
-                <table style="width: 100%">
-                    <tr><th>Search</th><th>Results</th><th>Example</th></tr> 
-                    <tr><td>published</td><td>Shows all published sites</td><td></td></tr> 
-                    <tr><td>submitted</td><td>Shows all submitted sites</td><td></td></tr> 
-                    <tr><td>approved</td><td>Shows all approved sites</td><td></td></tr> 
-                    <tr><td>pending review</td><td>Shows all sites needing revisions</td><td></td></tr> 
-                    <tr><td>revisions needed</td><td>Shows all published sites</td><td></td></tr> 
-                    <tr><td>rejected</td><td>Shows all rejected sites</td><td></td></tr> 
-                    <tr><td colspan="3"></td></tr> 
-                    <tr><td>is_siteforward</td><td>Shows all sites assigned to SiteForward</td><td></td></tr> 
-                    <tr><td>is_compliance</td><td>Shows all sites assigned to Compliance</td><td></td></tr> 
-                    <tr><td>is_mlssalescompliance</td><td>Shows all sites assigned to MLS Sales Communication</td><td></td></tr> 
-                    <tr><td>is_msicompliance</td><td>Shows all sites assigned to Insurance Compliance</td><td></td></tr> 
-                    <tr><td>is_onhold</td><td>Shows all sites on hold</td><td></td></tr> 
-                    <tr><td colspan="3"></td></tr> 
-                    <tr><td>created_at:&lt;year&gt;/[month]/[day]</td><td>Shows sites created at that time</td><td>created_at:2019/08</td></tr> 
-                    <tr><td>updated_at:&lt;year&gt;/[month]/[day]</td><td>Shows sites updated at that time</td><td>created_at:2019/08/01</td></tr> 
-                    <tr><td>published_at:&lt;year&gt;/[month]/[day]</td><td>Shows sites published at that time</td><td>created_at:2020</td></tr> 
-                    <tr><td>submitted_at:&lt;year&gt;/[month]/[day]</td><td>Shows sites submitted at that time</td><td>created_at:2020/01</td></tr> 
-                    <tr><td colspan="3"></td></tr> 
-                    <tr><td>#</td><td>Shows the number of sites that match</td><td>#Published</td></tr> 
-                    <tr><td>*</td><td>Shows all sites that match regardless of number</td><td>*Published</td></tr>
-                </table></td></tr>`
-            return
-        }
-
-        table.innerHTML = `<thead> 
-            <tr role="row">
-                <th class="" tabindex="0" aria-controls="advisorsList" rowspan="1" colspan="1">#</th>
-                <th class="" tabindex="0" aria-controls="advisorsList" rowspan="1" colspan="1" aria-label="">Name</th>
-                <th class="" tabindex="0" aria-controls="advisorsList" rowspan="1" colspan="1" aria-label="">Email</th>
-                <th class="has-state sorting" tabindex="0" aria-controls="advisorsList" rowspan="1" colspan="1" aria-label="">Status</th>
-                <th class="" tabindex="0" aria-controls="advisorsList" rowspan="1" colspan="1" aria-label="" aria-sort="descending">Last Submitted</th>
-                <th class="" rowspan="1" colspan="1" aria-label="Assigned">Assigned</th>
-                <th class="" rowspan="1" colspan="1" aria-label="Actions">Actions</th>
-            </tr> 
-        </thead>`
-
-        const results = this.performSearch(search_term)
-        if (results.length === 0) {
-            table.innerHTML += `<tr><td colspan="7">No results found</td></tr>`
-            return
-        }
-        
-        if (requesting_number || results.length > 100) {
-            table.innerHTML += `<tr><td colspan="7">Number of results: ${results.length}</td></tr>`
-        } else {
-            const tbody = document.createElement("tbody")
-            results.forEach((advisor, i) => {
-                advisor.prepend(createElement("td", { html: `${i + 1}.` }))
-                tbody.appendChild(advisor)
-            })
-            table.appendChild(tbody)
-        }
     },
 
     /**
@@ -1019,112 +896,11 @@ const Manage = {
             })
         }, 1000)
     },
-
-    /**
-     * Perform a search based on the provided search string.
-     * Supports:
-     * - Full-text search on advisor names, emails, and IDs
-     * - Date-based filtering (created_at, updated_at, etc.)
-     * - Special commands (e.g., ".")
-     * @param {string} searchString - The search string to use for filtering results.
-     * @returns {Array} - An array of search results matching the search criteria.
-     */
-    performSearch(searchString) {
-        const search_patterns = {
-            datePattern: /^(created|updated|published|submitted)_at:(\d{4})(?:\/(\d{1,2})(?:\/(\d{1,2}))?)?$/,
-            specialCommands: {
-                ".": (data) => isRandysList(data),
-                published: (data) => data.published_date !== "NA",
-                submitted: (data) => data.submitted_date !== "NA",
-                "not published": (data) => notPublished(data),
-                "advisor revisions needed": (data) => hasStatus("review completed", data),
-                is_siteforward: (data) => isSiteForward(data.officer_id),
-                is_compliance: (data) => isCompliance(data.officer_id),
-                is_mlssalescompliance: (data) => isMLSSalesCompliance(data.officer_id),
-                is_msicompliance: (data) => isMSICompliance(data.officer_id),
-                is_onhold: (data) => isOnHold(data.officer_id),
-            },
-        }
-
-        // Helper function to check if item matches date criteria
-        const matchesDateCriteria = (data, type, year, month = null, day = null) => {
-            const date = new Date(Date.parse(data.site[type]))
-            return (
-                (!year || date.getFullYear().toString() === year) &&
-                (!month || date.getMonth() === parseInt(month) - 1) &&
-                (!day || date.getDate() === parseInt(day))
-            )
-        }
-
-        // Helper function to check if item matches a search term
-        const matchesTerm = (item, search) => {
-            const data = item.data()
-            const search_lower = search.replace("&", "&amp;").toLowerCase()
-
-            // Check special commands first
-            if (search_patterns.specialCommands[search]) {
-                return search_patterns.specialCommands[search](data)
-            }
-
-            // Check date pattern
-            const date_match = search.match(search_patterns.datePattern)
-            if (date_match) {
-                const [_, type, year, month, day] = date_match
-                return matchesDateCriteria(data, type + "_at", year, month, day)
-            }
-
-            // Standard text search
-            return (
-                data.display_name.toLowerCase().includes(search_lower) ||
-                data.email.toLowerCase().includes(search_lower) ||
-                data._id.toLowerCase().includes(search_lower) ||
-                hasTag(search_lower, data) ||
-                hasStatus(search_lower, data) ||
-                getOfficerName(data.officer_id).toLowerCase().includes(search_lower)
-            )
-        }
-
-        // Helper function to check if an item is in Randy's list
-        const isRandysList = (data) => {
-            return (
-                (isSiteForward(data.officer_id) && hasStatus("review completed", data)) ||
-                (isCompliance(data.officer_id) &&
-                    (hasStatus("editing", data) || hasStatus("review completed", data))) ||
-                isOnHold(data.officer_id)
-            )
-        }
-
-        // Get all rows from DataTable
-        const rows = []
-        const table = document.querySelector("#advisorsList")
-        const data_table = $(table).DataTable()
-        data_table.rows().every(function () {
-            rows.push(this)
-        })
-
-        // Process each search term (split by comma for AND operations)
-        return searchString
-            .split(",")
-            .reduce((filtered_rows, search_group) => {
-                search_group = search_group.trim()
-
-                // Process OR operations (split by |)
-                return filtered_rows.filter((row) => {
-                    return search_group.split("|").some((term) => {
-                        term = term.trim()
-                        const invert = term.startsWith("!")
-                        const search_term = invert ? term.slice(1) : term
-                        const matches = matchesTerm(row, search_term)
-                        return invert ? !matches : matches
-                    })
-                })
-            }, rows)
-            .map((row) => row.node().cloneNode(true))
-    },
     // ======================= Advisor List ==========================
     AdvisorList: {
         init() {
             this.setupEventListeners()
+            this.setupSearchBar()
         },
 
         setupEventListeners() {
@@ -1171,9 +947,9 @@ const Manage = {
         updateDropdowns() {
             // Check if we're updating the dropdowns for the regular list or the searchbar list
             let rows = document.querySelectorAll("#advisorsList tbody tr")
-            // if (document.querySelector(".search-bar tbody")) rows = document.querySelectorAll(".search-bar tbody tr")
+            if (document.querySelector(".search-bar tbody")) rows = document.querySelectorAll(".search-bar tbody tr")
 
-            if (rows.length < 2) return // Not enough rows to actually be showing data
+            if(rows.length == 1 && rows[0].childElementCount == 1) return // Only result is saying no results found
 
             for (const row of rows) {
                 // Get the advisor ID from the row
@@ -1182,6 +958,9 @@ const Manage = {
 
                 const dropdown = row.querySelector(".tot_droplist ul")
                 if (dropdown.childElementCount > 3) continue // Skip if dropdown already has items
+
+                // Make "View Profile" open in a new tab
+                dropdown.children[0].children[0].target ="_blank"
 
                 // Get advisor info from DataTable
                 let advisor_info = getAdvisorInfoFromList(advisor_id)
@@ -1196,7 +975,7 @@ const Manage = {
                 // Add View Revisions
                 const open_revisions = createElement("li", {
                     html: `<a href="/manage/revisions?email=${encodeURIComponent(
-                        advisor_info.email
+                        advisor_info.email,
                     )}" target="_blank" class="">View Revisions</a>`,
                 })
                 dropdown.appendChild(open_revisions)
@@ -1330,6 +1109,230 @@ const Manage = {
                 }
             })
         },
+        
+    /**
+     * Setup the search bar for advisor management
+     */
+    setupSearchBar() {
+        const search_config = {
+            container: document.querySelector(".providence-overview--list"),
+            inputId: 'search-advisor',
+            buttonId: 'search-advisor-btn',
+            label: 'Search Advisors',
+            buttonText: 'Search',
+            buttonDataCover: 'Search for Advisor',
+            helpContent: 'Search for &quot;?&quot; for assistance.',
+            searchFunction: this.performAdvisorSearch.bind(this),
+            hideTableFunction: () => {
+                const table = document.querySelector("#advisorsList_wrapper")
+                if (table) table.style.display = "none"
+            },
+            showTableFunction: () => {
+                const table = document.querySelector("#advisorsList_wrapper")
+                if (table) table.style.display = "block"
+            }
+        }
+
+        SearchBar.init(search_config)
+        
+        // Setup reset listeners specific to advisor search
+        this.setupResetListeners()
+    },
+
+    /**
+     * Setup reset listeners for advisor search
+     */
+    setupResetListeners() {
+        const reset_selectors = ['.providence-overview--nav a']
+        reset_selectors.forEach(selector => {
+            document.querySelectorAll(selector).forEach(element => {
+                element.addEventListener("click", () => SearchBar.resetSearchTable())
+            })
+        })
+    },
+
+
+    /**
+     * Perform advisor search (bound to SearchBar instance)
+     */
+    async performAdvisorSearch(search_term) {
+        const requesting_all = search_term.indexOf("*") === 0
+        const requesting_number = search_term.indexOf("#") === 0
+        if (requesting_all || requesting_number) {
+            search_term = search_term.substring(1)
+        }
+
+        const table = document.querySelector(".search-bar table")
+        if (!table) return
+
+        SearchBar.hideTable()
+
+        if (search_term === "?") {
+            table.innerHTML = `<tr><td><h1>Searching can be done by Name, Email, Tags, Status, or Officer.</h1> 
+                <table style="width: 100%">
+                    <tr><th>Expressions</th><th>Results</th><th>Example</th></tr> 
+                    <tr><td>|</td><td>OR</td><td>Published|Submitted</td></tr> 
+                    <tr><td>,</td><td>AND</td><td>Published,SiteForward</td></tr> 
+                    <tr><td>!</td><td>NOT</td><td>!Published</td></tr>
+                </table>
+                <h1>There are some extra searching as well</h1>
+                <table style="width: 100%">
+                    <tr><th>Search</th><th>Results</th><th>Example</th></tr> 
+                    <tr><td>published</td><td>Shows all published sites</td><td></td></tr> 
+                    <tr><td>submitted</td><td>Shows all submitted sites</td><td></td></tr> 
+                    <tr><td>approved</td><td>Shows all approved sites</td><td></td></tr> 
+                    <tr><td>pending review</td><td>Shows all sites needing revisions</td><td></td></tr> 
+                    <tr><td>revisions needed</td><td>Shows all published sites</td><td></td></tr> 
+                    <tr><td>rejected</td><td>Shows all rejected sites</td><td></td></tr> 
+                    <tr><td colspan="3"></td></tr> 
+                    <tr><td>is_siteforward</td><td>Shows all sites assigned to SiteForward</td><td></td></tr> 
+                    <tr><td>is_compliance</td><td>Shows all sites assigned to Compliance</td><td></td></tr> 
+                    <tr><td>is_mlssalescompliance</td><td>Shows all sites assigned to MLS Sales Communication</td><td></td></tr> 
+                    <tr><td>is_msicompliance</td><td>Shows all sites assigned to Insurance Compliance</td><td></td></tr> 
+                    <tr><td>is_onhold</td><td>Shows all sites on hold</td><td></td></tr> 
+                    <tr><td colspan="3"></td></tr> 
+                    <tr><td>created_at:&lt;year&gt;/[month]/[day]</td><td>Shows sites created at that time</td><td>created_at:2019/08</td></tr> 
+                    <tr><td>updated_at:&lt;year&gt;/[month]/[day]</td><td>Shows sites updated at that time</td><td>created_at:2019/08/01</td></tr> 
+                    <tr><td>published_at:&lt;year&gt;/[month]/[day]</td><td>Shows sites published at that time</td><td>created_at:2020</td></tr> 
+                    <tr><td>submitted_at:&lt;year&gt;/[month]/[day]</td><td>Shows sites submitted at that time</td><td>created_at:2020/01</td></tr> 
+                    <tr><td colspan="3"></td></tr> 
+                    <tr><td>#</td><td>Shows the number of sites that match</td><td>#Published</td></tr> 
+                    <tr><td>*</td><td>Shows all sites that match regardless of number</td><td>*Published</td></tr>
+                </table></td></tr>`
+            return
+        }
+
+        table.innerHTML = `<thead> 
+            <tr role="row">
+                <th class="" tabindex="0" aria-controls="advisorsList" rowspan="1" colspan="1">#</th>
+                <th class="" tabindex="0" aria-controls="advisorsList" rowspan="1" colspan="1" aria-label="">Name</th>
+                <th class="" tabindex="0" aria-controls="advisorsList" rowspan="1" colspan="1" aria-label="">Email</th>
+                <th class="has-state sorting" tabindex="0" aria-controls="advisorsList" rowspan="1" colspan="1" aria-label="">Status</th>
+                <th class="" tabindex="0" aria-controls="advisorsList" rowspan="1" colspan="1" aria-label="" aria-sort="descending">Last Submitted</th>
+                <th class="" rowspan="1" colspan="1" aria-label="Assigned">Assigned</th>
+                <th class="" rowspan="1" colspan="1" aria-label="Actions">Actions</th>
+            </tr> 
+        </thead>`
+
+        const results = this.performSearch(search_term)
+        if (results.length === 0) {
+            table.innerHTML += `<tr><td colspan="7">No results found</td></tr>`
+            return
+        }
+        
+        if (requesting_number || results.length > 100) {
+            table.innerHTML += `<tr><td colspan="7">Number of results: ${results.length}</td></tr>`
+        } else {
+            const tbody = document.createElement("tbody")
+            results.forEach((advisor, i) => {
+                advisor.prepend(createElement("td", { html: `${i + 1}.` }))
+                tbody.appendChild(advisor)
+            })
+            table.appendChild(tbody)
+        }
+        this.updateDropdowns()
+    },
+    /**
+     * Perform a search based on the provided search string.
+     * Supports:
+     * - Full-text search on advisor names, emails, and IDs
+     * - Date-based filtering (created_at, updated_at, etc.)
+     * - Special commands (e.g., ".")
+     * @param {string} searchString - The search string to use for filtering results.
+     * @returns {Array} - An array of search results matching the search criteria.
+     */
+    performSearch(searchString) {
+        const search_patterns = {
+            datePattern: /^(created|updated|published|submitted)_at:(\d{4})(?:\/(\d{1,2})(?:\/(\d{1,2}))?)?$/,
+            specialCommands: {
+                ".": (data) => isRandysList(data),
+                published: (data) => data.published_date !== "NA",
+                submitted: (data) => data.submitted_date !== "NA",
+                "not published": (data) => notPublished(data),
+                "advisor revisions needed": (data) => hasStatus("review completed", data),
+                is_siteforward: (data) => isSiteForward(data.officer_id),
+                is_compliance: (data) => isCompliance(data.officer_id),
+                is_mlssalescompliance: (data) => isMLSSalesCompliance(data.officer_id),
+                is_msicompliance: (data) => isMSICompliance(data.officer_id),
+                is_onhold: (data) => isOnHold(data.officer_id),
+            },
+        }
+
+        // Helper function to check if item matches date criteria
+        const matchesDateCriteria = (data, type, year, month = null, day = null) => {
+            const date = new Date(Date.parse(data.site[type]))
+            return (
+                (!year || date.getFullYear().toString() === year) &&
+                (!month || date.getMonth() === parseInt(month) - 1) &&
+                (!day || date.getDate() === parseInt(day))
+            )
+        }
+
+        // Helper function to check if item matches a search term
+        const matchesTerm = (item, search) => {
+            const data = item.data()
+            const search_lower = search.replace("&", "&amp;").toLowerCase()
+
+            // Check special commands first
+            if (search_patterns.specialCommands[search]) {
+                return search_patterns.specialCommands[search](data)
+            }
+
+            // Check date pattern
+            const date_match = search.match(search_patterns.datePattern)
+            if (date_match) {
+                const [_, type, year, month, day] = date_match
+                return matchesDateCriteria(data, type + "_at", year, month, day)
+            }
+
+            // Standard text search
+            return (
+                data.display_name.toLowerCase().includes(search_lower) ||
+                data.email.toLowerCase().includes(search_lower) ||
+                data._id.toLowerCase().includes(search_lower) ||
+                hasTag(search_lower, data) ||
+                hasStatus(search_lower, data) ||
+                getOfficerName(data.officer_id).toLowerCase().includes(search_lower)
+            )
+        }
+
+        // Helper function to check if an item is in Randy's list
+        const isRandysList = (data) => {
+            return (
+                (isSiteForward(data.officer_id) && hasStatus("review completed", data)) ||
+                (isCompliance(data.officer_id) &&
+                    (hasStatus("editing", data) || hasStatus("review completed", data))) ||
+                isOnHold(data.officer_id)
+            )
+        }
+
+        // Get all rows from DataTable
+        const rows = []
+        const table = document.querySelector("#advisorsList")
+        const data_table = $(table).DataTable()
+        data_table.rows().every(function () {
+            rows.push(this)
+        })
+
+        // Process each search term (split by comma for AND operations)
+        return searchString
+            .split(",")
+            .reduce((filtered_rows, search_group) => {
+                search_group = search_group.trim()
+
+                // Process OR operations (split by |)
+                return filtered_rows.filter((row) => {
+                    return search_group.split("|").some((term) => {
+                        term = term.trim()
+                        const invert = term.startsWith("!")
+                        const search_term = invert ? term.slice(1) : term
+                        const matches = matchesTerm(row, search_term)
+                        return invert ? !matches : matches
+                    })
+                })
+            }, rows)
+            .map((row) => row.node().cloneNode(true))
+    }
     },
     // ======================= Review List =======================
     ReviewList: {
@@ -2400,6 +2403,7 @@ const Review = {
                 return found ? { title: found.title, html: found.html } : {}
             } catch (error) {
                 console.error("Error fetching content:", error)
+                this.handleContentAPIError()
                 return {}
             }
         },
