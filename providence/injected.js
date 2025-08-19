@@ -120,7 +120,7 @@ async function getSiteInfo(site_id) {
  * @param {string} id - The advisor's ID
  * @returns {Object|undefined} - Advisor info object or undefined if not found
  */
-function getAdvisorInfoFromList(id) {
+function getAdvisorInfo(id) {
     return advisor_list.find(function (e) {
         return id === e._id
     })
@@ -131,7 +131,7 @@ function getAdvisorInfoFromList(id) {
  * @param {string} display_name - The advisor's display name
  * @returns {Object|null} - Advisor info object or null if not found
  */
-function getAdvisorInfoByNameFromList(display_name) {
+function getAdvisorInfoByName(display_name) {
     if (!display_name) return null
     return advisor_list.find((advisor) => advisor.display_name === display_name) || null
 }
@@ -925,7 +925,7 @@ const Manage = {
         checkForUnPublished() {
             let rows = document.querySelectorAll("#advisorsList tbody tr")
             rows.forEach((row) => {
-                const advisor = getAdvisorInfoFromList(row._id)
+                const advisor = getAdvisorInfo(row._id)
                 let is_unpublished = false
                 if (hasStatus("approved", advisor)) {
                     let date_a = Date.parse(advisor.site.published_at),
@@ -963,7 +963,7 @@ const Manage = {
                 dropdown.children[0].children[0].target ="_blank"
 
                 // Get advisor info from DataTable
-                let advisor_info = getAdvisorInfoFromList(advisor_id)
+                let advisor_info = getAdvisorInfo(advisor_id)
                 if (!advisor_info) continue
 
                 // Add Open Chat
@@ -1403,8 +1403,8 @@ const Manage = {
                 const name_b = b.dataset.name
 
                 // Load advisor info from DataTable
-                const info_a = getAdvisorInfoByNameFromList(name_a)
-                const info_b = getAdvisorInfoByNameFromList(name_b)
+                const info_a = getAdvisorInfoByName(name_a)
+                const info_b = getAdvisorInfoByName(name_b)
 
                 // Get current times for both cards in minutes
                 const time_a = this.parseTimeToMinutes(a.querySelector(".submitted")?.textContent || "")
@@ -1607,7 +1607,7 @@ const Manage = {
                 }
 
                 const advisor_id = card.querySelector(".btn--action-review")?.href.split("/").pop()
-                const advisor_info = getAdvisorInfoFromList(advisor_id)
+                const advisor_info = getAdvisorInfo(advisor_id)
                 card.setAttribute("advisor_id", advisor_id)
 
                 // Add card changes section
@@ -1685,7 +1685,7 @@ const Advisor = {
         if (this.advisorId[this.advisorId.length - 1] === "#")
             this.advisorId = this.advisorId.slice(0, -1)
 
-        this.advisorInfo = getAdvisorInfoFromList(this.advisorId)
+        this.advisorInfo = getAdvisorInfo(this.advisorId)
         AdvisorDetails.init(this.advisorInfo)
 
         this.setupEventListeners()
@@ -2103,7 +2103,7 @@ const Review = {
         if (this.reviewId[this.reviewId.length - 1] === "#")
             this.reviewId = this.reviewId.slice(0, -1)
 
-        this.advisorInfo = getAdvisorInfoFromList(this.advisorId)
+        this.advisorInfo = getAdvisorInfo(this.advisorId)
         AdvisorDetails.init(this.advisorInfo)
         localStorage.setItem("last_reviewed_id", this.reviewId)
 
