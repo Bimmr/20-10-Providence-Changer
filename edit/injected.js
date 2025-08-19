@@ -1,505 +1,610 @@
-var isEditing = false;
-$(function() {
+let database = null
 
-  let attempts = 0,
-  loaded = setInterval(function(){
-    if(attempts++>40){
-       alert("Unable to load Extension, please reload the page to try enabling the extension again.")
-       clearInterval(loaded)
+$(async function () {
+    try {
+        await waitForCondition(() => typeof isSiteForward === "function" && typeof DatabaseClient != "undefined", 5000)
+        database = new DatabaseClient()
+        console.log("Providence Changer Loaded")
+        ready()
+    } catch (error) {
+        alert("Unable to load Extension, please reload the page to try enabling the extension again.")
     }
-    
-    if(typeof isSiteForward == "function"){
-      clearInterval(loaded) 
-      console.log("Providence Changer Loaded")
-      ready()
-    }
-    else
-       console.log(`Providence Changer Loading attempt ${attempts}`)
-  }, 50)
-
 })
-function ready(){
-  $("body").append(
-    "<style>" +
-    //Show active tab
-    '.active-page-tab{background:rgba(31, 233, 174, 0.5);}' +
-    '.active-page-tab ol {background:#F6F6F7;}' +
-    '.active-page-tab ol li:first-of-type {background:rgba(31, 233, 174, 0.5);}' +
 
-    //Checkbox for rejections
-    '.rejection-completed{position: absolute; top: 3.75rem; right:3rem;}' +
+/**
+ * Wait for a specific condition to be met.
+ * @param {*} condition_fn - The condition function to evaluate.
+ * @param {*} timeout - The maximum time to wait (in milliseconds).
+ * @param {*} interval - The interval between checks (in milliseconds).
+ * @returns {Promise} - A promise that resolves when the condition is met.
+ */
+function waitForCondition(condition_fn, timeout = 2000, interval = 50) {
+    return new Promise((resolve, reject) => {
+        const start = Date.now()
+        function check() {
+            if (condition_fn()) {
+                resolve()
+            } else if (Date.now() - start >= timeout) {
+                reject(new Error("Condition timeout"))
+            } else {
+                setTimeout(check, interval)
+            }
+        }
+        check()
+    })
+}
 
-    //Fix font weight of page title badges
-    'ol.pages li .title span.page-type, .dd-list li .title span.page-type{font-weight: 400;background: #999;}'+
+// Function to initialize the page
+async function ready() {
+    NightMode.init()
+    PageTabs.init()
+    Editor.init()
+    Chat.init()
+    Archives.init()
+}
 
-    // "#app-wrapper > #header{z-index: 10 !important;}"+
-    // "#app-wrapper > #page-settings-overlay{top: 60px !important;}"+
-    'body.app.nightMode h1, body.app.nightMode h2, body.app.nightMode  h3, body.app.nightMode  h4, body.app.nightMode .account-nav__my-account .display-name, body.app.nightMode .account-nav__chat .chat-name {color: #fff;}'+
-    'body.app.nightMode #header{background-color:  #2a2a2a; color: #fff;}'+
-    'body.app.nightMode #header .logo{filter: grayscale(1) invert(1);}'+
-    'body.app.nightMode #header .logo:before{display: none}'+
-    'body.app.nightMode .sidebar, body.app.nightMode #app-wrapper{background-color: #2d2d2d}'+
-    'body.app.nightMode .pages-pane > .scroller{overflow-x:hidden}'+
-    'body.app.nightMode .active-page-tab { border-radius: 13px;}'+
-    'body.app.nightMode .dd-item button, body.app.nightMode ol.pages li .drag:hover+.title {background-color: #212121; color: #efefef}'+
-    'body.app.nightMode .dd-item button:hover {background-color: #333; }'+
-    'body.app.nightMode .active-page-tab ol { background: #2d2d2d;}'+
-    'body.app.nightMode ol.pages li .page-tools{background-color: #212121;}'+
-    'body.app.nightMode .dd-list li .page-tools ol.pages li .title:hover+.page-tools, body.app.nightMode .dd-list li .title:hover+.page-tools, body.app.nightMode .dd-list li .drag:hover+.title {background-color: #333;}'+
-    'body.app.nightMode ol.pages li .page-tools a:hover, body.app.nightMode .dd-list li .page-tools a:hover {color: #aaa}'+
-    'body.app.nightMode .fade-top.night, body.app.nightMode .fade-bottom.night {opacity: 1;}'+
-    'body.app.nightMode .fade-top.day, body.app.nightMode .fade-bottom.day {opacity: 0;}'+
-    'body.app.nightMode ol.pages li .title span.page-type, body.app.nightMode .dd-list li .title span.page-type {background: #484848;}'+
-    'body.app.nightMode a.btn--outlined:not(:hover) {color:#aaa;border-color: #aaa}'+
-    'body.app.nightMode .btn-text, body.app.nightMode .is-text {color: #888}'+
-    'body.app.nightMode .btn-text:hover, body.app.nightMode .is-text:hover {color: #ccc;}'+
-    'body.app.nightMode .styles--tab-toggle.is-active {color: #ccc}'+
-    'body.app.nightMode .color-picker, body.app.nightMode .select-control.font-picker::before, body.app.nightMode .select-control.weight-picker::before {color: #ccc; background-color: #333}'+
-    'body.app.nightMode .select-control .selected {color: #ccc;}'+
-    'body.app.nightMode .form-item.is-select::after{color:#888}'+
-    'body.app.nightMode .select-control ul.dropdown-options li span, body.app.nightMode .select-control ul.dropdown-options button span {color: #fafafa}'+
+// =============================================================================
+// Night Mode Module
+// =============================================================================
+const NightMode = {
+    /**
+     * Initialize the night mode module.
+     */
+    init() {
+        const has_night_mode = localStorage.getItem("nightMode-p") === "true"
+        document.body.classList.toggle("nightMode", has_night_mode)
+        this.setupToggle()
+    },
 
-    'body.app.nightMode .noUi-tooltip{background: #2d2d2d;color: #efefef;}'+
-    'body.app.nightMode .noUi-handle {background-color: #efefef;}'+
-    'body.app.nightMode .vex-content {background-color: #2d2d2d;}'+
-    'body.app.nightMode .vex-content p{color: #efefef;}'+
-    'body.app.nightMode .friendship{background-color: #212121; border-color: #4c4c4c;}'+
-    'body.app.nightMode .friendship .friendship-title small {color: #a7a7a7cc}'+
+    /**
+     * Setup the night mode toggle in the header.
+     */
+    setupToggle() {
+        const dropdown_list = document.querySelector("#header .tot_dropdown .tot_droplist ul")
+        const night_mode_toggle = createElement("li", {
+            class: "nightModeToggle",
+            html: '<a href="#">Toggle Night Mode</a>',
+            onclick: () => {
+                document.body.classList.toggle("nightMode")
+                localStorage.setItem("nightMode-p", document.body.classList.contains("nightMode"))
+            },
+        })
+        dropdown_list.insertBefore(night_mode_toggle, dropdown_list.firstChild)
+    },
+}
 
-    'body.app.nightMode article.post:hover::after, body.app.nightMode li.member:hover::after {border-color: #efefef;}'+
+// =============================================================================
+// Page Tab Module
+// =============================================================================
+const PageTabs = {
+    /**
+     * Initialize the page tabs module.
+     */
+    init() {
+        this.previewIframe = document.getElementById("previewIframe")
+        this.updatePageTab()
+        this.setupObservers()
+    },
 
-    'body.app.nightMode .styles--tab-toggle.is-active, body.app.nightMode .styles--tab-toggle.is-active::before {border-color: #ccc}'+
-    'body.app.nightMode .styles--tab-toggle.is-active::after{border-top-color: #ccc}'+
+    /**
+     * Update the page tab based on the current iframe URL.
+     */
+    updatePageTab() {
+        this.colorPageTab(this.previewIframe.src)
+    },
 
-    'body.app.nightMode ul.domain_list li .title {background-color: #212121; color: #efefef}'+
-    'body.app.nightMode ul.domain_list li .title:hover {background-color: #333; }'+
-    'body.app.nightMode ul.domain_list li .domain-tools:hover {background-color: #212121;}'+
-    'body.app.nightMode ul.domain_list li .title:hover+.domain-tools {background-color: #333;}'+
-    'body.app.nightMode ul.domain_list li .domain-tools a:hover span.icon{color: #aaa;}'+
-    'body.app.nightMode .form--note {color: #efefef;}'+
+    /**
+     * Setup observers for dynamic content changes.
+     */
+    setupObservers() {
+        new MutationObserver(() => this.updatePageTab()).observe(document.querySelector(".browser .title"), {
+            subtree: true,
+            childList: true,
+        })
 
-    'body.app.nightMode .integration-actions {background: linear-gradient(to right, #2c2c2c00 0%, #2c2c2c63 10%, #2c2c2cbf 20%, #2c2c2c 100%);}'+
-    'body.app.nightMode .integration-details .integration-title, body.app.nightMode .integration-details p  { color: #efefef}'+
+        this.previewIframe.addEventListener("load", () => this.updatePageTab())
+    },
 
-    'body.app.nightMode #site-preview {box-shadow: 0 0 2rem 0 rgb(255 255 255 / 10%);}'+
-    'body.app.nightMode #site-preview .browser .browser-bar {background-color: #212121}'+
-    'body.app.nightMode #site-preview .browser .browser-bar .title {color: #ccc}'+
-    'body.app.nightMode .btn.secondary{background-color: #414141; color: #efefef}'+
-    'body.app.nightMode .btn.secondary:hover{background-color: #333;}'+
+    /**
+     * Color the page tab based on the iframe URL.
+     * @param {*} frame_url
+     */
+    colorPageTab(frame_url) {
+        const url_parts = frame_url.split("/")
+        const normalized_url =
+            url_parts.length <= 4 && (!url_parts[3] || url_parts[3] === "home")
+                ? ""
+                : url_parts.length > 4
+                ? `${url_parts[3]}/${url_parts[4]}`
+                : url_parts[3]
 
-    'body.app.nightMode .settings-wrapper, body.app.nightMode #brokercheck-overlay, body.app.nightMode #account-settings-overlay, body.app.nightMode #redirects-overlay, body.app.nightMode #dns-settings-overlay, body.app.nightMode #integrations-overlay {background-color: #2d2d2d}'+
-    'body.app.nightMode .settings-wrapper .settings-header, body.app.nightMode .settings-wrapper .settings-footer {background-color: #212121;}'+
-    'body.app.nightMode .settings-wrapper .settings-header h2, body.app.nightMode .settings-wrapper .settings-header h1, body.app.nightMode .settings-wrapper .settings-footer h2{color: #efefef; }'+
+        const active_tab = document.querySelector(".active-page-tab")
+        if (active_tab) active_tab.classList.remove("active-page-tab")
 
-    'body.app.nightMode .styles--component-toggle button, body.app.nightMode .styles--section-toggle, body.app.nightMode .styles--tab-toggle.is-active, body.app.nightMode .form-item--label{color: #efefef;}'+
-    'body.app.nightMode .form-item--helper, body.app.nightMode .sidebar p.is-desc {color: #aaa} '+
-    'body.app.nightMode .form-item--control{background-color: #212121; color: #efefef}'+
-    'body.app.nightMode .form-item.is-textarea::before {background-color: #272727}'+
-    'body.app.nightMode .styles--tab {background-color: #4c4c4c;}'+
+        const new_active_tab = document.querySelector(`#pagesWrapper .title[data-url="${normalized_url}"]`)
+        if (new_active_tab) new_active_tab.parentElement.classList.add("active-page-tab")
+    },
+}
 
-    'body.app.nightMode #uploads-library {background-color: #2d2d2d}'+
-    'body.app.nightMode .library-wrapper .library-sidebar {background: #21212180;}'+
-    'body.app.nightMode .filter-uploads li.active a { background: #3a3a3a; color: #efefef; }'+
-    'body.app.nightMode .filter-uploads a:hover {color: #efefef;}'+
-    'body.app.nightMode .assisted-overlay{background-color: #2d2d2d;}'+
-    'body.app.nightMode .checkbox-group{background: #272727;}'+
+// =============================================================================
+// Editor Module
+// =============================================================================
+const Editor = {
+    isEditing: false,
+    /**
+     * Initialize the editor module.
+     */
+    init() {
+        if (!localStorage.getItem("IsSiteForward")) return
+        this.setupEditorStop()
+        this.setupEditDropdown()
+    },
 
-    'body.app.nightMode a.download-chat:hover span , body.app.nightMode .close-chat:hover span, body.app.nightMode .close-library:hover span, body.app.nightMode .close-archives:hover span, .close-diff:hover span { background: #efefef;}'+
-    'body.app.nightMode .chat-wrapper, body.app.nightMode .chat-footer{background-color: #2d2d2d;}'+
-    'body.app.nightMode .chat-wrapper .chat-header .chat-title::after {background-image: linear-gradient(to right, rgba(255,255,255,0) 0%, #2d2d2d 30%, #2d2d2d 100%);}'+
-    'body.app.nightMode .fr-box.fr-basic .fr-wrapper, body.app.nightMode .fr-toolbar {background-color: #2d2d2d}'+
-    'body.app.nightMode .basic p {color: #efefef}'+
-
-    'body.app.nightMode .fr-toolbar{color: #efefef}'+
-    'body.app.nightMode .fr-command.fr-btn+.fr-dropdown-menu{ background: #2d2d2d}'+
-    'body.app.nightMode .fr-command.fr-btn+.fr-dropdown-menu .fr-dropdown-wrapper .fr-dropdown-content ul.fr-dropdown-list li a.fr-active{background: #3a3a3a}'+
-    'body.app.nightMode .fr-toolbar .fr-command.fr-btn {color: #efefef}'+
-    'body.app.nightMode .fr-toolbar .fr-command.fr-btn.fr-dropdown.fr-active, body.app.nightMode .fr-popup .fr-command.fr-btn.fr-dropdown.fr-active, body.app.nightMode .fr-modal .fr-command.fr-btn.fr-dropdown.fr-active{background: #3a3a3a}'+
-    'body.app.nightMode .fr-desktop .fr-command:hover:not(.fr-table-cell), body.app.nightMode .fr-desktop .fr-command:focus:not(.fr-table-cell), body.app.nightMode .fr-desktop .fr-command.fr-btn-hover:not(.fr-table-cell), body.app.nightMode .fr-desktop .fr-command.fr-expanded:not(.fr-table-cell){background: #3a3a3a}'+
-    'body.app.nightMode .fr-toolbar .fr-command.fr-btn.fr-dropdown:after, body.app.nightMode .fr-popup .fr-command.fr-btn.fr-dropdown:after, body.app.nightMode .fr-modal .fr-command.fr-btn.fr-dropdown:after{border-left: 4px solid transparent; border-right: 4px solid transparent; border-top: 4px solid #efefef;}'+
-    'body.app.nightMode .fr-toolbar .fr-command.fr-btn.fr-dropdown.fr-active:after, body.app.nightMode .fr-popup .fr-command.fr-btn.fr-dropdown.fr-active:after, body.app.nightMode .fr-modal .fr-command.fr-btn.fr-dropdown.fr-active:after{border-top: 0; border-bottom: 4px solid #efefef;}'+
-    'body.app.nightMode .profile-photo-form {background-color: #212121}'+
-    'body.app.nightMode #brokercheck-overlay .tab-nav a.active, body.app.nightMode #account-settings-overlay .tab-nav a{color: #888}'+
-    'body.app.nightMode #brokercheck-overlay .tab-nav a.active, body.app.nightMode #account-settings-overlay .tab-nav a.active{color: #efefef}'+
-    'body.app.nightMode #payment-section{color: #efefef}'+
-    'body.app.nightMode #archives-overlay {background-color: #212121}'+
-
-    'body.app.nightMode p a.inline{color: #aaa}'+
-    'body.app.nightMode .settings-content, body.app.nightMode p.secondary{color: #efefef}'+
-    'body.app.nightMode .chat-content .chat-messages .message {background-color: #4c4c4c;}'+
-    'body.app.nightMode .fr-box.fr-basic .fr-element{color: #efefef}'+
-    'body.app.nightMode .chat-content .chat-messages .message.broker, body.app.nightMode .chat-content .chat-messages .message.rejection-notice.broker .message-content .rejection-wrapper {background-color: #efefef}'+
-    'body.app.nightMode .chat-content .chat-messages .message.rejection-notice.broker .message-content .rejection-wrapper{border: 2px solid #efefef}'+
-
-    'body.app.nightMode .basic h1, body.app.nightMode .basic h2, body.app.nightMode .basic h3, body.app.nightMode .basic h4, body.app.nightMode .basic h5, body.app.nightMode .basic h6 { color: #efefef !important;}'+
-    'body.app.nightMode .content-item .article-categories {color: rgba(255,255,255,0.8);}'+
-    'body.app.nightMode .content-wrapper .content-header h1 .ca-title {filter: brightness(3)}'+
-    'body.app.nightMode #content-library .content-wrapper .content-sidebar {background: #212121;}'+
-    'body.app.nightMode #content-library {background: #2d2d2d;}'+
-
-    "</style>");
-
-   if (localStorage.getItem("nightMode-p") == "true")
-     $("body.app").addClass("nightMode");
-
-    $("#header .tot_dropdown .tot_droplist ul").first()
-    .prepend('<li class="nightModeToggle"><a href="#">Toggle Night Mode</a></li>');
-    $(".nightModeToggle").on('click', function(){
-      $("body.app").toggleClass("nightMode");
-      localStorage.setItem('nightMode-p', $("body.app").hasClass("nightMode"));
-    });
-
-  var sidebarLoaded = setInterval(function() {
-    if (!$('.sidebar').hasClass("loading")) {
-      // Stop looping
-      clearInterval(sidebarLoaded);
-
-      colorPageTab($("#previewIframe")[0].src);
-
-      $(".browser").find(".title").bind("DOMSubtreeModified", function() {
-        colorPageTab($("#previewIframe")[0].src);
-      });
-      $("#previewIframe").on("load", function() {
-        colorPageTab($("#previewIframe")[0].src);
-      });
-    }
-  }, 500);
-
-  function colorPageTab(frameURL) {
-    let frameURLSplit = frameURL.split("/");
-
-    if (frameURLSplit.length == 4 && (frameURLSplit[3].length == 0 || frameURLSplit[3] == "home"))
-      frameURL = "";
-    else if (frameURLSplit.length > 4)
-      frameURL = frameURLSplit[3] + "/" + frameURLSplit[4]
-    else
-      frameURL = frameURLSplit[3];
-
-    $("#pagesWrapper").find(".active-page-tab").removeClass("active-page-tab");
-    $("#pagesWrapper").find('.title[data-url="' + frameURL + '"]').parent().addClass("active-page-tab");
-  }
-
-  function editAll(){
-    editPages(()=>editMembers(()=>editPosts()));
-  }
-
-  if(localStorage.getItem('IsSiteForward') == "true"){
-    $(document).on('keypress mousedown', function(){
-      if(isEditing)
-        stopEditing();
-    });
-    async function stopEditing(){ isEditing = false; console.log("Stopping Auto Edit"); }
-
-    $(".browser-bar--right").append('<div class="tot_dropdown" style="margin-left:.5em;"> <a href="#" class="popout-preview">Mark As Edited</a> <div class="tot_droplist is-far-right"> <ul> <li><a href="#" class="edit-pages-pages" data-size="desktop">Edit Pages</a></li> <li><a href="#" class="edit-pages-members" data-size="tablet">Edit Members</a></li> <li><a href="#" class="edit-pages-posts" data-size="mobile">Edit Posts</a></li> <li><a href="#" class="edit-pages-all">Edit All</a></li> </ul> </div> </div>');
-
-    $(".edit-pages-pages").on("click", editPages);
-    $(".edit-pages-members").on("click", editMembers);
-    $(".edit-pages-posts").on("click", editPosts);
-    $(".edit-pages-all").on("click", ()=> editPages(()=>editMembers(()=>editPosts())));
-  }
-
-  //When the chat opens
-  $(".open-chat, #open-chat").on("click", () => {
-    let waiting = setInterval(()=> {
-      // Wait for chat to be ready
-      if(document.querySelector(".chat-wrapper").classList.contains("loading"))
-        return
-       
-      let advisorId = window.loggedInUser;
-      getRejections(advisorId)
-      .then(rejections => {
-          $(".rejection-notice").each(function(){
-            let rejectionItem = rejections.find(item => {return item.rejectionId == $(this).data("id")}) || []
-            $(this).find(".rejected-item").each(function(i, rejectionWrapper) {
-              let isCompleted = rejectionItem?.rejection ? rejectionItem.rejection[i] : false;
-              $(this).prepend('<input class="rejection-completed"' + (isCompleted ? 'checked=true' : '') + ' type="checkbox">');
+    /**
+     * Setup global event listeners.
+     */
+    setupEditorStop() {
+        ;["keypress", "mousedown"].forEach((event) => {
+            document.addEventListener(event, () => {
+                if (this.isEditing) this.isEditing = false
             })
-          });
-          $(".rejection-completed").off().on("change", function(){
-            let index = Array.prototype.indexOf.call(this.parentNode.parentNode.children, this.parentNode);
-            let rejectionId = $(this).parent().parent().parent().parent().data("id");
-            let rejectionArray = [];
-            $(this).parent().parent().find(".rejected-item").each(function(e, item){
-              rejectionArray.push($(item).find(".rejection-completed")[0].checked ? true : false);
-            });
-            updateRejection(advisorId, rejectionId, rejectionArray);
-          })
-      })
-      .catch(err =>{
-        console.log(err);
-      });
+        })
+    },
 
-      //When the chat gets opened, display saved message
-      if (localStorage.getItem('savedChatMsg') && localStorage.getItem('savedChatMsg') != 'null' && localStorage.getItem('savedChatMsg') != 'undefined') {
-        $($("#chatMessage").find(".fr-wrapper")).removeClass("show-placeholder");
-        $($("#chatMessage").find(".fr-element")).html(localStorage.getItem('savedChatMsg'));
-      }
+    /**
+     * Setup the edit dropdown menu.
+     */
+    setupEditDropdown() {
+        const edit_dropdown = this.createEditDropdown()
+        document.querySelector(".browser-bar--right").appendChild(edit_dropdown)
+        this.setupEventListeners(edit_dropdown)
+    },
 
-      //When the chat gets closed, save the message
-      $(".close-chat").on("click", () => {
-        localStorage.setItem('savedChatMsg', $($("#chatMessage").find(".fr-element")).html());
-      });
+    /**
+     * Create the edit dropdown element.
+     * @returns {HTMLElement} - The created dropdown element.
+     */
+    createEditDropdown() {
+        return createElement("div", {
+            class: "tot_dropdown",
+            style: { marginLeft: "0.5em" },
+            html: `
+        <a href="#" class="popout-preview">Mark As Edited</a>
+        <div class="tot_droplist is-far-right">
+          <ul>
+            <li><a href="#" class="edit-nav-pages" data-size="desktop">Edit Pages</a></li>
+            <li><a href="#" class="edit-nav-members" data-size="tablet">Edit Members</a></li>
+            <li><a href="#" class="edit-nav-posts" data-size="mobile">Edit Posts</a></li>
+            <li><a href="#" class="edit-nav-all">Edit All</a></li>
+          </ul>
+        </div>`,
+        })
+    },
 
-      //When message is sent remove from saved message
-      $(".chat-tools").find(".send-message").on('click', () => {
-        localStorage.setItem('savedChatMsg', null);
-        $("#loadLastMessage").hide();
-      });
-      clearInterval(waiting)
-    }, 5);
-  });
+    /**
+     * Setup event listeners for the edit dropdown.
+     * @param {HTMLElement} edit_dropdown - The edit dropdown element.
+     */
+    setupEventListeners(edit_dropdown) {
+        const actions = {
+            "edit-nav-pages": () => this.editPages(),
+            "edit-nav-members": () => this.editMembers(),
+            "edit-nav-posts": () => this.editPosts(),
+            "edit-nav-all": () => this.editAll(),
+        }
 
-  //When archives are opened
-  $(".open-archives").on("click", function () {
+        edit_dropdown.addEventListener("click", async (e) => {
+            const target = e.target.closest("a")
+            if (!target) return
+            e.preventDefault()
+            const action = actions[target.className]
+            if (action) await action()
+        })
+    },
 
-    //Wait 2 seconds
-    let waiting = setInterval(()=> {
+    /**
+     * Edit all sections.
+     */
+    async editAll() {
+        await this.editPages()
+        await this.editMembers()
+        await this.editPosts()
+    },
 
+    /**
+     * Handle overlays that appear on the side
+     * Runs as: Wait for style, wait for class, perform action, wait for !class, wait for style
+     * Waits for overlay to open, does an action, and then waits for it to close
+     * @param {string} selector - The ID of the overlay element.
+     * @param {Function} action - The action to perform on the overlay.
+     * @param {number} time_before_action - Time to wait before performing the action.
+     */
+    async handleSidebarOverlay(selector, action, time_before_action = 0) {
+        const overlay = document.querySelector(selector)
+        await waitForStyleAsync(true, overlay, "display", "block")
+        await waitForClassAsync(true, overlay, "ready")
+        if (time_before_action > 0) await new Promise((r) => setTimeout(r, time_before_action))
+        await action(overlay)
+        await waitForClassAsync(false, document.body, "overlay-active")
+        await waitForStyleAsync(true, overlay, "display", "none")
+    },
+    /**
+     * Handle larger overlays
+     * Runs as: Wait for class, perform action, wait for !class
+     * Waits for overlay to open, does an action, and then waits for it to close
+     * @param {string} selector - CSS selector for the overlay element.
+     * @param {Function} action - The action to perform on the overlay.
+     * @param {number} time_before_action - Time to wait before performing the action.
+     */
+    async handleLargerOverlay(selector, action, time_before_action = 0) {
+        const overlay = document.querySelector(selector)
+        await waitForClassAsync(true, overlay, "velocity-animating")
+        await waitForClassAsync(false, overlay, "velocity-animating")
+        if (time_before_action > 0) await new Promise((r) => setTimeout(r, time_before_action))
+        await action(overlay)
+        await waitForClassAsync(true, overlay, "velocity-animating")
+        await waitForClassAsync(false, overlay, "velocity-animating")
+    },
 
-       if(document.querySelector("#archives-overlay").classList.contains("loading"))
-          return
+    /**
+     * Edit the pages section.
+     */
+    async editPages() {
+        this.isEditing = true
+        const pages_array = Array.from(document.querySelectorAll(".page-settings")).map((e) => e.dataset.id)
 
-       // For each archive item adjust the styling
-       $(".archive-item").each(function () {
-          $(this).css("flex-flow", "row wrap");
-          $(this).find(".archive-actions")[0].style = 'position: absolute; top: 20px; right: 20px;';
+        for (const page_id of pages_array) {
+            if (!this.isEditing) break
+            const page_settings = getItemById("page-settings", page_id)
+            if (!page_settings) continue
 
-          //Load the archive note
-          let url = $(this).find(".btn-group").children().first()[0].href;
-          updateNotes(this, url);
-       });
+            page_settings.click()
+            await this.handleSidebarOverlay("#page-settings-overlay", (overlay) => {
+                overlay.querySelector(".save").click()
+            })
+        }
+    },
 
-       async function updateNotes(item, url) {
+    /**
+     * Edit the members section.
+     */
+    async editMembers() {
+        this.isEditing = true
+        const members_array = Array.from(document.querySelectorAll(".manage-members")).map((e) => e.dataset.id)
 
-          //Get the notes
-          let notes = await getNotes(url);
+        for (const member_id of members_array) {
+            if (!this.isEditing) break
+            await this.handleMemberSection(member_id)
+        }
+    },
 
-          //Add the notes, and the styling
-          if (notes) {
-             $(item).append('<div class="compliance-notes" style="font-size: 14px; width: 100%;">' + notes + '</div>');
-             $(item).find("span.small").css("font-size", "12px");
-          }
-       }
+    /**
+     * Handle member section interactions.
+     * @param {string} member_id - The ID of the member element.
+     */
+    async handleMemberSection(member_id) {
+        const manage_member = getItemById("manage-members", member_id)
+        if (!manage_member) return
 
-       function getNotes(url) {
-          return new Promise(function (resolve) {
-
-             //Read the note from the page
-             $.get(url).done(data => {
-                let $data = $(data);
-
-                //Try to get the notes
-                let notes = $data.find(".is-compliance-notes").html();
-
-                //Get the notes if it wasn't found the previous way
-                if (!notes)
-                   notes = '<span class="small">Approved By: ' + $($data.find('.print-timestamp-title + span')[2]).html() + '</span>';
-                resolve(notes);
-             });
-          });
-       }
-       
-    clearInterval(waiting)
-    }, 50);
- });
-}
-
-function getOnlyText(e) {
-  return e.clone() //clone the element
-    .children() //select all the children
-    .remove() //remove all the children
-    .end() //again go back to selected element
-    .text();
-}
-
-function getItemById(c, id) {
-  var v = $("." + c + "[data-id=" + id + "]");
-  return v
-}
-function editPages(callback){
-    isEditing = true;
-    var $overlay = $("#page-settings-overlay");
-    var pagesArray = $(".page-settings").map((i, e) => $(e).data("id")).get();
-    var pageIndex = -1;
-
-    touchPages(callback);
-
-    function touchPages(callback) {
-      pageIndex += 1;
-      var page = pagesArray[pageIndex];
-      if (page && isEditing)
-        touchPage(page, () => touchPages(callback));
-      else if (callback)
-        callback();
-    }
-
-    function touchPage(page, callback) {
-      page = getItemById("page-settings", page);
-      if (page) {
-
-        page.click();
-        waitForStyle(true, $overlay, "display", "block", function() {
-          waitForClass(true, $overlay, "ready", function() {
-            $overlay.find(".save").click();
-            waitForClass(false, $("body"), "overlay-active", function() {
-              waitForStyle(true, $overlay, "display", "none", function() {
-                if (callback)
-                  callback();
-              });
-            });
-          });
-        });
-      }
-    }
-
-}
-function editMembers(callback){
-
-    isEditing = true;
-    var $overlay = $("#page-settings-overlay");
-      var membersArray = $(".manage-members").map((i, e) => $(e).data("id")).get();
-    var memberIndex = -1;
-
-    touchMembers(callback);
-
-    function touchMembers(callback) {
-      memberIndex += 1;
-      var page = membersArray[memberIndex];
-      if (page && isEditing)
-        touchMember(page, () => touchMembers(callback));
-      else if (callback)
-        callback();
-    }
-
-
-    function touchMember(page, callback) {
-      page = getItemById("manage-members", page);
-      if (page) {
-        page.click();
-        waitForStyle(true, $overlay, "display", "block", function() {
-          waitForClass(true, $overlay, "ready", function() {
-
-            var i = -1;
-            var singleMembersArray = $(".member").map((i, e) => $(e).data("id")).get();
-
-            function touchAllMembers(callback2) {
-              i += 1;
-              var member = singleMembersArray[i];
-              if (member && isEditing)
-                touchSingleMember(member, () => touchAllMembers(callback2));
-              else
-                callback2();
+        manage_member.click()
+        await this.handleSidebarOverlay("#page-settings-overlay", async () => {
+            const member_ids = Array.from(document.querySelectorAll(".member")).map((e) => e.dataset.id)
+            for (const member_id of member_ids) {
+                if (!this.isEditing) break
+                await this.editMember(member_id)
             }
+            document.querySelector("#page-settings-overlay").querySelector(".cancel").click()
+        })
+    },
 
+    /**
+     * Edit a single member.
+     * @param {string} member_id - The ID of the member element.
+     */
+    async editMember(member_id) {
+        const member = getItemById("member", member_id)
+        if (!member) return
 
-            function touchSingleMember(member, callback) {
-              member = getItemById("member", member);
-              if (member) {
-                member.click();
-                waitForClass(false, $(".edit-post-pane"), "velocity-animating", function() {
-                  waitForStyle(true, $(".edit-member-pane"), "display", "block", function() {
-                    setTimeout(function(){
-                      $(".edit-member-pane").find(".save").click();
-                      waitForClass(false, $(".edit-post-pane"), "velocity-animating", function() {
-                        waitForStyle(true, $(".edit-member-pane"), "display", "none", function() {
-                          if (callback)
-                            callback();
-                        });
-                      });
-                    }, 2000);
-                  });
-                });
-              }
+        member.click()
+        await this.handleLargerOverlay(
+            ".edit-member-pane",
+            (overlay) => {
+                overlay.querySelector(".save").click()
+            },
+            2000
+        )
+    },
+
+    async editPosts() {
+        this.isEditing = true
+        const posts_array = Array.from(document.querySelectorAll(".manage-posts")).map((e) => e.dataset.id)
+
+        for (const page_id of posts_array) {
+            if (!this.isEditing) break
+            await this.handlePostSection(page_id)
+        }
+    },
+
+    /**
+     * Handle post section interactions.
+     * @param {string} post_id - The ID of the post element.
+     */
+    async handlePostSection(post_id) {
+        const manage_posts = getItemById("manage-posts", post_id)
+        if (!manage_posts) return
+
+        manage_posts.click()
+        await this.handleSidebarOverlay("#page-settings-overlay", async () => {
+            const post_ids = Array.from(document.querySelectorAll(".post")).map((e) => e.dataset.id)
+            for (const post_id of post_ids) {
+                if (!this.isEditing) break
+                await this.editSinglePost(post_id)
             }
+            document.querySelector("#page-settings-overlay").querySelector(".cancel").click()
+        })
+    },
 
-            touchAllMembers(function() {
-              //Edit members
-              $overlay.find(".cancel").click();
-              waitForClass(false, $("body"), "overlay-active", function() {
-                waitForStyle(true, $overlay, "display", "none", function() {
+    /**
+     * Edit a single post.
+     * @param {string} post_id - The ID of the post element.
+     */
+    async editSinglePost(post_id) {
+        const post = getItemById("post", post_id)
+        if (!post) return
 
-                  if (callback)
-                    callback();
-                });
-              });
-            });
-          });
-        });
-      }
-    }
+        post.click()
+        await this.handleLargerOverlay(
+            ".edit-post-pane",
+            (overlay) => {
+                overlay.querySelector(".save").click()
+            },
+            2000
+        )
+    },
 }
-function editPosts(callback){
-    isEditing = true;
 
-    var $overlay = $("#page-settings-overlay");
-    var postsArray = $(".manage-posts").map((i, e) => $(e).data("id")).get();
-    var postIndex = -1;
+// =============================================================================
+// Chat Module
+// =============================================================================
+const Chat = {
+    /**
+     * Initialize the chat module.
+     */
+    init() {
+        this.setupChatOpenListeners()
+    },
 
-    touchPosts(callback);
+    /**
+     * Setup chat open listeners.
+     */
+    setupChatOpenListeners() {
+        document.querySelectorAll(".open-chat, #open-chat").forEach((el) => {
+            el.addEventListener("click", () => this.handleChatOpen())
+        })
+    },
 
-    function touchPosts(callback) {
-      postIndex += 1;
-      var page = postsArray[postIndex];
-      if (page && isEditing)
-        touchPost(page, () => touchPosts(callback));
-      else if (callback)
-        callback();
-    }
+    /**
+     * Handle chat open interactions.
+     */
+    async handleChatOpen() {
+        try {
+            await this.waitForChatLoad()
+            this.setupSavedMessageHandling()
+            this.setupChatEventListeners()
+            await this.setupRejectionHandling()
+        } catch (err) {
+            console.error("Error initializing chat:", err)
+        }
+    },
 
-    function touchPost(page, callback) {
-      page = getItemById("manage-posts", page);
-      if (page) {
-        page.click();
-        waitForStyle(true, $overlay, "display", "block", function() {
-          waitForClass(true, $overlay, "ready", function() {
+    /**
+     * Wait for the chat to load.
+     */
+    async waitForChatLoad() {
+        await waitForCondition(() => {
+            const chat_wrapper = document.querySelector(".chat-wrapper")
+            return chat_wrapper && !chat_wrapper.classList.contains("loading")
+        })
+    },
 
-            var i = -1;
-            var singlePostArray = $(".post").map((i, e) => $(e).data("id")).get();
+    /**
+     * Setup rejection handling.
+     */
+    async setupRejectionHandling() {
+        const advisor_id = window.loggedInUser
+        const rejections = await database.getRejections(advisor_id)
 
-            function touchAllPosts(callback2) {
-              i += 1;
+        this.addRejectionCheckboxes(rejections, advisor_id)
+    },
 
-              var post = singlePostArray[i];
-              if (post && isEditing)
-                touchSinglePost(post, () => touchAllPosts(callback2));
-              else
-                callback2();
+    /**
+     * Add rejection checkboxes to the rejection notices.
+     * @param {Array} rejections - The list of rejections.
+     * @param {string} advisor_id - The ID of the advisor.
+     */
+    addRejectionCheckboxes(rejections, advisor_id) {
+        document.querySelectorAll(".rejection-notice").forEach((notice) => {
+            const rejection_id = notice.dataset.id
+            notice.dataset.advisorId = advisor_id
+            const rejection_item = rejections.find((item) => item.rejectionId === rejection_id) || []
+
+            notice.querySelectorAll(".rejected-item").forEach((item, i) => {
+                const is_completed = rejection_item?.rejection?.[i] || false
+                const checkbox = createElement("input", {
+                    class: "rejection-completed",
+                    type: "checkbox",
+                    checked: is_completed,
+                })
+                item.insertBefore(checkbox, item.firstChild)
+            })
+        })
+    },
+
+
+    /**
+     * Setup saved message handling.
+     */
+    setupSavedMessageHandling() {
+        const saved_msg = localStorage.getItem("savedChatMsg")
+        const chat_message = document.querySelector("#chatMessage")
+
+        if (saved_msg && saved_msg !== "null" && saved_msg !== "undefined") {
+            chat_message.querySelector(".fr-wrapper").classList.remove("show-placeholder")
+            chat_message.querySelector(".fr-element").innerHTML = saved_msg
+        }
+    },
+
+    /**
+     * Setup chat event listeners.
+     */
+    setupChatEventListeners() {
+        const chat_message = document.querySelector("#chatMessage")
+
+        document.querySelector(".close-chat").addEventListener("click", () => {
+            localStorage.setItem("savedChatMsg", chat_message.querySelector(".fr-element").innerHTML)
+        })
+
+        document.querySelector(".chat-tools .send-message").addEventListener("click", () => {
+            localStorage.setItem("savedChatMsg", null)
+            document.getElementById("loadLastMessage").style.display = "none"
+        })
+
+        document.addEventListener(
+                "change",
+                (e) => {
+                    if (!e.target.matches(".rejection-completed")) return;
+                    
+                    const checkbox = e.target;
+                    const rejection_wrapper = checkbox.closest(".rejection-notice");
+                    if (!rejection_wrapper) return;
+
+                    const rejection_id = rejection_wrapper.dataset.id;
+                    const advisor_id = rejection_wrapper.dataset.advisorId;
+                    
+                    if (!rejection_id || !advisor_id) {
+                        console.warn("Missing rejection or advisor ID for rejection change");
+                        return;
+                    }
+
+                    const rejection_array = Array.from(rejection_wrapper.querySelectorAll(".rejected-item"))
+                        .map(item => item.querySelector(".rejection-completed").checked);
+
+                    database.updateRejection(advisor_id, rejection_id, rejection_array);
+                }
+            );
+    },
+}
+
+// =============================================================================
+// Archives Module
+// =============================================================================
+const Archives = {
+    /**
+     * Initialize the archives module.
+     */
+    init() {
+        this.setupArchiveOpenListener()
+        console.log("Archives Module Initialized")
+    },
+
+    /**
+     * Setup archive open listener.
+     */
+    setupArchiveOpenListener() {
+        document.querySelector(".open-archives").addEventListener("click", async () => {
+            try {
+                await this.waitForArchivesOverlay()
+                await this.processArchiveItems()
+            } catch (err) {
+                console.error("Error initializing archives:", err)
             }
+        })
+    },
 
+    /**
+     * Wait for the archives overlay to load.
+     */
+    async waitForArchivesOverlay() {
+        await waitForCondition(() => {
+            const archives_overlay = document.querySelector("#archives-overlay")
+            return archives_overlay && !archives_overlay.classList.contains("loading")
+        })
+    },
 
-            function touchSinglePost(post, callback) {
-              post = getItemById("post", post);
-              if (post) {
-                post.click();
-                waitForClass(false, $(".edit-post-pane"), "velocity-animating", function() {
-                  waitForStyle(true, $(".edit-post-pane"), "display", "block", function() {
-                    setTimeout(function(){
-                      $(".edit-post-pane").find(".save").click();
-                      waitForClass(false, $(".edit-post-pane"), "velocity-animating", function() {
-                        waitForStyle(true, $(".edit-post-pane"), "display", "none", function() {
-                          if (callback)
-                            callback();
-                        });
-                      });
-                    }, 2000);
-                  });
-                });
-              }
+    /**
+     * Process archive items.
+     */
+    async processArchiveItems() {
+        const items = document.querySelectorAll(".archive-item")
+        for (const item of items) {
+            this.styleArchiveItem(item)
+            const url = item.querySelector(".btn-group a").href
+            await this.addArchiveNotes(item, url)
+        }
+    },
+
+    /**
+     * Style an archive item.
+     * @param {HTMLElement} item - The archive item element.
+     */
+    styleArchiveItem(item) {
+        Object.assign(item.style, { flexFlow: "row wrap" })
+        Object.assign(item.querySelector(".archive-actions").style, {
+            position: "absolute",
+            top: "20px",
+            right: "20px",
+        })
+    },
+
+    /**
+     * Add archive notes to an item.
+     * @param {HTMLElement} item - The archive item element.
+     * @param {string} url - The URL to fetch notes from.
+     */
+    async addArchiveNotes(item, url) {
+        const note = await this.fetchNotes(url)
+        if (note) {
+            this.appendNoteToItem(item, note)
+        }
+    },
+
+    /**
+     * Fetch notes from a URL.
+     * @param {string} url - The URL to fetch notes from.
+     * @returns {Promise<string|null>} - The fetched notes or null if not found.
+     */
+    async fetchNotes(url) {
+        try {
+            const response = await fetch(url)
+            const text = await response.text()
+            const doc = new DOMParser().parseFromString(text, "text/html")
+
+            let notes = doc.querySelector(".is-compliance-notes")?.innerHTML
+            if (!notes) {
+                const timestamp = doc.querySelectorAll(".print-timestamp-title + span")[2]?.innerHTML
+                notes = `<span class="small">Approved By: ${timestamp}</span>`
             }
+            return notes
+        } catch (error) {
+            console.error("Error fetching notes:", error)
+            return null
+        }
+    },
 
-            touchAllPosts(function() {
-              //Edit posts
-              $overlay.find(".cancel").click();
-              waitForClass(false, $("body"), "overlay-active", function() {
-                waitForStyle(true, $overlay, "display", "none", function() {
-
-                  if (callback)
-                    callback();
-                });
-              });
-            });
-          });
-        });
-      }
-    }
+    /**
+     * Append a note to an archive item.
+     * @param {HTMLElement} item - The archive item element.
+     * @param {string} note - The note content to append.
+     */
+    appendNoteToItem(item, note) {
+        const compliance_note = createElement("div", {
+            class: "compliance-notes",
+            style: "font-size: 14px; width: 100%;",
+            html: note,
+        })
+        item.appendChild(compliance_note)
+        item.querySelectorAll("span.small").forEach((span) => {
+            span.style.fontSize = "12px"
+        })
+    },
 }
