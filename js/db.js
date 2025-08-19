@@ -149,13 +149,13 @@ class DatabaseClient {
             TableName: 'Statuses',
             Key: {
                 advisorId,
-                timestamp
+                timestamp: parseInt(timestamp)
             }
         }
 
         try {
+            console.log(params)
             await this.docClient.delete(params).promise()
-            return true
         } catch (error) {
             console.error(`Failed to delete status for advisor ${advisorId}:`, error)
             throw error

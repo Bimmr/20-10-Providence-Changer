@@ -1693,6 +1693,7 @@ const Advisor = {
         this.updateViewButtonText()
         this.checkEmptyReview()
         this.setupLastReviewed()
+        this.updateTagsInAdvisorTitle()
 
         this.InternalDB.init(this.advisorId)
     },
@@ -1724,6 +1725,11 @@ const Advisor = {
     },
     setupAlwaysShowReviewSubmission(){
         document.querySelector(".review-submission").classList.add("showing")
+    },
+    updateTagsInAdvisorTitle(){
+        const member_review_items = Array.from(document.querySelectorAll("h3")).find(h3 => h3.textContent.trim() === "Members")?.parentElement.querySelectorAll(".posts-review .review-item") || []
+        for (const item of member_review_items)
+            item.querySelector(".title").innerHTML = item.querySelector(".title").innerHTML.replace(/\[(?!br\])(.*?)\]/g, '<$1>');
     },
     checkEmptyReview(){
         if(document.querySelector(".changes-list")?.children?.length == 0)
@@ -1832,7 +1838,7 @@ const Advisor = {
                 html: `
                 <p class="review-details"><span class="officer">Reviewed by: ${officer}</span> - <span class="date">${date}</span></p>
                 ${note ? `<div class="review-note"><h3>Internal Review Note</h3><div class="review-html">${note}</div></div>` : ""}
-                ${rejection ? `<div class="review-rejection"><h3>${status == "Rejected" ? "Previous " : ""}Rejection Note</h3><div class="review-html">${rejection}</div></div>` : ""}
+                ${rejection ? `<div class="review-rejection"><h3>${review_item.classList.contains("rejected-status") ? "" : "Previous "}Rejection Note</h3><div class="review-html">${rejection}</div></div>` : ""}
                 `
             })
             review_item.appendChild(review_item_preview)
@@ -1879,21 +1885,21 @@ const Advisor = {
         setupEventListeners(){
 
 
-            document.addEventListener("click", (e) => {
+            document.addEventListener("click", async (e) => {
                 if(e.target.matches(".advisor-statuses .sidebar-module-message-icon i")){
                      let confirmation = confirm("Are you sure you want to delete this status?");
                      if (confirmation == true) {
                         const messageModule = e.target.closest(".sidebar-module-message");
-                        let timeStamp = messageModule.querySelector("[data-time]").dataset.time;
-                        console.log(`Deleting status for advisor ${this.advisorId} at ${timeStamp}`); // TODO: Fix, getting an error on below
-                        database.deleteStatus(this.advisorId, timeStamp)
-                           .then(data => {
-                              messageModule.remove();
-                           })
-                           .catch(err => {
-                              alert("Unable to delete status.");
-                           })
-                     }
+                        let timeStamp = messageModule.querySelector("[data-time]").getAttribute("data-time");
+                        console.log(`Deleting status for advisor ${this.advisorId} with ${timeStamp}`); // TODO: Fix, getting an error on below
+                        try{
+                            await database.deleteStatus(this.advisorId, timeStamp)
+                            messageModule.remove()
+                            console.log(`Deleted status for advisor ${this.advisorId} with ${timeStamp}`);
+                        } catch (error) {
+                            console.error(`Failed to delete status for advisor ${this.advisorId} with ${timeStamp}:`, error);
+                        }
+                    }
                   }
             });
         },
@@ -1907,8 +1913,8 @@ const Advisor = {
                     <div class="sidebar-module-header">Website Notes</div>
                     <div class="sidebar-module-body">
                         <div class="sidebar-module-message">
-                            <div class="sidebar-module-message-content" style="color: #9a9a9a; border-radius: 10px; ">
-                                <textarea style="width: 100%;height: 100%;padding: 5px;" class="updateNotes-textarea" placeholder="Loading Notes..."></textarea>
+                            <div class="sidebar-module-message-content">
+                                <textarea class="updateNotes-textarea" placeholder="Loading Notes..."></textarea>
                             </div>
                         </div>
                     </div>
@@ -1936,15 +1942,17 @@ const Advisor = {
         async loadNotes(){
             if (this.notesLoaded) return
             const textarea = document.querySelector(".updateNotes-textarea")
-            textarea.placeholder = "There are no notes for this website.\nClick here to add some."
-            try{
+            try {
                 const res = await database.getNotes(this.advisorId)
-                if (res){
-                    this.notesLoaded = true
-                    if(res.message)
-                        textarea.value = res.message
+                this.notesLoaded = true
+                
+                if (res?.message) {
+                    textarea.value = res.message
+                } else {
+                    textarea.placeholder = "There are no notes for this website.\nClick here to add some."
                 }
-            }catch (error) {
+            } catch (error) {
+                console.error("Error loading notes:", error)
                 textarea.placeholder = "Unable to load notes."
             }
         },
@@ -1958,7 +1966,7 @@ const Advisor = {
                     <div class="sidebar-module-header">Website Status</div>
                     <div class="sidebar-module-body">
                         <div class="sidebar-module-message statusPlaceholder">
-                            <div class="sidebar-module-message-content" style=" padding: 20px; color: #9a9a9a; border-radius: 10px; text-align:center">Loading Statuses...</div>
+                            <div class="sidebar-module-message-content">Loading Statuses...</div>
                         </div>
                     </div>
                     <div class="sidebar-module-footer">
@@ -1977,17 +1985,17 @@ const Advisor = {
             if (this.statusesLoaded) return;
             
             try {
-                const res = await database.getStatuses(this.advisorId);
-                if (res) {
-                    this.statusesLoaded = true;
-                    if (res.length > 0) {
-                        const statuses = res.sort((status_a, status_b) => status_a.timestamp > status_b.timestamp ? -1 : 1);
-                        for (const status of statuses) {
-                            this.addStatusNode(status.officer, status.timestamp, status.message);
-                        }
-                    } else {
-                        document.querySelector(".advisor-statuses .sidebar-module-message-content").innerHTML = "There are no statuses for this website.";
-                    }
+                const statuses = await database.getStatuses(this.advisorId);
+                this.statusesLoaded = true;
+
+                if (statuses && statuses.length > 0) {
+                    statuses.forEach(status => {
+                        console.log(`Loaded Status for advisor ${this.advisorId} with ${status.timestamp}`);
+                        this.addStatusNode(status.officer, status.timestamp, status.message);
+                    });
+                } else {
+                    document.querySelector(".advisor-statuses .sidebar-module-message-content").innerHTML = 
+                        "There are no statuses for this website.";
                 }
             } catch (error) {
                 console.error("Error loading statuses:", error);
@@ -2036,7 +2044,7 @@ const Advisor = {
             const statusElement = createElement("div", {
                 class: "sidebar-module-message",
                 html: `
-                    <div class="sidebar-module-message-icon"><i class="fas fa-trash-alt"></i></div>
+                    ${officer == document.querySelector("#header").querySelector(".display-name + small").textContent ? `<div class="sidebar-module-message-icon"><i class="fas fa-trash-alt"></i></div>` : ""}
                     <div class="sidebar-module-message-info">
                         <span class="sidebar-module-message-name">${officer}</span>
                         <span class="sidebar-module-message-time" data-time="${timestamp}">${formattedDate}</span>
@@ -2046,11 +2054,10 @@ const Advisor = {
             });
             
             const statusContainer = document.querySelector(".advisor-statuses .sidebar-module-body");
-            // Add to element sorted by timestamp
             const existingStatuses = Array.from(statusContainer.children);
             const insertBefore = existingStatuses.find(status => {
                 const statusTime = parseInt(status.querySelector(".sidebar-module-message-time").dataset.time, 10);
-                return statusTime < timestamp;
+                return statusTime > timestamp;
             });
             statusContainer?.insertBefore(statusElement, insertBefore || null);
         },
@@ -2091,10 +2098,15 @@ const Review = {
 
         this.setupEventListeners()
         this.addAddExtraButton()
+        this.updateTagsInAdvisorTitle()
         this.FloatingTools.init(this.reviewId)
     },
     setupEventListeners(){
         // Setup event listeners for the review page
+    },
+    
+    updateTagsInAdvisorTitle(){
+        document.querySelector(".title-wrapper .title").innerHTML = document.querySelector(".title-wrapper .title").innerHTML.replace(/\[(?!br\])(.*?)\]/g, '<$1>');
     },
     addAddExtraButton(){
         const add_note_btn = createElement("button", {
