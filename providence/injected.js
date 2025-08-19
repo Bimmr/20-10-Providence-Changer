@@ -1751,19 +1751,27 @@ const Advisor = {
         const review_items = document.querySelectorAll(".review-item")
         review_items.forEach((item) => {
             if(item.querySelector(".review-actions a").textContent.includes("Link")){
-                const link = item.querySelector(".review-actions a")
-                if(link.href.indexOf("http") == 0)
-                    link.text = "Visit External Link"
-                else if (link.href.indexOf("#") == 0){
-                    link.text = "Visit Section Link"
-                    link.href = link.href.replace("app.twentyoverten.com/manage/advisor/", "")
-                }else{
-                    link.innerHTML = "Navigation Link"
-                    link.removeAttribute("href")
-                    link.style = "cursor: no-drop"
-                    link.classList.add("approve-item")
-                    link.classList.add("active")
-                    link.title = "Just a navigation link, has no content."
+                const link = item.querySelector(".review-url").textContent
+                const review = item.querySelector(".review-actions a")
+
+                 //Indicate if the link is External or Internal
+                if (link.indexOf("http") >= 0)
+                    review.innerHTML = "Visit External Link";
+                else if (link.indexOf("#") >= 0) {
+                    review.innerHTML = "Section Link";
+                    review.removeAttribute("href");
+                    review.style = "cursor: no-drop";
+                    review.classList.add("approve-item");
+                    review.classList.add("active");
+                    review.title = "Just a section link; This has no content.";
+                }
+                else {
+                    review.innerHTML = "Navigation Link";
+                    review.removeAttribute("href");
+                    review.style = "cursor: no-drop";
+                    review.classList.add("approve-item");
+                    review.classList.add("active");
+                    review.title = "Just a navigation link; This has no content.";
                 }
             }
         })
