@@ -1,5 +1,7 @@
 /* Misc */
 body.providence #header{z-index: 10}
+.btn.thinking, a.thinking, button.thinking {animation: pulse 1.5s infinite;}
+@keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
 
 /* Add Sub Nav to Manage Content nav */
 .providence--section-nav-sub {z-index: -1; font-size: .9em; top: -100% !important; opacity: 0; display: flex !important; flex-direction: column !important; position: absolute; background: #03182e; transition: top 0.6s, opacity 0.3s;}
@@ -129,7 +131,7 @@ body.providence #revisions-list.reportorized td.revisions-notes, body.providence
 #review-changes .review-item .review-rejection > h3{color:#c0392b !important;}
 #review-changes :is(.review-note, .review-rejection) .review-html{font-size: 0.8em;}
 #review-changes .review-item.approved-status .review-rejection{display: none;}
-#review-changes .review-item .review-rejection:nth-child(3){padding-left: 2em;border-left:1px solid #4c4c4c; margin-left: 2em;}
+#review-changes .review-item .review-note:nth-child(3){padding-left: 2em;border-left:1px solid #4c4c4c; margin-left: 2em;}
 
 
 /* Language toggle in review */

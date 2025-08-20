@@ -466,7 +466,7 @@ const SearchBar = {
         // Debounced search on keyup
         input.addEventListener(
             "keyup",
-            delay(() => {
+            debounce(() => {
                 button.click()
             }, this.config.debounceDelay)
         )
@@ -680,7 +680,7 @@ const Chat = {
 
         search_input.addEventListener(
             "keyup",
-            delay((e) => {
+            debounce((e) => {
                 const search_name = search_input.value
                 if (search_name.length >= 3) {
                     this.performChatSearch()
@@ -910,7 +910,7 @@ const Manage = {
             // Update dropdowns when the table is redrawn
             $("#advisorsList").on(
                 "draw.dt",
-                delay(() => {
+                debounce(() => {
                     if (document.getElementById("showAllAdvisors").classList.contains("active"))
                         document.querySelector(".providence-overview--list")?.classList.add("loadedAll")
 
@@ -1712,28 +1712,66 @@ const Advisor = {
     },
     setupEventListeners(){
         document.addEventListener("click", async (e) => {
+
             if(e.target.matches(".btn-clear-state")){
-                const review_id = e.target.closest(".review-item").querySelector("[data-id]").getAttribute("data-id")
+                const review_item = e.target.closest(".review-item")
+                const review_id = review_item.querySelector("[data-id]").getAttribute("data-id")
+                const clear_notes = e.ctrlKey
+                e.target.textContent = clear_notes ? "Clearing All..." : "Clearing State..."
+                e.target.classList.add("thinking")
+                
+                const payload = { state: "" }
+                if (clear_notes) {
+                    payload.internal_notes = ""
+                    payload.notes = ""
+                }
+                
                 await fetch(`${baseUrl}/api/revisions/${review_id}`, {
                     method: "PUT",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ state: "", internal_notes: "", notes: "" })
+                    body: JSON.stringify(payload)
                 })
-                window.location.reload()
+                review_item.classList.remove("approved-status", "rejected-status")
+                review_item.querySelector(".active").classList.remove("active")
+                review_item.querySelector(".review-item__status").innerHTML = `<span class="review-item-status pending-status">Pending Review</span>`
+                e.target.textContent = "Clear State"
+                e.target.classList.remove("thinking")
+                setTimeout(() => this.addReviewItemNotesToPage(review_item.getAttribute("data-id")), 100)
             }
-        })
-        document.addEventListener("click", async (e) => {
+      
             if(e.target.matches("#revision-note-overlay .save")){
+                let reset_internal_notes = false
                 const overlay = document.querySelector("#revision-note-overlay")
+                const review_id = e.target.getAttribute("data-id")
+                
+                if(overlay.querySelector(".show-placeholder")){ // Fixes bug of not being able to remove note after adding it
+                   reset_internal_notes = true
+                }
+                await waitForClassAsync(true, overlay, "velocity-animating")
+                await waitForClassAsync(false, overlay, "velocity-animating")
+                if(reset_internal_notes)
+                     await fetch(`${baseUrl}/api/revisions/${review_id}`, {
+                        method: "PUT",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ internal_notes: "" })
+                    })
+                this.addReviewItemNotesToPage(review_id)
+            }
+
+            if(e.target.matches("#rejection-note-overlay .save")){
+                const overlay = document.querySelector("#rejection-note-overlay")
                 await waitForClassAsync(true, overlay, "velocity-animating")
                 await waitForClassAsync(false, overlay, "velocity-animating")
                 const review_id = e.target.getAttribute("data-id")
                 this.addReviewItemNotesToPage(review_id)
             }
-        })
-        document.addEventListener("click", (e)=>{
+       
             if(e.target.matches(".btn--action-approve, .btn--action-reject"))
-                setTimeout(this.addPendingCount, 100)
+                setTimeout(() => this.addPendingCount(), 1)
+
+            if(e.target.matches(".btn--action-approve"))
+                setTimeout(() => this.addReviewItemNotesToPage(e.target.closest(".review-item").getAttribute("data-id")), 1)
+
         })
     },
     setupAlwaysShowReviewSubmission(){
@@ -1796,6 +1834,7 @@ const Advisor = {
             html: "Approve All",
             onclick: () => {
                 document.querySelectorAll(".review-actions .approve-item").forEach((btn) => btn.click())
+                this.setupReviewItemNotes()
             }
         })
         document.querySelector(".changes-header .btn-group").appendChild(approve_all_btn)
@@ -1808,6 +1847,8 @@ const Advisor = {
                 const note = prompt("Add your note")
                 if (!note) return
 
+                add_note_to_all_btn.textContent = "Adding Note..."
+                add_note_to_all_btn.classList.add("thinking")
                 const revisionIds = [...document.querySelectorAll(".revision-note")].map(rev => 
                     rev.getAttribute("data-id")
                 )
@@ -1821,7 +1862,9 @@ const Advisor = {
                 )
 
                 Promise.all(updatePromises).then(() => {
-                    window.location.reload()
+                    add_note_to_all_btn.textContent = "Add Note to All"
+                    add_note_to_all_btn.classList.remove("thinking")
+                    this.setupReviewItemNotes()
                 }).catch(error => {
                     console.error("Failed to update some revisions:", error)
                 })
@@ -1833,7 +1876,7 @@ const Advisor = {
             href: '#',
             class: "btn pill btn--action-default btn-clear-state",
             html: "Clear State",
-            title: "Clear the state and all notes"
+            title: "Clear the state. Holding CTRL will also clear all notes."
         })
         document.querySelectorAll(".review-actions").forEach((action) => {
             action.appendChild(clear_state.cloneNode(true))
@@ -1848,18 +1891,21 @@ const Advisor = {
         })
     },
     async addReviewItemNotesToPage(review_id){
-        const { status, officer, date, note, rejection } = await this.getReviewInfoFromRevisionsPage(review_id)
-        if (!status) return
         const review_item = document.querySelector(`.review-item[data-id="${review_id}"]`)
-
+        
         // Remove if already existing
         review_item.querySelector(`.review-item-preview`)?.remove()
+
+        let { status, officer, date, note, rejection } = await this.getReviewInfoFromRevisionsPage(review_id)
+        if (!status)
+            ({ status, officer, date, note, rejection } = await this.getReviewInfoFromAPI(review_id))
+
         const review_item_preview = createElement("div", {
                 class: "review-item-preview",
                 html: `
-                <p class="review-details"><span class="officer">Reviewed by: ${officer}</span> - <span class="date">${date}</span></p>
-                ${note ? `<div class="review-note"><h3>Internal Review Note</h3><div class="review-html">${note}</div></div>` : ""}
+                ${officer ? `<p class="review-details"><span class="officer">Reviewed by: ${officer}</span> - <span class="date">${date}</span></p>` : ""}
                 ${rejection ? `<div class="review-rejection"><h3>${review_item.classList.contains("rejected-status") ? "" : "Previous "}Rejection Note</h3><div class="review-html">${rejection}</div></div>` : ""}
+                ${note ? `<div class="review-note"><h3>Internal Review Note</h3><div class="review-html">${note}</div></div>` : ""}
                 `
             })
             review_item.appendChild(review_item_preview)
@@ -1876,6 +1922,18 @@ const Advisor = {
         const note = doc.querySelector(".is-compliance-notes")?.innerHTML
         const rejection = doc.querySelector(".is-rejection-notes")?.innerHTML
         return { status, officer, date, note, rejection }
+    },
+    async getReviewInfoFromAPI(review_id){
+        let response = await fetch(`${baseUrl}/api/revisions/${review_id}`)
+        if (!response.ok) return {}
+        const data = await response.json()
+        return {
+            status: data.status,
+            officer: "",
+            date: "",
+            note: data.internal_notes,
+            rejection: data.rejection
+        }
     },
     setupLastReviewed(){
         setTimeout(() => {
@@ -2547,7 +2605,7 @@ const Content = {
         // Add event listeners for content-specific actions
          $("#content-list").on(
             "draw.dt",
-            delay((e) => {
+            debounce((e) => {
                 if(!this.isBrokerBucket) this.hideLeadPilotContent()
                 SearchBar.resetSearchTable()
             }, 100)
