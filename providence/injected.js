@@ -1702,6 +1702,7 @@ const Advisor = {
             this.setupAlwaysShowReviewSubmission()
             this.addPendingCount()
             this.addSiteForwardControls()
+            this.addClearStateButton()
             this.setupReviewItemNotes()
             this.updateViewButtonText()
             this.checkEmptyReview()
@@ -1828,13 +1829,12 @@ const Advisor = {
         })
     },
     addSiteForwardControls(){
-        const approve_all_btn = createElement("a",{
+        const approve_all_btn = createElement("a", {
             href: '#',
             class: "btn pill btn--action-approve btn-approve-all",
             html: "Approve All",
             onclick: () => {
                 document.querySelectorAll(".review-actions .approve-item").forEach((btn) => btn.click())
-                this.setupReviewItemNotes()
             }
         })
         document.querySelector(".changes-header .btn-group").appendChild(approve_all_btn)
@@ -1872,6 +1872,9 @@ const Advisor = {
         })
         document.querySelector(".changes-header .btn-group").appendChild(add_note_to_all_btn)
 
+        
+    },
+    addClearStateButton(){
         const clear_state = createElement("a", {
             href: '#',
             class: "btn pill btn--action-default btn-clear-state",
