@@ -131,7 +131,7 @@ body.providence #revisions-list.reportorized td.revisions-notes, body.providence
 #review-changes .review-item .review-rejection > h3{color:#c0392b !important;}
 #review-changes :is(.review-note, .review-rejection) .review-html{font-size: 0.8em;}
 #review-changes .review-item.approved-status .review-rejection{display: none;}
-#review-changes .review-item .review-note:nth-child(3){padding-left: 2em;border-left:1px solid #4c4c4c; margin-left: 2em;}
+#review-changes .review-item:not(.approved-status) .review-note:nth-child(3){padding-left: 2em;border-left:1px solid #4c4c4c; margin-left: 2em;}
 
 
 /* Language toggle in review */
