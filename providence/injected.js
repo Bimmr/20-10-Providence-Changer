@@ -1697,15 +1697,17 @@ const Advisor = {
         AdvisorDetails.init(this.advisorInfo)
 
         this.setupEventListeners()
-        this.setupAlwaysShowReviewSubmission()
-        this.addPendingCount()
-        this.addSiteForwardControls()
-        this.setupReviewItemNotes()
-        this.updateViewButtonText()
-        this.checkEmptyReview()
-        this.setupLastReviewed()
-        this.updateTagsInAdvisorTitle()
 
+        if(!document.querySelector(".no-changes")){
+            this.setupAlwaysShowReviewSubmission()
+            this.addPendingCount()
+            this.addSiteForwardControls()
+            this.setupReviewItemNotes()
+            this.updateViewButtonText()
+            this.checkEmptyReview()
+            this.setupLastReviewed()
+            this.updateTagsInAdvisorTitle()
+        }
         this.InternalDB.init(this.advisorId)
     },
     setupEventListeners(){
