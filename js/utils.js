@@ -105,14 +105,18 @@ let waitForStyle = function(b, e, s, v, callback) {
   }, 100);
 }
 
-//delay and wait
-function delay(callback, ms) {
-  var timer = 0;
-  return function () {
-    var context = this,
-      args = arguments;
-    clearTimeout(timer);
-    timer = setTimeout(function () {
+//debounce and wait
+function debounce(callback, ms) {
+  let timeoutId;
+  return function() {
+    const context = this;
+    const args = arguments;
+    
+    // Clear the previous timeout
+    clearTimeout(timeoutId);
+    
+    // Set a new timeout
+    timeoutId = setTimeout(function() {
       callback.apply(context, args);
     }, ms || 0);
   };
