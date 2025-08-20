@@ -43,11 +43,16 @@ function waitForCondition(condition_fn, timeout = 2000, interval = 50) {
 
 // Function to initialize the page
 async function ready() {
-    //Load advisor list from storage
+
+    // Load advisor list
     let advisor_list_req = await fetch(`${baseUrl}/manage/advisor/list?tags=`)
     advisor_list_req = await advisor_list_req.json()
     advisor_list = advisor_list_req.data
-    officer_list = await getOfficerList()
+
+    // Load officer list
+    let officer_list_req = await fetch(`${baseUrl}/api/officers`)
+    officer_list_req = await officer_list_req.json()
+    officer_list = officer_list_req
 
     // Check if the user is a SiteForward team member
     if (isSiteForward(window.loggedInUser)) localStorage.setItem("IsSiteForward", true)
@@ -851,14 +856,11 @@ const Manage = {
             .querySelectorAll(".providence-overview--nav a")
             .forEach((e) => e.addEventListener("click", () => this.adjustItemsPerPage()))
 
-        // Wait until the button exists before adding the event listener
-        const waitForFilterBtn = setInterval(() => {
-            const filter_btn = document.querySelector("#filterAdvisors .btn")
-            if (filter_btn) {
-                filter_btn.addEventListener("click", () => this.checkFilterWarning())
-                clearInterval(waitForFilterBtn)
-            }
-        }, 500)
+        // Filter button click listener
+        waitForCondition(() => document.querySelector("#filterAdvisors .btn"))
+            .then(() => {
+                document.querySelector("#filterAdvisors .btn").addEventListener("click", () => this.checkFilterWarning())
+            })
 
         // Custom chat opening buttons
         document.addEventListener("click", (e) => {
@@ -1149,6 +1151,12 @@ const Manage = {
                 element.addEventListener("click", () => SearchBar.resetSearchTable())
             })
         })
+
+        // Filter button click listener
+        waitForCondition(() => document.querySelector("#filterAdvisors .btn"))
+            .then(() => {
+                document.querySelector("#filterAdvisors .btn").addEventListener("click", () => SearchBar.resetSearchTable())
+            })
     },
 
 
@@ -2745,46 +2753,12 @@ function hasStatus(status, advisor) {
     } else return false
 }
 
-/**
- * Async Fetch the list of officers
- * @returns {Promise<Object>} - A map containing {officerId: officerName}
- */
-async function getOfficerList() {
-    const officer_map = {}
-    const unique_officer_ids = [...new Set(advisor_list.map(advisor => advisor.officer_id))]
-    
-    const officer_promises = unique_officer_ids.map(async (officer_id) => {
-        const name = await fetchOfficerName(officer_id)
-        officer_map[officer_id] = name
-        return { id: officer_id, name }
-    })
-    
-    await Promise.all(officer_promises)
-    return officer_map
-}
-
-/**
- * Async fetch the officer's name by ID
- * @param {string} id - The officer's ID
- * @returns {Promise<string>} - The Officer's name
- */
-async function fetchOfficerName(id) {
-    try {
-        const response = await fetch(`${baseUrl}/manage/advisor/one/${id}`)
-        const officer = await response.json()
-        return officer?.display_name || "Unknown Officer"
-    } catch (error) {
-        console.error(`Failed to fetch officer ${id}:`, error)
-        return "Unknown Officer"
-    }
-}
-
 //Get the officer name from their ID
 /**
  * Get the officer name from their ID
  * @param {string} id - The officer's ID
- * @returns {string|undefined} - The officer's name or undefined if not found
+ * @returns {string|undefined} - The officer's name or "All Officers" if not found
  */
 function getOfficerName(id) {
-    if (officer_list[id]) return officer_list[id]
+    return officer_list.find((officer) => officer._id === id)?.display_name || "All Officers"
 }
