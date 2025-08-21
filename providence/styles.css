@@ -250,7 +250,6 @@ body.providence.nightMode th.sorting_asc {color: #08aeea !important;}
 body.providence.nightMode .table td.has-assignment .is-select .form-item--control {background-color: #2d2d2d; color: #efefef;}
 body.providence.nightMode .table .chip--editing {color: #888 !important; background-color: #444 !important;}
 
-
 /* Cards */
 body.providence.nightMode .advisor-card {background-color: #212121; box-shadow: none}
 body.providence.nightMode .advisor-card h4, 
