@@ -2541,14 +2541,17 @@ const Review = {
          * Check if the current review item is content-related
          */
         async checkIfContent(revisionId) {
+            let broker_content = null
+            
             try {
+                // Check if the current item is a post or not
                 const current_item = await fetch(`${baseUrl}/api/revisions/${revisionId}`)
                 const item_data = await current_item.json()
                 
                 if (item_data.location !== "post") {
                     return { is_post: false }
                 }
-
+            
                 // Add spinner button
                 document.querySelector(".floating-review-item.open-differences")?.remove() // Remove if already exists
                 document.querySelector(".floating-review-item-wrapper")?.insertAdjacentHTML(
@@ -2556,13 +2559,23 @@ const Review = {
                     '<button class="floating-review-item open-differences" title="Checking the file source"><i class="fas fa-spinner"></i></button>'
                 )
 
+                //Try getting the broker content
+                broker_content = await this.getBrokerContent()
+
+                // If not available, login as advisor then retry
+                if (!broker_content || !broker_content.content){
+                    await this.loginAsAdvisor()
+                    broker_content = await this.getBrokerContent()
+                }
+
+                // Check if the current item is custom content
                 const is_custom = item_data.content_id == null
-                //TODO: If this is an error, login, then try again
                 const [from_siteforward, from_vendor] = await Promise.all([
-                    this.getContent(item_data, `${baseUrl}/api/content/broker`),
+                    this.getContent(item_data, broker_content),
                     this.getContent(item_data, `${baseUrl}/api/content`)
                 ])
 
+                // Check the differences
                 let edits = null
                 let found_article = Object.keys(from_siteforward).length > 0 ? from_siteforward : from_vendor
 
@@ -2591,32 +2604,52 @@ const Review = {
             } catch (error) {
                 console.error("Error checking content:", error)
                 this.handleContentAPIError()
-                console.log("here")
                 return { is_post: false }
             }
+        },
+        /**
+         * Login as advisor to access content API
+         * This gets run if the broker content is not available
+         */
+        async loginAsAdvisor(){
+            console.log("Logging in as advisor to load content API")
+            const login_url = document.querySelector(".advisor-quick-links a[target='_blank']").href
+            await fetch(login_url)
+            await new Promise(resolve => setTimeout(resolve, 1000))
+        },
+        /**
+         * Get broker content from API
+         */
+        async getBrokerContent(){
+            const response = await fetch(`${baseUrl}/api/content/broker`)
+            const content_list = await response.json()
+            return content_list
         },
 
         /**
          * Get content from API endpoint
          */
-        async getContent(current_item, url) {
+        async getContent(current_item, content_source) {
             try {
-                const response = await fetch(url)
-                const content_list = await response.json()
+            // If content_source is a string URL, fetch the content list
+            const content_list = typeof content_source === "string" 
+                ? await fetch(content_source).then(res => res.json())
+                : content_source
 
-                if (!content_list.content) {
-                    this.handleContentAPIError()
-                    throw new Error("Content not found")
-                }
+            // Validate content exists
+            if (!content_list?.content) {
+                throw new Error("Content not found")
+            }
 
-                const found = content_list.content.find(blog => 
-                    blog._id === current_item.content_id || 
-                    (blog.title === current_item.title && blog.html === current_item.content)
-                )
+            // Find matching content by ID or title/content match
+            const found = content_list.content.find(blog => 
+                blog._id === current_item.content_id || 
+                (blog.title === current_item.title && blog.html === current_item.content)
+            )
 
-                return found ? { title: found.title, html: found.html } : {}
+            return found ? { title: found.title, html: found.html } : {}
             } catch (error) {
-                throw error
+            throw error
             }
         },
 
