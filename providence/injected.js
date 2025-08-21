@@ -629,12 +629,14 @@ const Chat = {
      */
     async handleChatOpen() {
         await this.waitForChatLoad()
-        const opened_chat_id = document.querySelector(".recent-chats li.active a")?.getAttribute("data-advisor_id")
         let target_chat_id = document.querySelector("#live-chat").getAttribute("data-advisor_id")
 
-        if (opened_chat_id != target_chat_id && target_chat_id != null) {
+        if(target_chat_id == null){
+            target_chat_id = document.querySelector(".recent-chats li.active a")?.getAttribute("data-advisor_id")
+            document.querySelector("#live-chat").setAttribute("data-advisor_id", target_chat_id)
+        }
+        else
             document.querySelector('.chat-users-list-wrapper ul [data-advisor_id="' + target_chat_id + '"]').click()
-        } else target_chat_id = opened_chat_id
 
         this.setupChatWindow(target_chat_id)
 
