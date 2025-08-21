@@ -1353,48 +1353,155 @@ const Manage = {
             "Tier",
         ],
         reviewCount: {},
-        init() {
+        activeFilters: {
+            officers: [],
+            tags: [],
+            all: true
+        },
+        async init() {
             
             this.setupEventListeners()
             
             this.sortReviewCards()
             this.addDetailsToCards()
-            this.setupRevisionCount()
-            this.filterReviewCards()
+            await this.setupRevisionCount()
+            this.updateReviewFilters()
         },
 
         setupEventListeners() {
-            
-               
             document.addEventListener("click", (e) => {
                 if (e.target.matches(".review-table tbody tr td")) {
                     const table = e.target.closest(".review-table")
                     const clicked_row = e.target.closest("tr")
                     const clicked_category = e.target.closest("tbody").classList[0]
-                    table.querySelector(".active").classList.remove("active")
-                    clicked_row.classList.add("active")
-                    this.filterReviewCards(clicked_category, clicked_row.children[0].textContent)
+                    const clicked_text = clicked_row.children[0].textContent
+                    
+                    // Handle "All in Review" special case
+                    if (clicked_category === "all") {
+                        // Clear all filters and reset to show all
+                        this.activeFilters = { officers: [], tags: [], all: true }
+                        table.querySelectorAll(".active").forEach(row => row.classList.remove("active"))
+                        clicked_row.classList.add("active")
+                        this.updateReviewFilters()
+                        return
+                    }
+                    
+                    // Disable "all" filter when selecting specific filters
+                    this.activeFilters.all = false
+                    const allRow = table.querySelector(".all .active")
+                    if (allRow) allRow.classList.remove("active")
+                    
+                    if (clicked_row.classList.contains("active")) {
+                        // Remove from active filters
+                        clicked_row.classList.remove("active")
+                        const filterArray = this.activeFilters[clicked_category]
+                        const index = filterArray.indexOf(clicked_text)
+                        if (index > -1) {
+                            filterArray.splice(index, 1)
+                        }
+                    } else {
+                        // Add to active filters
+                        clicked_row.classList.add("active")
+                        if (!this.activeFilters[clicked_category].includes(clicked_text)) {
+                            this.activeFilters[clicked_category].push(clicked_text)
+                        }
+                    }
+                
+                    
+                    // If no filters are active, show all
+                    if (this.activeFilters.officers.length === 0 && this.activeFilters.tags.length === 0) {
+                        this.activeFilters.all = true
+                        const allRowInTable = table.querySelector(".all tr")
+                        if (allRowInTable) allRowInTable.classList.add("active")
+                    }
+                    this.updateReviewFilters()
                 }
             })
         },
-        filterReviewCards(clicked_category, clicked_text){
-            const cards = document.querySelectorAll(".advisor-card")
-            if (cards.length === 0) return
-            cards.forEach((card) => {
-                if (clicked_category == "officers")
-                    if(card.querySelector(".cardOfficer").textContent == clicked_text)
-                        card.style.display = "block"
-                    else
-                        card.style.display = "none"
-                else if (clicked_category == "tags")
-                    if(card.querySelectorAll(".tag").length > 0 && [...card.querySelectorAll(".tag")].some(tag=> tag.textContent == clicked_text))
-                        card.style.display = "block"
-                    else
-                        card.style.display = "none"
-                else
+        updateReviewFilters(){
+            console.log(this.activeFilters)
+            this.filterCardsForOfficers();
+            this.filterCardsAndTagListForTags()
+            this.updateShowMoreTags()
+            this.updateFilterCounts()
+        },
+
+        filterCardsForOfficers(){
+           const cards = document.querySelectorAll(".advisor-card")
+           if (cards.length === 0) return
+
+           cards.forEach((card) => {
+               const card_officer = card.querySelector(".cardOfficer")?.textContent
+               const matches_officer_filter = (card_officer && this.activeFilters.officers.includes(card_officer)) || this.activeFilters.all || this.activeFilters.officers.length === 0
+               card.style.display = matches_officer_filter ? "block" : "none"
+           })
+        },
+
+        filterCardsAndTagListForTags(){
+            const tag_rows = document.querySelectorAll(".review-table .tags tr")
+            const visible_cards = [...document.querySelectorAll(".advisor-card")].filter(card => card.style.display !== "none")
+            const tags_with_visible_cards = new Set()
+
+            // Hide all tag rows initially
+            tag_rows.forEach(tag_row => tag_row.style.display = "none")
+
+            // Filter cards based on tag selection (AND logic) and collect tags from visible cards
+            visible_cards.forEach(card => {
+                if (this.activeFilters.tags.length === 0) {
+                    // No tag filters active - show all cards that passed officer filter
                     card.style.display = "block"
+                    // Add all tags from this visible card
+                    const card_tags = [...card.querySelectorAll('.card-tags .tag')].map(tag => tag.textContent)
+                    card_tags.forEach(tag => tags_with_visible_cards.add(tag))
+                } else {
+                    // Check if card has ALL active tag filters
+                    const card_tags = [...card.querySelectorAll('.card-tags .tag')].map(tag => tag.textContent)
+                    const has_all_tags = this.activeFilters.tags.every(activeTag => card_tags.includes(activeTag))
+                    card.style.display = has_all_tags ? "block" : "none"
+                    
+                    // If card will be visible, add its tags to the available set
+                    if (has_all_tags) {
+                        card_tags.forEach(tag => tags_with_visible_cards.add(tag))
+                    }
+                }
             })
 
+            // Show only tag rows that have visible cards
+            for(const tag_row of tag_rows){
+                const tag_name = tag_row.children[0]?.textContent
+                if (tag_name && tags_with_visible_cards.has(tag_name)) {
+                    tag_row.style.display = "table-row"
+                }
+            }
+        },
+        updateShowMoreTags(){
+            console.log("Updating show more tags if needed")
+            const visible_tags = [...document.querySelectorAll(".review-table .tags.important-tags tr")].filter(row => row.style.display !== "none")
+
+            if (visible_tags.length === 0 && document.querySelector(".review-table .other-tags").style.display === "none") {
+                document.querySelector(".review-table .expand-toggle").click()
+            }
+        },
+        updateFilterCounts(){
+            const tag_rows = document.querySelectorAll(".review-table .tags tr")
+            const visible_cards = [...document.querySelectorAll(".advisor-card")].filter(card => card.style.display !== "none")
+
+            // Update the site and pending counts in tag_rows based off visible_cards tags
+            tag_rows.forEach(row => {
+                const tag_name = row.children[0]?.textContent
+                const matching_cards = visible_cards.filter(card => {
+                    const tags = card.querySelectorAll('.card-tags .tag')
+                    return Array.from(tags).some(tag => tag.textContent === tag_name)
+                })
+                if (tag_name) {
+                    const count = matching_cards.length
+                    row.children[1].textContent = count
+                    row.children[2].textContent = matching_cards.reduce((acc, card) => {
+                        const pending = card.querySelector('.cardPending')
+                        return acc + (pending ? parseInt(pending.textContent) : 0)
+                    }, 0)
+                }
+            })
         },
 
         /**
@@ -1478,44 +1585,47 @@ const Manage = {
                     return value
             }
         },
-        setupRevisionCount() {
+        async setupRevisionCount() {
             const advisor_cards = document.querySelectorAll(".advisor-card")
             this.reviewCount = { all: { sites: 0, pending: 0, total: 0 }, tags: {}, officers: {} }
-            advisor_cards.forEach(async (card) => {
-                const revisions = await this.getRevisions(card.getAttribute("advisor_id"))
-                card.querySelector(".cardApprovals").textContent = revisions.approved
-                card.querySelector(".cardPending").textContent = revisions.pending
-                card.querySelector(".cardRejections").textContent = revisions.rejected
+            
+            const promises = Array.from(advisor_cards).map(async (card) => {
+            const revisions = await this.getRevisions(card.getAttribute("advisor_id"))
+            card.querySelector(".cardApprovals").textContent = revisions.approved
+            card.querySelector(".cardPending").textContent = revisions.pending
+            card.querySelector(".cardRejections").textContent = revisions.rejected
 
-                // Update overall review count
-                this.reviewCount.all.sites += 1
-                this.reviewCount.all.pending += revisions.pending
-                this.reviewCount.all.total += revisions.approved + revisions.pending + revisions.rejected
+            // Update overall review count
+            this.reviewCount.all.sites += 1
+            this.reviewCount.all.pending += revisions.pending
+            this.reviewCount.all.total += revisions.approved + revisions.pending + revisions.rejected
 
-                // Update tag review count
-                const tags = card.querySelectorAll(".card-tags .tag")
-                tags.forEach((tag) => {
-                    let tag_name = tag.textContent
-                    if (!this.reviewCount.tags[tag_name])
-                        this.reviewCount.tags[tag_name] = { sites: 0, pending: 0, total: 0 }
-                    this.reviewCount.tags[tag_name].sites += 1
-                    this.reviewCount.tags[tag_name].pending += revisions.pending
-                    this.reviewCount.tags[tag_name].total += revisions.approved + revisions.pending + revisions.rejected
-                })
-
-                // Update officer review count
-                const officer_name = card.querySelector(".cardOfficer")?.textContent
-                if (!this.reviewCount.officers[officer_name])
-                    this.reviewCount.officers[officer_name] = { sites: 0, pending: 0, total: 0 }
-                this.reviewCount.officers[officer_name].sites += 1
-                this.reviewCount.officers[officer_name].pending += revisions.pending
-                this.reviewCount.officers[officer_name].total +=
-                    revisions.approved + revisions.pending + revisions.rejected
-
-                this.updateReviewTable()
+            // Update tag review count
+            const tags = card.querySelectorAll(".card-tags .tag")
+            tags.forEach((tag) => {
+                let tag_name = tag.textContent
+                if (!this.reviewCount.tags[tag_name])
+                this.reviewCount.tags[tag_name] = { sites: 0, pending: 0, total: 0 }
+                this.reviewCount.tags[tag_name].sites += 1
+                this.reviewCount.tags[tag_name].pending += revisions.pending
+                this.reviewCount.tags[tag_name].total += revisions.approved + revisions.pending + revisions.rejected
             })
+
+            // Update officer review count
+            const officer_name = card.querySelector(".cardOfficer")?.textContent
+            if (!this.reviewCount.officers[officer_name])
+                this.reviewCount.officers[officer_name] = { sites: 0, pending: 0, total: 0 }
+            this.reviewCount.officers[officer_name].sites += 1
+            this.reviewCount.officers[officer_name].pending += revisions.pending
+            this.reviewCount.officers[officer_name].total +=
+                revisions.approved + revisions.pending + revisions.rejected
+            })
+
+            await Promise.all(promises)
+            this.updateReviewTable()
         },
         updateReviewTable() {
+            const review_cards = document.querySelectorAll(".advisor-card")
             const review_filter = createElement("div", {
                 class: "review-filter",
                 html: `
@@ -1542,7 +1652,7 @@ const Manage = {
                     })
                     .sort(([tagA], [tagB]) => tagA.localeCompare(tagB))
                     .map(([tag, data]) => {
-                        return `<tr><td>${tag}</td><td>${data.sites}</td><td>${data.pending}</td></tr>`
+                        return `<tr><td>${tag}</td><td class="sites">#</td><td class="pending">#</td></tr>`
                     })
                     .join("")}
                 </tbody>
@@ -1553,7 +1663,7 @@ const Manage = {
                     })
                     .sort(([tagA], [tagB]) => tagA.localeCompare(tagB))
                     .map(([tag, data]) => {
-                        return `<tr><td>${tag}</td><td>${data.sites}</td><td>${data.pending}</td></tr>`
+                        return `<tr><td>${tag}</td><td class="sites">#</td><td class="pending">#</td></tr>`
                     })
                     .join("")}
                 </tbody>
@@ -1717,7 +1827,7 @@ const Advisor = {
             if(e.target.matches(".btn-clear-state")){
                 const review_item = e.target.closest(".review-item")
                 const review_id = review_item.querySelector("[data-id]").getAttribute("data-id")
-                const clear_notes = e.ctrlKey
+                const clear_notes = e.ctrlKey || e.metaKey
                 e.target.textContent = clear_notes ? "Clearing All..." : "Clearing State..."
                 e.target.classList.add("thinking")
                 
@@ -2411,12 +2521,14 @@ const Review = {
                 }
 
                 // Add spinner button
+                document.querySelector(".floating-review-item.open-differences")?.remove() // Remove if already exists
                 document.querySelector(".floating-review-item-wrapper")?.insertAdjacentHTML(
                     "beforeend",
                     '<button class="floating-review-item open-differences" title="Checking the file source"><i class="fas fa-spinner"></i></button>'
                 )
 
                 const is_custom = item_data.content_id == null
+                //TODO: If this is an error, login, then try again
                 const [from_siteforward, from_vendor] = await Promise.all([
                     this.getContent(item_data, `${baseUrl}/api/content/broker`),
                     this.getContent(item_data, `${baseUrl}/api/content`)
@@ -2449,6 +2561,8 @@ const Review = {
                 }
             } catch (error) {
                 console.error("Error checking content:", error)
+                this.handleContentAPIError()
+                console.log("here")
                 return { is_post: false }
             }
         },
@@ -2463,7 +2577,7 @@ const Review = {
 
                 if (!content_list.content) {
                     this.handleContentAPIError()
-                    return {}
+                    throw new Error("Content not found")
                 }
 
                 const found = content_list.content.find(blog => 
@@ -2473,9 +2587,7 @@ const Review = {
 
                 return found ? { title: found.title, html: found.html } : {}
             } catch (error) {
-                console.error("Error fetching content:", error)
-                this.handleContentAPIError()
-                return {}
+                throw error
             }
         },
 
@@ -2487,6 +2599,7 @@ const Review = {
             if (button) {
                 button.setAttribute("title", "Error: Unable to load content API.\nPlease login as advisor to load the content API.")
                 const icon = button.querySelector("i")
+                icon.title = "Error: Unable to load content API.\nPlease login as advisor to load the content API."
                 icon.classList.remove("fa-spinner")
                 icon.classList.add("fa-exclamation-circle")
             }
