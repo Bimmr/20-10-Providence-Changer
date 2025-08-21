@@ -1428,25 +1428,54 @@ const Manage = {
 
         filterCardsForOfficers(){
            const cards = document.querySelectorAll(".advisor-card")
+           const all_officers = this.activeFilters.officers.length === 0 || this.activeFilters.all
            if (cards.length === 0) return
 
            cards.forEach((card) => {
                const card_officer = card.querySelector(".cardOfficer")?.textContent
-               const matches_officer_filter = (card_officer && this.activeFilters.officers.includes(card_officer)) || this.activeFilters.all || this.activeFilters.officers.length === 0
+               const matches_officer_filter = (card_officer && this.activeFilters.officers.includes(card_officer)) || all_officers
                card.style.display = matches_officer_filter ? "block" : "none"
            })
         },
 
         filterCardsAndTagListForTags(){
             const tag_rows = document.querySelectorAll(".review-table .tags tr")
-            const visible_cards = [...document.querySelectorAll(".advisor-card")].filter(card => card.style.display !== "none")
+            // Get cards that passed officer filtering, or all cards if no officer filter is active
+            const cards_after_officer_filter = this.activeFilters.officers.length === 0 || this.activeFilters.all 
+                ? [...document.querySelectorAll(".advisor-card")]  // All cards if no officer filter
+                : [...document.querySelectorAll(".advisor-card")].filter(card => card.style.display !== "none") // Cards that passed officer filter
+            
             const tags_with_visible_cards = new Set()
+
+            // Collect all available tags from cards after officer filtering
+            cards_after_officer_filter.forEach(card => {
+                const card_tags = [...card.querySelectorAll('.card-tags .tag')].map(tag => tag.textContent)
+                card_tags.forEach(tag => tags_with_visible_cards.add(tag))
+            })
+
+            // Check if any active tag filters are not available from visible cards and remove them
+            const tags_to_remove = this.activeFilters.tags.filter(activeTag => !tags_with_visible_cards.has(activeTag))
+            if (tags_to_remove.length > 0) {
+                // Remove unavailable tags from active filters
+                this.activeFilters.tags = this.activeFilters.tags.filter(activeTag => tags_with_visible_cards.has(activeTag))
+                
+                // Remove active class from deselected tag rows
+                tags_to_remove.forEach(removedTag => {
+                    const tag_row = [...tag_rows].find(row => row.children[0]?.textContent === removedTag)
+                    if (tag_row) {
+                        tag_row.classList.remove("active")
+                    }
+                })
+            }
+
+            // Reset tags_with_visible_cards for final filtering
+            tags_with_visible_cards.clear()
 
             // Hide all tag rows initially
             tag_rows.forEach(tag_row => tag_row.style.display = "none")
 
             // Filter cards based on tag selection (AND logic) and collect tags from visible cards
-            visible_cards.forEach(card => {
+            cards_after_officer_filter.forEach(card => {
                 if (this.activeFilters.tags.length === 0) {
                     // No tag filters active - show all cards that passed officer filter
                     card.style.display = "block"
