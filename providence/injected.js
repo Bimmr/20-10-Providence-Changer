@@ -1525,11 +1525,19 @@ const Manage = {
             }
         },
         updateShowMoreTags(){
-            console.log("Updating show more tags if needed")
-            const visible_tags = [...document.querySelectorAll(".review-table .tags.important-tags tr")].filter(row => row.style.display !== "none")
+            const visible_important_tags = [...document.querySelectorAll(".review-table .tags.important-tags tr")].filter(row => row.style.display !== "none")
+            const expand_toggle = document.querySelector(".review-table .expand-toggle")
+            const other_tags = document.querySelector(".review-table .other-tags")
 
-            if (visible_tags.length === 0 && document.querySelector(".review-table .other-tags").style.display === "none") {
-                document.querySelector(".review-table .expand-toggle").click()
+            if (visible_important_tags.length === 0) {
+                // No important tags visible, auto-expand other tags and hide toggle
+                expand_toggle.style.display = "none"
+                other_tags.style.display = "table-row-group"
+            } else {
+                // Important tags are visible, show toggle and respect its state
+                expand_toggle.style.display = "inline-block"
+                const is_expanded = expand_toggle.classList.contains("expanded")
+                other_tags.style.display = is_expanded ? "table-row-group" : "none"
             }
         },
         updateFilterCounts(){
@@ -1721,9 +1729,16 @@ const Manage = {
                 </table>`,
             })
             document.querySelector(".providence-pending--title").innerHTML = review_filter.outerHTML
-            document.querySelector(".expand-toggle").addEventListener("click", (e) => {
-                document.querySelector(".tags.other-tags").style.display = e.target.innerHTML === "▼" ? "table-row-group" : "none"
-                e.target.innerHTML = e.target.innerHTML === "▼" ? "▲" : "▼"
+            
+            // Setup expand toggle with simplified logic
+            const expand_toggle = document.querySelector(".expand-toggle")
+            const other_tags = document.querySelector(".tags.other-tags")
+            
+            expand_toggle.addEventListener("click", () => {
+                const is_expanded = expand_toggle.classList.toggle("expanded")
+                other_tags.style.display = is_expanded ? "table-row-group" : "none"
+                expand_toggle.innerHTML = is_expanded ? "▲" : "▼"
+                expand_toggle.title = is_expanded ? "Hide Other Tags" : "Show Other Tags"
             })
         },
 
