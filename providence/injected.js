@@ -41,6 +41,11 @@ function waitForCondition(condition_fn, timeout = 2000, interval = 50) {
     })
 }
 
+// Check if the user is a SiteForward user
+function isSiteForwardUser(){
+    return isSiteForward(window.loggedInUser)
+}
+
 // Function to initialize the page
 async function ready() {
 
@@ -53,9 +58,6 @@ async function ready() {
     let officer_list_req = await fetch(`${baseUrl}/api/officers`)
     officer_list_req = await officer_list_req.json()
     officer_list = officer_list_req
-
-    // Check if the user is a SiteForward team member
-    if (isSiteForward(window.loggedInUser)) localStorage.setItem("IsSiteForward", true)
 
     // Add content sub-menu items to content nav menu item
     const content_sub_nav = createElement("ul", {
@@ -645,7 +647,8 @@ const Chat = {
             this.setupSavedMessageHandling()
             this.setupChatEventListeners()
             this.setupChatSearch()
-            await this.setupRejectionHandling()
+            if (isSiteForwardUser())
+                await this.setupRejectionHandling()
         } catch (err) {
             console.error("Error initializing chat:", err)
         }
@@ -1423,8 +1426,8 @@ const Manage = {
                 if(e.target.matches(".advisor-card .assign-to-me i")){
                     const card = e.target.closest(".advisor-card")
                     const advisor_id = card.getAttribute("data-advisor_id")
-                    const my_info = officer_list.find(officer => officer.display_name === document.querySelector(".providence-title small").textContent)
-                    
+                    const my_info = officer_list.find(officer => officer._id == window.loggedInUser)
+
                     e.target.classList.add("thinking")
                     
                     // Update the main table if row exists
@@ -1897,7 +1900,9 @@ const Advisor = {
         if(!document.querySelector(".no-changes")){
             this.setupAlwaysShowReviewSubmission()
             this.addPendingCount()
-            this.addSiteForwardControls()
+            if(isSiteForwardUser())
+                this.addSiteForwardControls()
+            
             this.addClearStateButton()
             this.setupReviewItemNotes()
             this.updateViewButtonText()
@@ -2297,7 +2302,7 @@ const Advisor = {
                     messageInput.value = "";
                     
                     const date = new Date().getTime();
-                    const officer = document.querySelector("#header").querySelector(".display-name + small").textContent;
+                    const officer = officer_list.find(officer => officer._id == window.loggedInUser).display_name;
 
                     try {
                         await database.addStatus(this.advisorId, date, officer, message);
