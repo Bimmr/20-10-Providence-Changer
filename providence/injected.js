@@ -2041,7 +2041,8 @@ const Advisor = {
         review_item.querySelector(`.review-item-preview`)?.remove()
 
         let { status, officer, date, note, rejection } = await this.getReviewInfoFromRevisionsPage(review_id)
-        if (!status)
+        console.log(status)
+        if (!status || status == "")
             ({ status, officer, date, note, rejection } = await this.getReviewInfoFromAPI(review_id))
 
         const review_item_preview = createElement("div", {
@@ -2072,11 +2073,11 @@ const Advisor = {
         if (!response.ok) return {}
         const data = await response.json()
         return {
-            status: data.status,
+            status: data.state,
             officer: "",
             date: "",
             note: data.internal_notes,
-            rejection: data.rejection
+            rejection: data.notes
         }
     },
     setupLastReviewed(){
