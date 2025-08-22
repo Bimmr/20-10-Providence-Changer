@@ -1424,20 +1424,31 @@ const Manage = {
                     const card = e.target.closest(".advisor-card")
                     const advisor_id = card.getAttribute("data-advisor_id")
                     const my_info = officer_list.find(officer => officer.display_name === document.querySelector(".providence-title small").textContent)
-                    const payload = {'user_id': advisor_id, 'officer_id': my_info._id}
-                    console.log(payload)
+                    
                     e.target.classList.add("thinking")
-                    const res = await fetch(`${baseUrl}/api/officers/assign`, { 
+                    
+                    // Update the main table if row exists
+                    const row = document.querySelector(`#advisorsList [data-advisor_id="${advisor_id}"]`)
+                    if (row) {
+                        const select = row.querySelector(".assigned_officer")
+                        select.value = select.value.split("|")[0] + "|" + my_info._id
+                    }
+                    
+                    // Make API call
+                    await fetch(`${baseUrl}/api/officers/assign`, {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify(payload)
+                        body: JSON.stringify({ user_id: advisor_id, officer_id: my_info._id })
                     })
-
+                    
+                    // Update UI
                     e.target.classList.remove("thinking")
-                    card.querySelector(".assign-to-me")?.remove();
+                    card.querySelector(".assign-to-me").remove()
                     card.querySelector(".cardOfficer").outerHTML = `<div class="cardOfficer" data-officer_id="${my_info._id}">${my_info.display_name}</div>`
-
+                    await this.setupRevisionCount()
+                    this.updateReviewFilters()
                 }
+
             })
         },
         updateReviewFilters(){
@@ -1448,6 +1459,11 @@ const Manage = {
         },
 
         filterCardsForOfficers(){
+
+            //Remove any unavailable officers from the activeFilter
+            const available_officers = new Set([...document.querySelectorAll(".cardOfficer")].map(officer => officer.textContent))
+            this.activeFilters.officers = this.activeFilters.officers.filter(officer => available_officers.has(officer))
+
            const cards = document.querySelectorAll(".advisor-card")
            const all_officers = this.activeFilters.officers.length === 0 || this.activeFilters.all
            if (cards.length === 0) return
