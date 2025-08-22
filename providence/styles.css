@@ -87,7 +87,9 @@ body.providence .search-bar table.table td{vertical-align:middle;}
 .providence-pending .review-table .expand-toggle:hover{color: #08aeea;}
 
 /* Cards */
-.providence-pending--list .card-extras{font-size: 14px;padding: 15px;margin-top: 15px;background-color: #f1f1f1; border-radius: 10px;}
+.providence-pending--list .card-extras{font-size: 14px;padding: 15px;margin-top: 15px;background-color: #f1f1f1; border-radius: 10px;position: relative;}
+.providence-pending--list .card-extras .assign-to-me{position: absolute; top: 5px; right: 5px; font-size: .7em; color: #737373;}
+.providence-pending--list .card-extras .assign-to-me:hover{color: #08aeea;}
 .providence-pending--list .card-extras p{color:#2d2d2d}
 .providence-pending--list .card-changes{font-size: 12px;color: #737373;}
 .providence-pending--list .card-extras p.cardImportantTags{font-size: 12px; color: #08aeea;}

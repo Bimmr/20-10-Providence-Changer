@@ -938,8 +938,9 @@ const Manage = {
                 }
                 if (is_unpublished) {
                     let state = row.querySelector(".has-state")
+                    state.querySelector(".not-published")?.remove()
                     state.append(
-                        "<p style=\"font-size: .75em;color: #1fe9ae;text-align: center;margin: 5px 0 0 0; font-family: 'Anonymous Pro', Courier, monospace;\">Not Published</p>"
+                        `<p class="not-published" style="font-size: .75em;color: #1fe9ae;text-align: center;margin: 5px 0 0 0; font-family: 'Anonymous Pro', Courier, monospace;">Not Published</p>`
                     )
                 }
             })
@@ -958,7 +959,7 @@ const Manage = {
             for (const row of rows) {
                 // Get the advisor ID from the row
                 const advisor_id = row.querySelector("a").href.split("/").pop()
-                row.setAttribute("advisor_id", advisor_id)
+                row.setAttribute("data-advisor_id", advisor_id)
 
                 const dropdown = row.querySelector(".tot_droplist ul")
                 if (dropdown.childElementCount > 3) continue // Skip if dropdown already has items
@@ -1241,6 +1242,8 @@ const Manage = {
             table.appendChild(tbody)
         }
         this.updateDropdowns()
+        this.updateOfficerList()
+        this.checkForUnPublished()
     },
     /**
      * Perform a search based on the provided search string.
@@ -1363,7 +1366,6 @@ const Manage = {
         async init() {
             
             this.setupEventListeners()
-            
             this.sortReviewCards()
             this.addDetailsToCards()
             await this.setupRevisionCount()
@@ -1371,7 +1373,7 @@ const Manage = {
         },
 
         setupEventListeners() {
-            document.addEventListener("click", (e) => {
+            document.addEventListener("click", async (e) => {
                 if (e.target.matches(".review-table tbody tr td")) {
                     const table = e.target.closest(".review-table")
                     const clicked_row = e.target.closest("tr")
@@ -1418,10 +1420,27 @@ const Manage = {
                     }
                     this.updateReviewFilters()
                 }
+                if(e.target.matches(".advisor-card .assign-to-me i")){
+                    const card = e.target.closest(".advisor-card")
+                    const advisor_id = card.getAttribute("data-advisor_id")
+                    const my_info = officer_list.find(officer => officer.display_name === document.querySelector(".providence-title small").textContent)
+                    const payload = {'user_id': advisor_id, 'officer_id': my_info._id}
+                    console.log(payload)
+                    e.target.classList.add("thinking")
+                    const res = await fetch(`${baseUrl}/api/officers/assign`, { 
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(payload)
+                    })
+
+                    e.target.classList.remove("thinking")
+                    card.querySelector(".assign-to-me")?.remove();
+                    card.querySelector(".cardOfficer").outerHTML = `<div class="cardOfficer" data-officer_id="${my_info._id}">${my_info.display_name}</div>`
+
+                }
             })
         },
         updateReviewFilters(){
-            console.log(this.activeFilters)
             this.filterCardsForOfficers();
             this.filterCardsAndTagListForTags()
             this.updateShowMoreTags()
@@ -1621,7 +1640,7 @@ const Manage = {
             this.reviewCount = { all: { sites: 0, pending: 0, total: 0 }, tags: {}, officers: {} }
             
             const promises = Array.from(advisor_cards).map(async (card) => {
-            const revisions = await this.getRevisions(card.getAttribute("advisor_id"))
+            const revisions = await this.getRevisions(card.getAttribute("data-advisor_id"))
             card.querySelector(".cardApprovals").textContent = revisions.approved
             card.querySelector(".cardPending").textContent = revisions.pending
             card.querySelector(".cardRejections").textContent = revisions.rejected
@@ -1757,7 +1776,7 @@ const Manage = {
 
                 const advisor_id = card.querySelector(".btn--action-review")?.href.split("/").pop()
                 const advisor_info = getAdvisorInfo(advisor_id)
-                card.setAttribute("advisor_id", advisor_id)
+                card.setAttribute("data-advisor_id", advisor_id)
 
                 // Add card changes section
                 if (!card.querySelector(".card-changes")) {
@@ -1790,11 +1809,16 @@ const Manage = {
                 // Add card extras section
                 if (!card.querySelector(".card-extras")) {
                     const officer_name = getOfficerName(advisor_info.officer_id)
+                    const my_officer_info = officer_list.find(officer => officer.display_name === document.querySelector(".providence-title small").textContent)
+                    const can_assign_to_me = isOnTeam(advisor_info.officer_id, my_officer_info._id)
 
                     const card_content = card.querySelector(".card-content")
                     const card_extras = createElement("div", {
                         class: "card-extras",
-                        html: `<p class="cardOfficer" style="margin: 0">${officer_name}</p><p class="cardImportantTags" style="line-height: 1; margin: 0">${important_tags}</p>`,
+                        html: `
+                        <p class="cardOfficer" data-officer_id="${advisor_info.officer_id}" style="margin: 0">${officer_name}</p>
+                        <p class="cardImportantTags" style="line-height: 1; margin: 0">${important_tags}</p>
+                        ${can_assign_to_me ? `<a class="assign-to-me" href="#" title="Assign to me"><i class="fa fa-user-plus" aria-hidden="true"></i></a>` : ``}`,
                     })
                     card_content?.appendChild(card_extras)
                 }
