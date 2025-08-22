@@ -2797,7 +2797,7 @@ const Revisions = {
     },
     checkEmailInURL(){
         const url_params = new URLSearchParams(window.location.search)
-        const email = url_params.get("email")
+        let email = url_params.get("email")
 
         if (email) {
             // If an email was provided, force a search of the revisions table
