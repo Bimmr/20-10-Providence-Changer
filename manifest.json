@@ -37,7 +37,7 @@
         "/js/utils.js",
         "/js/keys.js",
         "/js/db.js",
-        "/js/aws-sdk-2.892.0.min.js"
+        "/js/aws-sdk-2.1692.0.min.js"
       ],
       "matches": [
         "https://app.twentyoverten.com/*"

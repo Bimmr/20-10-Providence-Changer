@@ -22,7 +22,7 @@ function injectResource(file, type) {
 // Define resources to be injected
 const resources = [
     { file: "/edit/styles.css", type: "style" },
-    { file: "/js/aws-sdk-2.892.0.min.js", type: "script" },
+    { file: "/js/aws-sdk-2.1692.0.min.js", type: "script" },
     { file: "/js/utils.js", type: "script" },
     { file: "/js/keys.js", type: "script" },
     { file: "/js/db.js", type: "script" },
