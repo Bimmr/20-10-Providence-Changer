@@ -5,7 +5,7 @@
   "description": "TwentyOverTen Providence Changes",
   "manifest_version": 3,
   "icons": {
-    "128": "icon/SiteForwardFAv.png"
+    "128": "icon/SiteForwardFav.png"
   },
   "content_scripts": [
     {
