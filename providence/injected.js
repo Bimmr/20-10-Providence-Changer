@@ -7,6 +7,34 @@ let url_parts = ""
 let database = null
 let officer_list = []
 
+/**
+ * Advisor lookup maps for O(1) data access
+ */
+const advisorLookups = {
+    byId: new Map(),
+    byName: new Map(),
+    
+    buildIndexes() {
+        this.byId.clear()
+        this.byName.clear()
+        
+        advisor_list.forEach(advisor => {
+            this.byId.set(advisor._id, advisor)
+            this.byName.set(advisor.display_name, advisor)
+        })
+        
+        console.log(`Providence: Built advisor indexes - ${this.byId.size} advisors indexed`)
+    },
+    
+    getById(id) {
+        return this.byId.get(id)
+    },
+    
+    getByName(name) {
+        return this.byName.get(name)
+    }
+}
+
 $(async function () {
     try {
         await waitForCondition(() => typeof isSiteForward === "function" && typeof DatabaseClient != "undefined", 5000)
@@ -58,6 +86,9 @@ async function ready() {
     let officer_list_req = await fetch(`${baseUrl}/api/officers`)
     officer_list_req = await officer_list_req.json()
     officer_list = officer_list_req
+
+    // Initialize optimizations
+    advisorLookups.buildIndexes()
 
     // Add content sub-menu items to content nav menu item
     const content_sub_nav = createElement("ul", {
@@ -128,9 +159,7 @@ async function getSiteInfo(site_id) {
  * @returns {Object|undefined} - Advisor info object or undefined if not found
  */
 function getAdvisorInfo(id) {
-    return advisor_list.find(function (e) {
-        return id === e._id
-    })
+    return advisorLookups.getById(id)
 }
 
 /**
@@ -140,7 +169,7 @@ function getAdvisorInfo(id) {
  */
 function getAdvisorInfoByName(display_name) {
     if (!display_name) return null
-    return advisor_list.find((advisor) => advisor.display_name === display_name) || null
+    return advisorLookups.getByName(display_name) || null
 }
 
 // =============================================================================
@@ -551,10 +580,20 @@ const SearchBar = {
     }
 }
 const Chat = {
+    // DOM Cache for Chat module
+    cache: {
+        liveChat: null,
+        
+        init() {
+            this.liveChat = document.querySelector("#live-chat")
+        }
+    },
+
     /**
      * Initialize the chat module.
      */
     init() {
+        this.cache.init()
         this.setupChatOpenListeners()
     },
 
@@ -571,11 +610,11 @@ const Chat = {
         document.addEventListener("click", (e) => {
             if (e.target.matches(".chat-users-list-wrapper ul .user")) {
                 let advisor_id = e.target.querySelector(".chat-user").getAttribute("data-advisor_id")
-                document.querySelector("#live-chat").setAttribute("data-advisor_id", advisor_id)
+                this.cache.liveChat?.setAttribute("data-advisor_id", advisor_id)
                 this.handleChatOpen()
             } else if (e.target.matches(".chat-users-list-wrapper ul .user img")) {
                 let advisor_id = e.target.parentNode.parentNode.getAttribute("data-advisor_id")
-                document.querySelector("#live-chat").setAttribute("data-advisor_id", advisor_id)
+                this.cache.liveChat?.setAttribute("data-advisor_id", advisor_id)
                 this.handleChatOpen()
             }
         })
@@ -591,7 +630,7 @@ const Chat = {
                 if (!rejection_wrapper) return
 
                 const rejection_id = rejection_wrapper.dataset.id
-                const advisor_id = document.querySelector("#live-chat").getAttribute("data-advisor_id")
+                const advisor_id = this.cache.liveChat?.getAttribute("data-advisor_id")
 
                 if (!rejection_id || !advisor_id) {
                     console.warn("Missing rejection or advisor ID for rejection change")
@@ -631,11 +670,11 @@ const Chat = {
      */
     async handleChatOpen() {
         await this.waitForChatLoad()
-        let target_chat_id = document.querySelector("#live-chat").getAttribute("data-advisor_id")
+        let target_chat_id = this.cache.liveChat?.getAttribute("data-advisor_id")
 
         if(target_chat_id == null){
             target_chat_id = document.querySelector(".recent-chats li.active a")?.getAttribute("data-advisor_id")
-            document.querySelector("#live-chat").setAttribute("data-advisor_id", target_chat_id)
+            this.cache.liveChat?.setAttribute("data-advisor_id", target_chat_id)
         }
         else
             document.querySelector('.chat-users-list-wrapper ul [data-advisor_id="' + target_chat_id + '"]').click()
@@ -753,7 +792,7 @@ const Chat = {
      * Waits 500ms total before adding the checkboxes (including time taken by getRejections)
      */
     async setupRejectionHandling() {
-        const advisor_id = document.querySelector("#live-chat").getAttribute("data-advisor_id")
+        const advisor_id = this.cache.liveChat?.getAttribute("data-advisor_id")
         const start_time = performance.now()
         const rejections = await database.getRejections(advisor_id)
         const elapsed_time = performance.now() - start_time
@@ -795,9 +834,14 @@ const Chat = {
         const saved_msg = localStorage.getItem("savedChatMsg")
         const chat_message = document.querySelector("#chatMessage")
 
-        if (saved_msg) {
-            chat_message.querySelector(".fr-wrapper").classList.remove("show-placeholder")
-            chat_message.querySelector(".fr-element").innerHTML = saved_msg
+        if (saved_msg && chat_message) {
+            const fr_wrapper = chat_message.querySelector(".fr-wrapper")
+            const fr_element = chat_message.querySelector(".fr-element")
+            
+            if (fr_wrapper && fr_element) {
+                fr_wrapper.classList.remove("show-placeholder")
+                fr_element.innerHTML = saved_msg
+            }
         }
     },
 
@@ -806,16 +850,34 @@ const Chat = {
      */
     setupChatEventListeners() {
         const chat_message = document.querySelector("#chatMessage")
+        const close_chat = document.querySelector(".close-chat")
+        const send_message = document.querySelector(".chat-tools .send-message")
 
-        document.querySelector(".close-chat").addEventListener("click", () => {
-            localStorage.setItem("savedChatMsg", chat_message.querySelector(".fr-element").innerHTML)
-            document.querySelector("#live-chat").setAttribute("data-advisor_id", null)
-        })
+        if (close_chat && chat_message) {
+            close_chat.addEventListener("click", () => {
+                const fr_element = chat_message.querySelector(".fr-element")
+                if (fr_element) {
+                    const message_content = fr_element.innerHTML
+                    // Don't save empty messages
+                    if (message_content && message_content !== "<p><br></p>") {
+                        localStorage.setItem("savedChatMsg", message_content)
+                    } else {
+                        localStorage.setItem("savedChatMsg", null)
+                    }
+                }
+                document.querySelector("#live-chat")?.setAttribute("data-advisor_id", null)
+            })
+        }
 
-        document.querySelector(".chat-tools .send-message").addEventListener("click", () => {
-            localStorage.setItem("savedChatMsg", null)
-            document.getElementById("loadLastMessage").style.display = "none"
-        })
+        if (send_message) {
+            send_message.addEventListener("click", () => {
+                localStorage.setItem("savedChatMsg", null)
+                const loadLastMessage = document.getElementById("loadLastMessage")
+                if (loadLastMessage) {
+                    loadLastMessage.style.display = "none"
+                }
+            })
+        }
     },
 }
 
@@ -823,10 +885,28 @@ const Chat = {
 // Manage Page Module
 // =============================================================================
 const Manage = {
+    // DOM Cache for Manage module
+    cache: {
+        filterBtn: null,
+        advisorsList: null,
+        providenceOverviewList: null,
+        
+        init() {
+            this.advisorsList = document.querySelector("#advisorsList")
+            this.providenceOverviewList = document.querySelector(".providence-overview--list")
+            this.refreshDynamicElements()
+        },
+        
+        refreshDynamicElements() {
+            this.filterBtn = document.querySelector("#filterAdvisors .btn")
+        }
+    },
+
     /**
      * Initialize the Manage module.
      */
     async init() {
+        this.cache.init()
         this.changeToShowAll()
         this.setupEventListeners()
         this.adjustItemsPerPage()
@@ -864,14 +944,15 @@ const Manage = {
         // Filter button click listener
         waitForCondition(() => document.querySelector("#filterAdvisors .btn"))
             .then(() => {
-                document.querySelector("#filterAdvisors .btn").addEventListener("click", () => this.checkFilterWarning())
+                this.cache.refreshDynamicElements()
+                this.cache.filterBtn?.addEventListener("click", () => this.checkFilterWarning())
             })
 
         // Custom chat opening buttons
         document.addEventListener("click", (e) => {
             if (e.target.matches(".open-chat-extension")) {
                 const advisor_id = e.target.getAttribute("data-advisor_id")
-                document.querySelector("#live-chat").setAttribute("data-advisor_id", advisor_id)
+                Chat.cache.liveChat?.setAttribute("data-advisor_id", advisor_id)
                 document.querySelector("#open-chat").click()
             }
         })
@@ -905,6 +986,8 @@ const Manage = {
     },
     // ======================= Advisor List ==========================
     AdvisorList: {
+        lastRowCount: 0, // Track changes to avoid unnecessary work
+        
         init() {
             this.setupEventListeners()
             this.setupSearchBar()
@@ -916,13 +999,17 @@ const Manage = {
             $("#advisorsList").on(
                 "draw.dt",
                 debounce(() => {
-                    if (document.getElementById("showAllAdvisors").classList.contains("active"))
-                        document.querySelector(".providence-overview--list")?.classList.add("loadedAll")
+                    if (document.getElementById("showAllAdvisors")?.classList.contains("active"))
+                        Manage.cache.providenceOverviewList?.classList.add("loadedAll")
 
-                    this.updateDropdowns()
-                    this.updateOfficerList()
-                    this.checkForUnPublished()
-                }, 500)
+                    const currentRowCount = Manage.cache.advisorsList?.querySelectorAll("tbody tr").length || 0
+                    if (this.lastRowCount !== currentRowCount) {
+                        this.updateDropdowns()
+                        this.updateOfficerList()
+                        this.checkForUnPublished()
+                        this.lastRowCount = currentRowCount
+                    }
+                }, 300)
             )
         },
 
@@ -974,11 +1061,13 @@ const Manage = {
                 let advisor_info = getAdvisorInfo(advisor_id)
                 if (!advisor_info) continue
 
+                const fragment = document.createDocumentFragment()
+
                 // Add Open Chat
                 const open_chat = createElement("li", {
                     html: `<a href="#messages" class="open-chat-extension" data-advisor_id="${advisor_id}">Open Chat</a>`,
                 })
-                dropdown.appendChild(open_chat)
+                fragment.appendChild(open_chat)
 
                 // Add View Revisions
                 const open_revisions = createElement("li", {
@@ -986,13 +1075,15 @@ const Manage = {
                         advisor_info.email,
                     )}" target="_blank" class="">View Revisions</a>`,
                 })
-                dropdown.appendChild(open_revisions)
+                fragment.appendChild(open_revisions)
 
                 // Add View Preview
                 const open_preview = createElement("li", {
                     html: `<a href="https://${advisor_info.site.settings.subdomain}.app.twentyoverten.com" class="" target="_blank">View Preview Website</a>`,
                 })
-                dropdown.appendChild(open_preview)
+                fragment.appendChild(open_preview)
+
+                dropdown.appendChild(fragment)
 
                 // Add View Live - this is done async since we need to fetch data to get the live url
                 addLiveURLToDropdown(advisor_info.site._id)
@@ -1038,7 +1129,8 @@ const Manage = {
                     else if (!isNotAssignable(id)) officers.Other.push(option)
                 })
 
-                // Create optgroups
+                const optgroupFragment = document.createDocumentFragment()
+                
                 Object.entries(officers).forEach(([groupName, optionList]) => {
                     if (groupName === "Other" && optionList.length === 0) return
 
@@ -1047,6 +1139,8 @@ const Manage = {
                         style: "padding-top: 4px;",
                     })
 
+                    const optionFragment = document.createDocumentFragment()
+                    
                     // Sort options based on account list index
                     optionList
                         .sort((a, b) => {
@@ -1057,15 +1151,19 @@ const Manage = {
                         .forEach((option) => {
                             const id = option.getAttribute("data-id")
                             if (!isNotActive(id)) {
-                                optgroup.appendChild(option.cloneNode(true))
+                                optionFragment.appendChild(option.cloneNode(true))
                             }
                             option.remove()
                         })
 
+                    optgroup.appendChild(optionFragment)
+                    
                     if (optgroup.children.length > 0) {
-                        select_element.appendChild(optgroup)
+                        optgroupFragment.appendChild(optgroup)
                     }
                 })
+                
+                select_element.appendChild(optgroupFragment)
 
                 // Clean up any remaining ungrouped options
                 select_element.querySelectorAll(":scope > option").forEach((option) => option.remove())
@@ -1123,7 +1221,7 @@ const Manage = {
      */
     setupSearchBar() {
         const search_config = {
-            container: document.querySelector(".providence-overview--list"),
+            container: Manage.cache.providenceOverviewList,
             inputId: 'search-advisor',
             buttonId: 'search-advisor-btn',
             label: 'Search Advisors',
@@ -1161,7 +1259,8 @@ const Manage = {
         // Filter button click listener
         waitForCondition(() => document.querySelector("#filterAdvisors .btn"))
             .then(() => {
-                document.querySelector("#filterAdvisors .btn").addEventListener("click", () => SearchBar.resetSearchTable())
+                Manage.cache.refreshDynamicElements()
+                Manage.cache.filterBtn?.addEventListener("click", () => SearchBar.resetSearchTable())
             })
     },
 
@@ -1237,11 +1336,14 @@ const Manage = {
         if (requesting_number || results.length > 100) {
             table.innerHTML += `<tr><td colspan="7">Number of results: ${results.length}</td></tr>`
         } else {
-            const tbody = document.createElement("tbody")
+            const fragment = document.createDocumentFragment()
             results.forEach((advisor, i) => {
                 advisor.prepend(createElement("td", { html: `${i + 1}.` }))
-                tbody.appendChild(advisor)
+                fragment.appendChild(advisor)
             })
+            
+            const tbody = document.createElement("tbody")
+            tbody.appendChild(fragment)
             table.appendChild(tbody)
         }
         this.updateDropdowns()
@@ -1366,7 +1468,11 @@ const Manage = {
             tags: [],
             all: true
         },
+        debouncedUpdateFilters: null, // Will be initialized in init()
+        
         async init() {
+            // Initialize debounced filter function
+            this.debouncedUpdateFilters = debounce(() => this.updateReviewFilters(), 150)
             
             this.setupEventListeners()
             this.sortReviewCards()
@@ -1389,7 +1495,7 @@ const Manage = {
                         this.activeFilters = { officers: [], tags: [], all: true }
                         table.querySelectorAll(".active").forEach(row => row.classList.remove("active"))
                         clicked_row.classList.add("active")
-                        this.updateReviewFilters()
+                        this.debouncedUpdateFilters()
                         return
                     }
                     
@@ -1421,7 +1527,7 @@ const Manage = {
                         const allRowInTable = table.querySelector(".all tr")
                         if (allRowInTable) allRowInTable.classList.add("active")
                     }
-                    this.updateReviewFilters()
+                    this.debouncedUpdateFilters()
                 }
                 if(e.target.matches(".advisor-card .assign-to-me i")){
                     const card = e.target.closest(".advisor-card")
@@ -1449,7 +1555,7 @@ const Manage = {
                     card.querySelector(".assign-to-me").remove()
                     card.querySelector(".cardOfficer").outerHTML = `<div class="cardOfficer" data-officer_id="${my_info._id}">${my_info.display_name}</div>`
                     await this.setupRevisionCount()
-                    this.updateReviewFilters()
+                    this.debouncedUpdateFilters()
                 }
 
             })
@@ -1471,10 +1577,11 @@ const Manage = {
            const all_officers = this.activeFilters.officers.length === 0 || this.activeFilters.all
            if (cards.length === 0) return
 
+           // Use CSS classes instead of inline styles for better performance
            cards.forEach((card) => {
                const card_officer = card.querySelector(".cardOfficer")?.textContent
                const matches_officer_filter = (card_officer && this.activeFilters.officers.includes(card_officer)) || all_officers
-               card.style.display = matches_officer_filter ? "block" : "none"
+               card.classList.toggle("card-hidden", !matches_officer_filter)
            })
         },
 
@@ -1483,7 +1590,7 @@ const Manage = {
             // Get cards that passed officer filtering, or all cards if no officer filter is active
             const cards_after_officer_filter = this.activeFilters.officers.length === 0 || this.activeFilters.all 
                 ? [...document.querySelectorAll(".advisor-card")]  // All cards if no officer filter
-                : [...document.querySelectorAll(".advisor-card")].filter(card => card.style.display !== "none") // Cards that passed officer filter
+                : [...document.querySelectorAll(".advisor-card")].filter(card => !card.classList.contains("card-hidden")) // Cards that passed officer filter
             
             const tags_with_visible_cards = new Set()
 
@@ -1517,8 +1624,8 @@ const Manage = {
             // Filter cards based on tag selection (AND logic) and collect tags from visible cards
             cards_after_officer_filter.forEach(card => {
                 if (this.activeFilters.tags.length === 0) {
-                    // No tag filters active - show all cards that passed officer filter
-                    card.style.display = "block"
+                    // No tag filters active - ensure card is visible
+                    card.classList.remove("card-hidden")
                     // Add all tags from this visible card
                     const card_tags = [...card.querySelectorAll('.card-tags .tag')].map(tag => tag.textContent)
                     card_tags.forEach(tag => tags_with_visible_cards.add(tag))
@@ -1526,7 +1633,7 @@ const Manage = {
                     // Check if card has ALL active tag filters
                     const card_tags = [...card.querySelectorAll('.card-tags .tag')].map(tag => tag.textContent)
                     const has_all_tags = this.activeFilters.tags.every(activeTag => card_tags.includes(activeTag))
-                    card.style.display = has_all_tags ? "block" : "none"
+                    card.classList.toggle("card-hidden", !has_all_tags)
                     
                     // If card will be visible, add its tags to the available set
                     if (has_all_tags) {
@@ -1561,7 +1668,7 @@ const Manage = {
         },
         updateFilterCounts(){
             const tag_rows = document.querySelectorAll(".review-table .tags tr")
-            const visible_cards = [...document.querySelectorAll(".advisor-card")].filter(card => card.style.display !== "none")
+            const visible_cards = [...document.querySelectorAll(".advisor-card")].filter(card => !card.classList.contains("card-hidden"))
 
             // Update the site and pending counts in tag_rows based off visible_cards tags
             tag_rows.forEach(row => {
@@ -1614,10 +1721,11 @@ const Manage = {
                 return time_a < time_b ? 1 : time_a > time_b ? -1 : 0
             })
 
-            // Re-append sorted cards to the container
             const container = document.querySelector(".providence-pending--list")
             if (container) {
-                sorted_cards.forEach((card) => container.appendChild(card))
+                const fragment = document.createDocumentFragment()
+                sorted_cards.forEach((card) => fragment.appendChild(card))
+                container.appendChild(fragment)
             }
         },
 
@@ -1703,50 +1811,87 @@ const Manage = {
         },
         updateReviewTable() {
             const review_cards = document.querySelectorAll(".advisor-card")
-            const review_filter = createElement("div", {
-                class: "review-filter",
-                html: `
-                <h2>Pending Reviews</h2>
-                <table class="review-table">
-                 <thead><tr><th>Filter</th><th>Sites</th><th>Pending</th></tr></thead><thead>
-                 <tbody class="all">
-                    <tr class="active"><td>All in Review</td><td>${this.reviewCount.all.sites}</td><td>${this.reviewCount.all.pending}</td></tr>
-                 </tbody>
-                
-                <thead><tr><th>Filter by Officer</th></tr></thead>
-                <tbody class="officers">
-                ${Object.entries(this.reviewCount.officers)
-                    .map(([officer, data]) => {
-                        return `<tr><td>${officer}</td><td>${data.sites}</td><td>${data.pending}</td></tr>`
-                    })
-                    .join("")}
-                </tbody>
-                <thead><tr><th>Filter by Tags <span class="expand-toggle" title="Show/Hide Other Tags">▼</span></th></tr></thead>
-                <tbody class="tags important-tags">
-                ${Object.entries(this.reviewCount.tags)
-                    .filter(([tag, data]) => {
-                        return this.importantTagList.some((importantTag) => tag.indexOf(importantTag) > -1)
-                    })
-                    .sort(([tagA], [tagB]) => tagA.localeCompare(tagB))
-                    .map(([tag, data]) => {
-                        return `<tr><td>${tag}</td><td class="sites">#</td><td class="pending">#</td></tr>`
-                    })
-                    .join("")}
-                </tbody>
-                <tbody class="tags other-tags" style="display:none">
-                ${Object.entries(this.reviewCount.tags)
-                    .filter(([tag, data]) => {
-                        return !this.importantTagList.some((importantTag) => tag.indexOf(importantTag) > -1)
-                    })
-                    .sort(([tagA], [tagB]) => tagA.localeCompare(tagB))
-                    .map(([tag, data]) => {
-                        return `<tr><td>${tag}</td><td class="sites">#</td><td class="pending">#</td></tr>`
-                    })
-                    .join("")}
-                </tbody>
-
-                </table>`,
+            
+            // Create the main container
+            const review_filter = createElement("div", { class: "review-filter" })
+            
+            // Create title
+            const title = createElement("h2", { html: "Pending Reviews" })
+            review_filter.appendChild(title)
+            
+            const table = createElement("table", { class: "review-table" })
+            
+            // Create table header
+            const thead = createElement("thead")
+            const headerRow = createElement("tr")
+            headerRow.innerHTML = `<th>Filter</th><th>Sites</th><th>Pending</th>`
+            thead.appendChild(headerRow)
+            table.appendChild(thead)
+            
+            // Create "All" section
+            const allTbody = createElement("tbody", { class: "all" })
+            const allRow = createElement("tr", { class: "active" })
+            allRow.innerHTML = `<td>All in Review</td><td>${this.reviewCount.all.sites}</td><td>${this.reviewCount.all.pending}</td>`
+            allTbody.appendChild(allRow)
+            table.appendChild(allTbody)
+            
+            // Create Officers section header
+            const officersHead = createElement("thead")
+            const officersHeaderRow = createElement("tr")
+            officersHeaderRow.innerHTML = `<th>Filter by Officer</th>`
+            officersHead.appendChild(officersHeaderRow)
+            table.appendChild(officersHead)
+            
+            const officersTbody = createElement("tbody", { class: "officers" })
+            const officersFragment = document.createDocumentFragment()
+            Object.entries(this.reviewCount.officers).forEach(([officer, data]) => {
+                const row = createElement("tr")
+                row.innerHTML = `<td>${officer}</td><td>${data.sites}</td><td>${data.pending}</td>`
+                officersFragment.appendChild(row)
             })
+            officersTbody.appendChild(officersFragment)
+            table.appendChild(officersTbody)
+            
+            // Create Tags section header
+            const tagsHead = createElement("thead")
+            const tagsHeaderRow = createElement("tr")
+            tagsHeaderRow.innerHTML = `<th>Filter by Tags <span class="expand-toggle" title="Show/Hide Other Tags">▼</span></th>`
+            tagsHead.appendChild(tagsHeaderRow)
+            table.appendChild(tagsHead)
+            
+            const importantTagsTbody = createElement("tbody", { class: "tags important-tags" })
+            const importantTagsFragment = document.createDocumentFragment()
+            Object.entries(this.reviewCount.tags)
+                .filter(([tag, data]) => {
+                    return this.importantTagList.some((importantTag) => tag.indexOf(importantTag) > -1)
+                })
+                .sort(([tagA], [tagB]) => tagA.localeCompare(tagB))
+                .forEach(([tag, data]) => {
+                    const row = createElement("tr")
+                    row.innerHTML = `<td>${tag}</td><td class="sites">#</td><td class="pending">#</td>`
+                    importantTagsFragment.appendChild(row)
+                })
+            importantTagsTbody.appendChild(importantTagsFragment)
+            table.appendChild(importantTagsTbody)
+            
+            const otherTagsTbody = createElement("tbody", { class: "tags other-tags", style: "display:none" })
+            const otherTagsFragment = document.createDocumentFragment()
+            Object.entries(this.reviewCount.tags)
+                .filter(([tag, data]) => {
+                    return !this.importantTagList.some((importantTag) => tag.indexOf(importantTag) > -1)
+                })
+                .sort(([tagA], [tagB]) => tagA.localeCompare(tagB))
+                .forEach(([tag, data]) => {
+                    const row = createElement("tr")
+                    row.innerHTML = `<td>${tag}</td><td class="sites">#</td><td class="pending">#</td>`
+                    otherTagsFragment.appendChild(row)
+                })
+            otherTagsTbody.appendChild(otherTagsFragment)
+            table.appendChild(otherTagsTbody)
+            
+            // Append table to container
+            review_filter.appendChild(table)
+            
             document.querySelector(".providence-pending--title").innerHTML = review_filter.outerHTML
             
             // Setup expand toggle with simplified logic

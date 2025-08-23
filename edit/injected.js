@@ -255,7 +255,7 @@ const Editor = {
 
         for (const page_id of pages_array) {
             if (!this.isEditing) break
-            const page_settings = getItemById("page-settings", page_id)
+            const page_settings = document.querySelector(`.page-settings[data-id="${page_id}"]`)
             if (!page_settings) continue
 
             page_settings.click()
@@ -283,7 +283,7 @@ const Editor = {
      * @param {string} member_id - The ID of the member element.
      */
     async handleMemberSection(member_id) {
-        const manage_member = getItemById("manage-members", member_id)
+        const manage_member = document.querySelector(`.manage-members[data-id="${member_id}"]`)
         if (!manage_member) return
 
         manage_member.click()
@@ -302,7 +302,7 @@ const Editor = {
      * @param {string} member_id - The ID of the member element.
      */
     async editMember(member_id) {
-        const member = getItemById("member", member_id)
+        const member = document.querySelector(`.member[data-id="${member_id}"]`)
         if (!member) return
 
         member.click()
@@ -330,7 +330,7 @@ const Editor = {
      * @param {string} post_id - The ID of the post element.
      */
     async handlePostSection(post_id) {
-        const manage_posts = getItemById("manage-posts", post_id)
+        const manage_posts = document.querySelector(`.manage-posts[data-id="${post_id}"]`)
         if (!manage_posts) return
 
         manage_posts.click()
@@ -349,7 +349,7 @@ const Editor = {
      * @param {string} post_id - The ID of the post element.
      */
     async editSinglePost(post_id) {
-        const post = getItemById("post", post_id)
+        const post = document.querySelector(`.post[data-id="${post_id}"]`)
         if (!post) return
 
         post.click()
@@ -448,9 +448,14 @@ const Chat = {
         const saved_msg = localStorage.getItem("savedChatMsg")
         const chat_message = document.querySelector("#chatMessage")
 
-        if (saved_msg && saved_msg !== "null" && saved_msg !== "undefined") {
-            chat_message.querySelector(".fr-wrapper").classList.remove("show-placeholder")
-            chat_message.querySelector(".fr-element").innerHTML = saved_msg
+        if (saved_msg && saved_msg !== "null" && saved_msg !== "undefined" && chat_message) {
+            const fr_wrapper = chat_message.querySelector(".fr-wrapper")
+            const fr_element = chat_message.querySelector(".fr-element")
+            
+            if (fr_wrapper && fr_element) {
+                fr_wrapper.classList.remove("show-placeholder")
+                fr_element.innerHTML = saved_msg
+            }
         }
     },
 
@@ -459,15 +464,33 @@ const Chat = {
      */
     setupChatEventListeners() {
         const chat_message = document.querySelector("#chatMessage")
+        const close_chat = document.querySelector(".close-chat")
+        const send_message = document.querySelector(".chat-tools .send-message")
 
-        document.querySelector(".close-chat").addEventListener("click", () => {
-            localStorage.setItem("savedChatMsg", chat_message.querySelector(".fr-element").innerHTML)
-        })
+        if (close_chat && chat_message) {
+            close_chat.addEventListener("click", () => {
+                const fr_element = chat_message.querySelector(".fr-element")
+                if (fr_element) {
+                    const message_content = fr_element.innerHTML
+                    // Don't save empty messages
+                    if (message_content && message_content !== "<p><br></p>") {
+                        localStorage.setItem("savedChatMsg", message_content)
+                    } else {
+                        localStorage.setItem("savedChatMsg", null)
+                    }
+                }
+            })
+        }
 
-        document.querySelector(".chat-tools .send-message").addEventListener("click", () => {
-            localStorage.setItem("savedChatMsg", null)
-            document.getElementById("loadLastMessage").style.display = "none"
-        })
+        if (send_message) {
+            send_message.addEventListener("click", () => {
+                localStorage.setItem("savedChatMsg", null)
+                const loadLastMessage = document.getElementById("loadLastMessage")
+                if (loadLastMessage) {
+                    loadLastMessage.style.display = "none"
+                }
+            })
+        }
 
         document.addEventListener(
                 "change",

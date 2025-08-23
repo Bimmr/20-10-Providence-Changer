@@ -174,13 +174,3 @@ function waitForStyleAsync(shouldBe, element, property, value) {
     check()
   })
 }
-
-/**
- * Get element by ID within a specific class
- * @param {string} className - Class name to search within
- * @param {string} id - ID to search for
- * @returns {HTMLElement|null} - Found element or null
- */
-function getItemById(className, id) {
-  return document.querySelector(`.${className}[data-id="${id}"]`)
-}
