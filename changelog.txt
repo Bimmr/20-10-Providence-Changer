@@ -1,4 +1,4 @@
-1.8.6
+2.0.0
 - Massive code cleanup
 1.8.5
 - Reworked "Add Note to All" button
