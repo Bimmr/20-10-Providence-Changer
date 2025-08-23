@@ -986,8 +986,6 @@ const Manage = {
     },
     // ======================= Advisor List ==========================
     AdvisorList: {
-        lastRowCount: 0, // Track changes to avoid unnecessary work
-        
         init() {
             this.setupEventListeners()
             this.setupSearchBar()
@@ -1002,13 +1000,9 @@ const Manage = {
                     if (document.getElementById("showAllAdvisors")?.classList.contains("active"))
                         Manage.cache.providenceOverviewList?.classList.add("loadedAll")
 
-                    const currentRowCount = Manage.cache.advisorsList?.querySelectorAll("tbody tr").length || 0
-                    if (this.lastRowCount !== currentRowCount) {
-                        this.updateDropdowns()
-                        this.updateOfficerList()
-                        this.checkForUnPublished()
-                        this.lastRowCount = currentRowCount
-                    }
+                    this.updateDropdowns()
+                    this.updateOfficerList()
+                    this.checkForUnPublished()
                 }, 300)
             )
         },
