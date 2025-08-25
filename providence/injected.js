@@ -2042,7 +2042,7 @@ const Advisor = {
 
         if(!document.querySelector(".no-changes")){
             this.setupAlwaysShowReviewSubmission()
-            this.addPendingCount()
+            this.updateChangeCounts()
             if(isSiteForwardUser())
                 this.addSiteForwardControls()
             
@@ -2058,7 +2058,12 @@ const Advisor = {
     setupEventListeners(){
         document.addEventListener("click", async (e) => {
 
+            if(e.target.matches(".revision-note")){
+                e.preventDefault()
+            }
+
             if(e.target.matches(".btn-clear-state")){
+                e.preventDefault()
                 const review_item = e.target.closest(".review-item")
                 const review_id = review_item.querySelector("[data-id]").getAttribute("data-id")
                 const clear_notes = e.ctrlKey || e.metaKey
@@ -2082,6 +2087,7 @@ const Advisor = {
                 e.target.textContent = "Clear State"
                 e.target.classList.remove("thinking")
                 setTimeout(() => this.addReviewItemNotesToPage(review_item.getAttribute("data-id")), 100)
+                this.updateChangeCounts()
             }
       
             if(e.target.matches("#revision-note-overlay .save")){
@@ -2119,6 +2125,11 @@ const Advisor = {
 
         })
     },
+    updateChangeCounts(){
+        this.addPendingCount()
+        document.querySelector(".review-count-items .approved-count span").textContent = $(".review-item.approved-status").length
+        document.querySelector(".review-count-items .rejected-count span").textContent = $(".review-item.rejected-status").length
+    },
     setupAlwaysShowReviewSubmission(){
         document.querySelector(".review-submission").classList.add("showing")
     },
@@ -2137,11 +2148,12 @@ const Advisor = {
     },
     addPendingCount(){
         document.querySelector(".pending-count")?.remove() // Remove if already there
-        const pending_count = createElement('div',{
+        const pending_count = $(".review-item:not(.approved-status):not(.rejected-status)").length
+        const pending_count_text = createElement('div',{
             class: "approved-count pending-count",
-            html: `<span class="active">${$(".review-item:not(.approved-status):not(.rejected-status)").length}</span> Pending Changes`
+            html: `<span class="${pending_count > 0 ? "active" : ""}">${pending_count}</span> Pending Changes`
         })
-        document.querySelector(".approved-count").insertAdjacentElement("afterend", pending_count)
+        document.querySelector(".approved-count").insertAdjacentElement("afterend", pending_count_text)
     },
     updateViewButtonText(){
         const review_items = document.querySelectorAll(".review-item")
