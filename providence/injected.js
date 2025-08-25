@@ -2256,7 +2256,6 @@ const Advisor = {
         review_item.querySelector(`.review-item-preview`)?.remove()
 
         let { status, officer, date, note, rejection } = await this.getReviewInfoFromRevisionsPage(review_id)
-        console.log(status)
         if (!status || status == "")
             ({ status, officer, date, note, rejection } = await this.getReviewInfoFromAPI(review_id))
 
