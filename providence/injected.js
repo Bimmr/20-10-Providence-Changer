@@ -74,6 +74,11 @@ function isSiteForwardUser(){
     return isSiteForward(window.loggedInUser)
 }
 
+// Get the current officer info through the loggedInUser
+function getCurrentOfficerInfo(){
+    return officer_list.find(officer => officer.user_id === window.loggedInUser._id)
+}
+
 // Function to initialize the page
 async function ready() {
 
@@ -1530,7 +1535,7 @@ const Manage = {
                 if(e.target.matches(".advisor-card .assign-to-me i")){
                     const card = e.target.closest(".advisor-card")
                     const advisor_id = card.getAttribute("data-advisor_id")
-                    const my_info = officer_list.find(officer => officer._id == window.loggedInUser)
+                    const my_info = getCurrentOfficerInfo()
 
                     e.target.classList.add("thinking")
                     
@@ -1986,7 +1991,7 @@ const Manage = {
                 // Add card extras section
                 if (!card.querySelector(".card-extras")) {
                     const officer_name = getOfficerName(advisor_info.officer_id)
-                    const my_officer_info = officer_list.find(officer => officer.display_name === document.querySelector(".providence-title small").textContent)
+                    const my_officer_info = getCurrentOfficerInfo()
                     const can_assign_to_me = isOnTeam(advisor_info.officer_id, my_officer_info._id)
 
                     const card_content = card.querySelector(".card-content")
