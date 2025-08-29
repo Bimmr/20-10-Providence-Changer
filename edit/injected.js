@@ -39,6 +39,7 @@ async function ready() {
     NightMode.init()
     PageTabs.init()
     Editor.init()
+    BuildURL.init()
     Chat.init()
     Archives.init()
 }
@@ -629,5 +630,30 @@ const Archives = {
         item.querySelectorAll("span.small").forEach((span) => {
             span.style.fontSize = "12px"
         })
+    }
+}
+const BuildURL = {
+    /**
+     * Initialize the BuildURL module.
+     */
+    init() {
+        this.updateCopyBuildURL()
+        this.setupEventListeners()
     },
+
+    /**
+     * Build a URL with the given parameters.
+     * @param {string} base - The base URL.
+     * @param {Object} params - The query parameters.
+     * @returns {string} - The constructed URL.
+     */
+    updateCopyBuildURL() {
+        const btn = document.querySelector(".copy-preview-url")
+        const preview_url = document.querySelector("#previewIframe").src
+        console.log(preview_url)
+        btn.setAttribute("data-clipboard-text", preview_url)
+    },
+    setupEventListeners(){
+        document.querySelector("#previewIframe").addEventListener("load", () => this.updateCopyBuildURL())
+    }
 }
