@@ -650,7 +650,6 @@ const BuildURL = {
     updateCopyBuildURL() {
         const btn = document.querySelector(".copy-preview-url")
         const preview_url = document.querySelector("#previewIframe").src
-        console.log(preview_url)
         btn.setAttribute("data-clipboard-text", preview_url)
     },
     setupEventListeners(){
