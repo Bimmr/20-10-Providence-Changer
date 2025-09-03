@@ -2246,7 +2246,7 @@ const Advisor = {
                 const note = prompt("Add your note")
                 if (!note) return
 
-                add_note_to_all_btn.textContent = "Adding Note..."
+                add_note_to_all_btn.textContent = "Adding Notes..."
                 add_note_to_all_btn.classList.add("thinking")
                 const revisionIds = [...document.querySelectorAll(".revision-note")].map(rev => 
                     rev.getAttribute("data-id")
