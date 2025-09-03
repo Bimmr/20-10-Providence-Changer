@@ -462,7 +462,7 @@ const SearchBar = {
             style: Object.entries(this.config.customStyles).map(([k,v]) => `${k}: ${v}`).join('; '),
             html: `
                 <div class="text-control" aria-required="true" style="margin: 10px 0 0 0; flex-basis: 80%; padding-right: 15px">
-                    <input required type="text" 
+                    <input required type="search" 
                            id="${this.config.inputId}" 
                            name="${this.config.inputId}" 
                            class="form-control" 
@@ -506,6 +506,13 @@ const SearchBar = {
                 button.click()
             }, this.config.debounceDelay)
         )
+
+        // Reset search table when search input is cleared (X button clicked)
+        input.addEventListener("search", () => {
+            if (input.value === "") {
+                this.resetSearchTable()
+            }
+        })
 
         // Search on button click
         button.addEventListener("click", () => this.handleSearch())
