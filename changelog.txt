@@ -1,5 +1,6 @@
 2.0.1
 - Updates review counts when state cleared
+- Added find in list to card extras
 2.0.0
 - Massive code cleanup
 1.8.5

@@ -1560,6 +1560,36 @@ const Manage = {
                     await this.setupRevisionCount()
                     this.debouncedUpdateFilters()
                 }
+                if(e.target.matches(".advisor-card .find-in-list i")){
+                    const card = e.target.closest(".advisor-card")
+                    const advisor_id = card.getAttribute("data-advisor_id")
+                    const advisor_info = getAdvisorInfo(advisor_id)
+                    const search_term = advisor_info?.display_name || advisor_id
+
+                    // Set the search input value first
+                    const search_input = document.querySelector(`#${SearchBar.config?.inputId}`)
+                    if (search_input) {
+                        search_input.value = search_term
+                    }
+
+                    const advisor_list = document.querySelector("#advisorsList")
+                    const advisor_row = advisor_list.querySelector(`[data-advisor_id="${advisor_id}"]`)
+                    
+                    if (advisor_row) {
+                        // Row exists in current table - reset search to show all, then highlight
+                        SearchBar.resetSearchTable()
+                        setTimeout(() => {
+                            advisor_row.scrollIntoView({ behavior: "smooth", block: "center" })
+                            advisor_row.classList.add("highlight")
+                            setTimeout(() => {
+                                advisor_row.classList.remove("highlight")
+                            }, 3000)
+                        }, 100)
+                    } else {
+                        // Row not in current table - perform search
+                        await Manage.AdvisorList.performAdvisorSearch(search_term)
+                    }
+                }
 
             })
         },
@@ -2000,7 +2030,8 @@ const Manage = {
                         html: `
                         <p class="cardOfficer" data-officer_id="${advisor_info.officer_id}" style="margin: 0">${officer_name}</p>
                         <p class="cardImportantTags" style="line-height: 1; margin: 0">${important_tags}</p>
-                        ${can_assign_to_me ? `<a class="assign-to-me" href="#" title="Assign to me"><i class="fa fa-user-plus" aria-hidden="true"></i></a>` : ``}`,
+                        <a class="card-helper find-in-list" href="#" title="Find in Advisor List"><i class="fa fa-search" aria-hidden="true"></i></a>
+                        ${can_assign_to_me ? `<a class="card-helper assign-to-me" href="#" title="Assign to me"><i class="fa fa-user-plus" aria-hidden="true"></i></a>` : ``}`,
                     })
                     card_content?.appendChild(card_extras)
                 }

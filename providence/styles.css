@@ -3,6 +3,7 @@
 .btn.thinking, a.thinking, button.thinking {animation: pulse 1.5s infinite;}
 @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
 @keyframes spinning { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+@keyframes highlight-animation { 0% { filter: invert(0) } 50% { filter: invert(0.25) } 100% { filter: invert(0) } }
 
 .advisor-card.card-hidden { display: none !important; }
 
@@ -67,6 +68,7 @@ body.providence .search-bar table.table td{vertical-align:middle;}
 .providence .table .show-email {font-size: 0.9em}
 .providence .table span.advisor-tags {font-size: 0.75em}
 .providence .table .chip--approved{ background: #bdffe9 !important}
+.providence .table .highlight{animation: highlight-animation 1s ease-in-out infinite;}
 
 /* Providence list quick links */
 .providence #advisor-details .advisor-quick-links > a{margin: 5px 15px;}
@@ -90,8 +92,11 @@ body.providence .search-bar table.table td{vertical-align:middle;}
 
 /* Cards */
 .providence-pending--list .card-extras{font-size: 14px;padding: 15px;margin-top: 15px;background-color: #f1f1f1; border-radius: 10px;position: relative;}
-.providence-pending--list .card-extras .assign-to-me{position: absolute; top: 5px; right: 5px; font-size: .7em; color: #737373;}
-.providence-pending--list .card-extras .assign-to-me:hover{color: #08aeea;}
+.providence-pending--list .advisor-card .card-extras .card-helper{position: absolute; top: 5px; font-size: .7em; color: #737373; opacity: 1; transition: opacity 0.3s;}
+.providence-pending--list .advisor-card:not(:hover) .card-extras .card-helper{opacity: 0}
+.providence-pending--list .card-extras .card-helper:hover{color: #08aeea;}
+.providence-pending--list .card-extras .assign-to-me{ right: 5px;}
+.providence-pending--list .card-extras .find-in-list{ left: 5px;}
 .providence-pending--list .card-extras p{color:#2d2d2d}
 .providence-pending--list .card-changes{font-size: 12px;color: #737373;}
 .providence-pending--list .card-extras p.cardImportantTags{font-size: 12px; color: #08aeea;}
