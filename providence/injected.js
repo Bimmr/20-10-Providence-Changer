@@ -76,7 +76,7 @@ function isSiteForwardUser(){
 
 // Get the current officer info through the loggedInUser
 function getCurrentOfficerInfo(){
-    return officer_list.find(officer => officer.user_id === window.loggedInUser._id)
+    return officer_list.find(officer => officer._id === window.loggedInUser)
 }
 
 // Function to initialize the page
