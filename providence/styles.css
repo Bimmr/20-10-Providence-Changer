@@ -154,13 +154,14 @@ body.providence #compare-diff{top: 160px !important; left: 280px !important}
 #review-changes .review-item .review-details{font-size: 0.8em;font-weight: bold; flex-basis: 100%;}
 #review-changes .review-item.approved-status .review-details{color:#007750 !important;}
 #review-changes .review-item.rejected-status .review-details{color:#c0392b !important;}
-#review-changes .review-item :is(.review-note, .review-rejection){flex-grow: 1;}
+#review-changes .review-item :is(.review-note, .review-rejection){flex-grow: 1; flex-basis: 40%;}
 #review-changes :is(.review-note, .review-rejection) > h3{margin: 10px 0;font-weight: bold; text-decoration: underline;}
 #review-changes .review-item .review-note > h3{color:#007750 !important;}
 #review-changes .review-item .review-rejection > h3{color:#c0392b !important;}
 #review-changes :is(.review-note, .review-rejection) .review-html{font-size: 0.8em;}
 #review-changes .review-item.approved-status .review-rejection{display: none;}
-#review-changes .review-item:not(.approved-status) .review-note:nth-child(3){padding-left: 2em;border-left:1px solid #4c4c4c; margin-left: 2em;}
+#review-changes .review-item:not(.approved-status) .review-note:is(:nth-child(2), :nth-child(3)){padding-left: 2em; border-left: 1px solid #4c4c4c;}
+#review-changes .review-item:not(.approved-status) .review-rejection:has(~.review-note){margin-right: 2em;}
 
 /* Language toggle in review */
 #review-item .change-item div[data-lang]{display: block !important; position: relative;}
