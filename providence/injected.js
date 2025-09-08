@@ -2125,7 +2125,7 @@ const Advisor = {
                     body: JSON.stringify(payload)
                 })
                 review_item.classList.remove("approved-status", "rejected-status")
-                review_item.querySelector(".active").classList.remove("active")
+                review_item.querySelector(".active")?.classList.remove("active")
                 review_item.querySelector(".review-item__status").innerHTML = `<span class="review-item-status pending-status">Pending Review</span>`
                 e.target.textContent = "Clear State"
                 e.target.classList.remove("thinking")
