@@ -1342,8 +1342,8 @@ const Manage = {
             table.innerHTML += `<tr><td colspan="7">No results found</td></tr>`
             return
         }
-        
-        if (requesting_number || results.length > 100) {
+
+        if (requesting_number || (results.length > 100 && !requesting_all)) {
             table.innerHTML += `<tr><td colspan="7">Number of results: ${results.length}</td></tr>`
         } else {
             const fragment = document.createDocumentFragment()
@@ -3158,7 +3158,7 @@ const Content = {
             return
         }
         
-        if (requesting_number || results.length > 100) {
+        if (requesting_number || (results.length > 100 && !requesting_all)) {
             table.innerHTML += `<tr><td colspan="5">Number of results: ${results.length}</td></tr>`
         } else {
             const tbody = document.createElement("tbody")
