@@ -516,6 +516,10 @@ const SearchBar = {
 
         // Search on button click
         button.addEventListener("click", () => this.handleSearch())
+        document.querySelector(".search-help").addEventListener("click", () =>{
+            input.value = "?"
+            button.click()
+        })
     },
 
     /**
@@ -1291,15 +1295,15 @@ const Manage = {
         SearchBar.hideTable()
 
         if (search_term === "?") {
-            table.innerHTML = `<tr><td><h1>Searching can be done by Name, Email, Tags, Status, or Officer.</h1> 
-                <table style="width: 100%">
-                    <tr><th>Expressions</th><th>Results</th><th>Example</th></tr> 
-                    <tr><td>|</td><td>OR</td><td>Published|Submitted</td></tr> 
-                    <tr><td>,</td><td>AND</td><td>Published,SiteForward</td></tr> 
+            table.innerHTML = `
+                <tr><th colspan="3"><h1>Searching can be done by Name, Email, Tags, Status, or Officer.</h1></th></tr>
+                <tr><th>Expressions</th><th>Results</th><th>Example</th></tr> 
+                    <tr><td>|</td><td>OR</td><td>Published | Submitted</td></tr> 
+                    <tr><td>,</td><td>AND</td><td>Published, SiteForward</td></tr> 
                     <tr><td>!</td><td>NOT</td><td>!Published</td></tr>
-                </table>
-                <h1>There are some extra searching as well</h1>
-                <table style="width: 100%">
+                </tbody><br>
+                <tbody>
+                <tr><th colspan="3"><h1>There are some extra searching as well</h1></th></tr>
                     <tr><th>Search</th><th>Results</th><th>Example</th></tr> 
                     <tr><td>published</td><td>Shows all published sites</td><td></td></tr> 
                     <tr><td>submitted</td><td>Shows all submitted sites</td><td></td></tr> 
@@ -1321,7 +1325,7 @@ const Manage = {
                     <tr><td colspan="3"></td></tr> 
                     <tr><td>#</td><td>Shows the number of sites that match</td><td>#Published</td></tr> 
                     <tr><td>*</td><td>Shows all sites that match regardless of number</td><td>*Published</td></tr>
-                </table></td></tr>`
+                `
             return
         }
 

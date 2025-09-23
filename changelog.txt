@@ -1,6 +1,8 @@
 2.0.2
 - Bug fixes for review item states
 - Fixed bug with searching for all items in the searchbar
+- Help icon for advisor search will display help if clicked
+- Help text for advisor search table result was updated
 2.0.1
 - Updates review counts when state cleared
 - Added find in list to card extras
