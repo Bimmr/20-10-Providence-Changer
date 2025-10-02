@@ -3073,7 +3073,7 @@ const Content = {
      */
     adjustItemsPerPage() {
         setTimeout(() => {
-            const select = document.querySelector("#content-list_length select")
+            const select = document.querySelector("#content-list_length select, #custom-content-list_length select")
             ;["200", "500", "999999"].forEach((val) => {
                 select.appendChild(createElement("option", { value: val, html: val === "999999" ? "All" : val }))
             })

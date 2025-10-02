@@ -1,5 +1,6 @@
 2.0.3
 - Refactor content analysis and update logic in content identifier
+- Enhance content list selector to include custom content options
 2.0.2
 - Bug fixes for review item states
 - Fixed bug with searching for all items in the searchbar
