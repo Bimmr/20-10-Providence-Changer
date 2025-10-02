@@ -2719,14 +2719,18 @@ const Review = {
             let html = ""
 
             if (edits.title && edits.title.length > 0) {
-                html += '<h2 style="font-size: 1.25em;border-bottom: 1px solid #ccc;">Title Differences</h2>'
+                html += '<h2>📝 Title Differences</h2>'
                 html += edits.title.map(edit => this.createDifferenceBlock(edit)).join("")
             }
 
             if (edits.content && edits.content.length > 0) {
-                if (html) html += "<br><br>"
-                html += '<h2 style="font-size: 1.25em;border-bottom: 1px solid #ccc;">Content Differences</h2>'
+                if (html) html += '<div style="margin: 2rem 0 1rem 0;"></div>'
+                html += '<h2>📄 Content Differences</h2>'
                 html += edits.content.map(edit => this.createDifferenceBlock(edit)).join("")
+            }
+
+            if (html === "") {
+                html = '<div style="text-align: center; padding: 2rem; color: #666;">No differences found</div>'
             }
 
             return html
@@ -2738,17 +2742,19 @@ const Review = {
         createDifferenceBlock(edit) {
             const escapeAndHighlight = (text) => {
                 return this.escapeHTML(text)
-                    .replace(/\[\[/g, "<strong>[")
-                    .replace(/\]\]/g, "]</strong>")
+                    .replace(/\[\[/g, '<span class="diff-highlight">')
+                    .replace(/\]\]/g, '</span>')
             }
 
             return `
-                <div style="display: flex; justify-content: space-between; gap: 2rem; border-bottom: 1px dashed #ccc;">
-                    <div style="flex: 1;">
-                        <p><span style="font-style: italic">Vendor:</span><br>${escapeAndHighlight(edit.vendor)}</p>
+                <div class="diff-block">
+                    <div class="diff-column vendor">
+                        <div class="diff-label">Original</div>
+                        <div class="diff-text">${escapeAndHighlight(edit.vendor)}</div>
                     </div>
-                    <div style="flex: 1;">
-                        <p><span style="font-style: italic">Advisor:</span><br>${escapeAndHighlight(edit.advisor)}</p>
+                    <div class="diff-column advisor">
+                        <div class="diff-label">Modified</div>
+                        <div class="diff-text">${escapeAndHighlight(edit.advisor)}</div>
                     </div>
                 </div>`
         },
@@ -2759,25 +2765,43 @@ const Review = {
         showDifferencesDialog(differences, trigger) {
             const dialog = createElement("dialog", {
                 id: "differences-dialog",
-                html: `<div>${differences}</div>`
+                html: `
+                    <div class="diff-dialog-header">
+                        <h3>Content Differences</h3>
+                        <button class="diff-dialog-close" title="Close">&times;</button>
+                    </div>
+                    <div class="diff-dialog-content">${differences}</div>
+                `
             })
 
             document.body.appendChild(dialog)
-
-            // Position near the button
-            const rect = trigger.getBoundingClientRect()
-            dialog.style.cssText = `top: ${rect.bottom + 5}px;`
-
             dialog.show()
 
-            // Setup click outside to close
+            // Setup close handlers
+            const closeBtn = dialog.querySelector(".diff-dialog-close")
+            const handleClose = () => {
+                dialog.close()
+                dialog.remove()
+                document.removeEventListener("click", handleClickOutside)
+                document.removeEventListener("keydown", handleEscape)
+            }
+
+            closeBtn.addEventListener("click", handleClose)
+
             const handleClickOutside = (e) => {
                 if (!dialog.contains(e.target)) {
-                    dialog.close()
-                    dialog.remove()
-                    document.removeEventListener("click", handleClickOutside)
+                    handleClose()
                 }
             }
+
+            // Setup escape key handler
+            const handleEscape = (e) => {
+                if (e.key === "Escape") {
+                    handleClose()
+                }
+            }
+            
+            document.addEventListener("keydown", handleEscape)
 
             setTimeout(() => {
                 document.addEventListener("click", handleClickOutside)

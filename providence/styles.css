@@ -143,7 +143,6 @@ body.providence .review-submission .approved-count.pending-count span.active {co
 /* Content source finder */
 #review-item .floating-review-item:not(:last-of-type) { border-right: 1px solid #e7e7e7;}
 #review-item .floating-review-item .fa-spinner{animation: spinning 2s infinite linear;}
-#differences-dialog{position: fixed; left: calc(50% + 140px); transform: translateX(-50%); padding: 1rem; border: 2px groove #2d2d2d1f; border-radius: 6px; box-shadow: 0px -3px 40px 6px rgba(24,99,99,0.13); background: white; z-index: 1000; max-width: 90%; min-width: 75%;}
 
 /* Highlight Difference Helper */
 body.providence #compare-diff{top: 160px !important; left: 280px !important}
@@ -316,3 +315,21 @@ body.providence.nightMode #review-item .floating-review-item-wrapper {background
 body.providence.nightMode #review-item .floating-review-item-wrapper {border-color: #4c4c4c}
 body.providence.nightMode #review-item .floating-review-item:not(:last-of-type) {border-color: #4c4c4c}
 
+/* ============ Differences Dialog ============ */
+#differences-dialog { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90vw; max-width: 1200px; max-height: 80vh; background: white; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); padding: 0; z-index: 1000; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+#differences-dialog::backdrop { background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(2px); }
+#differences-dialog .diff-dialog-header { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.5rem; border-bottom: 1px solid #eee; background: #f8f9fa; border-radius: 8px 8px 0 0; }
+#differences-dialog .diff-dialog-header h3 { margin: 0; font-size: 1.1em; font-weight: 600; color: #333; }
+#differences-dialog .diff-dialog-close { background: none; border: none; cursor: pointer; color: #666; padding: 0; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: background-color 0.2s; }
+#differences-dialog .diff-dialog-close:hover { background-color: #e9ecef; color: #333; }
+#differences-dialog .diff-dialog-content { padding: 1.5rem; overflow-y: auto; max-height: calc(80vh - 80px); }
+#differences-dialog h2 { font-size: 1em; font-weight: 600; margin: 0 0 1rem 0; padding: 0.5rem 0; border-bottom: 2px solid #007bff; color: #333; }
+#differences-dialog .diff-block { display: flex; gap: 1rem; margin-bottom: 1.5rem; border: 1px solid #e9ecef; border-radius: 6px; overflow: hidden; }
+#differences-dialog .diff-column { flex: 1; padding: 1rem; }
+#differences-dialog .diff-column.vendor { background-color: #fff5f5; border-right: 1px solid #e9ecef; }
+#differences-dialog .diff-column.advisor { background-color: #f0f9ff; }
+#differences-dialog .diff-label { font-weight: 600; font-size: 0.875em; color: #666; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px; }
+#differences-dialog .diff-column.vendor .diff-label { color: #dc3545; }
+#differences-dialog .diff-column.advisor .diff-label { color: #0066cc; }
+#differences-dialog .diff-text { font-size: 0.9em; line-height: 1.5; margin: 0; word-wrap: break-word; }
+#differences-dialog .diff-highlight { background-color: #ffeb3b; padding: 2px 4px; border-radius: 3px; font-weight: 600; }
