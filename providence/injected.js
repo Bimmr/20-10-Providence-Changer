@@ -2651,55 +2651,50 @@ const Review = {
             this.checkIfContent(this.reviewId).then((result) => {
                 if (!result.is_post) return
 
-                const content_info = this.analyzeContentSource(result)
-                this.updateContentButton(content_info, result)
-                
-                if (content_info.was_edited) {
-                    this.setupDifferencesDialog(result.edits)
-                }
+                this.updateContentButton(result)
             })
-        },
-
-        /**
-         * Analyze the content source and editing status
-         */
-        analyzeContentSource(result) {
-            const from_siteforward = Object.keys(result.from_siteforward).length > 0
-            const from_vendor = Object.keys(result.from_vendor).length > 0
-            const was_edited = result.edits && (result.edits.title.length > 0 || result.edits.content.length > 0)
-
-            let source = ""
-            if (result.is_custom) source = "Custom"
-            else if (from_vendor) source = "Vendor Provided"
-            else if (from_siteforward) source = "SiteForward Provided"
-
-            return {
-                source,
-                was_edited,
-                display_text: was_edited ? `Edited ${source}` : source
-            }
         },
 
         /**
          * Update the content button with appropriate icon and tooltip
          */
-        updateContentButton(contentInfo, result) {
+        updateContentButton(result) {
+
             const button = document.querySelector(".open-differences")
             if (!button) return
-
-            const tooltip = `${contentInfo.display_text} Content${contentInfo.was_edited ? " (Click to see differences)" : ""}`
-            button.setAttribute("title", tooltip)
 
             const icon = button.querySelector("i")
             icon.classList.remove("fa-spinner")
 
-            if (result.is_custom) {
+            if(!result.matched_article){
                 icon.classList.add("fa-edit")
-            } else if (contentInfo.was_edited) {
-                icon.classList.add("fa-user-edit")
-            } else if (Object.keys(result.from_siteforward).length > 0 || Object.keys(result.from_vendor).length > 0) {
-                icon.classList.add("fa-copy")
+                button.setAttribute("title", "This is custom content")
+                return
             }
+
+            const matched_article = result.matched_article
+
+            // Determine tooltip based on match type
+            let tooltip = `${matched_article.source} Content`
+            icon.classList.add("fa-copy")
+
+            if(matched_article.id_matches)
+                tooltip = `Found matching ID in ${matched_article.source} content`
+            else if(matched_article.title_matches)
+                tooltip = `Found matching title in ${matched_article.source} content`
+            else if(matched_article.html_matches)
+                tooltip = `Found matching content in ${matched_article.source} content`
+            
+
+            if (result.edits && (result.edits.title.length > 0 || result.edits.content.length > 0)) {
+                tooltip += " (Click to see differences)"
+                icon.classList.remove("fa-copy")
+                icon.classList.add("fa-user-edit")
+                this.setupDifferencesDialog(result.edits)
+            }else
+                tooltip += " (No differences found)"
+            
+            button.setAttribute("title", tooltip)
         },
 
         /**
@@ -2723,12 +2718,12 @@ const Review = {
         generateDifferencesHTML(edits) {
             let html = ""
 
-            if (edits.title.length > 0) {
+            if (edits.title && edits.title.length > 0) {
                 html += '<h2 style="font-size: 1.25em;border-bottom: 1px solid #ccc;">Title Differences</h2>'
                 html += edits.title.map(edit => this.createDifferenceBlock(edit)).join("")
             }
 
-            if (edits.content.length > 0) {
+            if (edits.content && edits.content.length > 0) {
                 if (html) html += "<br><br>"
                 html += '<h2 style="font-size: 1.25em;border-bottom: 1px solid #ccc;">Content Differences</h2>'
                 html += edits.content.map(edit => this.createDifferenceBlock(edit)).join("")
@@ -2803,6 +2798,7 @@ const Review = {
 
         /**
          * Check if the current review item is content-related
+         * Returns an object with {is_post, is_custom, current_item, edits, matched_article{source, title, html, title_matches, html_matches, id_matches}}
          */
         async checkIfContent(revisionId) {
             let broker_content = null
@@ -2833,36 +2829,46 @@ const Review = {
                 }
 
                 // Check if the current item is custom content
-                const is_custom = item_data.content_id == null
                 const [from_siteforward, from_vendor] = await Promise.all([
                     this.getContent(item_data, broker_content),
                     this.getContent(item_data, `${baseUrl}/api/content`)
                 ])
+                console.log("Content Check Results:", from_siteforward, from_vendor)
 
                 // Check the differences
                 let edits = null
-                let found_article = Object.keys(from_siteforward).length > 0 ? from_siteforward : from_vendor
+                let found_article = null
 
-                if (found_article && Object.keys(found_article).length > 0) {
-                    const current_formatted = { title: item_data.title, html: item_data.content }
+                // Determine which source has matches 
+                if (from_siteforward.title) {
+                    found_article = {
+                        source: "SiteForward",
+                        ...from_siteforward
+                    }
+                } else if (from_vendor.title) {
+                    found_article = {
+                        source: "Vendor",
+                        ...from_vendor
+                    }
+                }
+
+                if (found_article) {
                     edits = {
                         title: this.getArrayDifferences(
                             this.parseHTML(found_article.title),
-                            this.parseHTML(current_formatted.title)
+                            this.parseHTML(item_data.title)
                         ),
                         content: this.getArrayDifferences(
                             this.parseHTML(found_article.html),
-                            this.parseHTML(current_formatted.html)
+                            this.parseHTML(item_data.content)
                         )
                     }
                 }
 
                 return {
                     is_post: true,
-                    is_custom: found_article ? false : is_custom,
-                    from_siteforward,
-                    from_vendor,
                     current_item: item_data,
+                    matched_article: found_article,
                     edits
                 }
             } catch (error) {
@@ -2905,13 +2911,21 @@ const Review = {
                 throw new Error("Content not found")
             }
 
-            // Find matching content by ID or title/content match
-            const found = content_list.content.find(blog => 
-                blog._id === current_item.content_id || 
-                (blog.title === current_item.title && blog.html === current_item.content)
-            )
+            // Find matches in order of preference: ID > title > HTML
+            const matches = [
+                { match: content_list.content.find(blog => blog._id === current_item.content_id), type: 'id_matches' },
+                { match: content_list.content.find(blog => blog.title === current_item.title), type: 'title_matches' },
+                { match: content_list.content.find(blog => blog.html === current_item.content || blog.html === current_item.html), type: 'html_matches' }
+            ]
 
-            return found ? { title: found.title, html: found.html } : {}
+            const foundMatch = matches.find(m => m.match)
+            if (!foundMatch) return {}
+
+            return {
+                [foundMatch.type]: true,
+                title: foundMatch.match.title,
+                html: foundMatch.match.html || foundMatch.match.content
+            }
             } catch (error) {
             throw error
             }
@@ -2961,6 +2975,7 @@ const Review = {
          * Compare two arrays and return differences with brackets
          */
         getArrayDifferences(arr1, arr2) {
+            console.log("Comparing Arrays:", arr1, arr2)
             const differences = []
             const max_length = Math.max(arr1.length, arr2.length)
             let in_difference = false
