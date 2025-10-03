@@ -2106,7 +2106,16 @@ const Advisor = {
         document.addEventListener("click", async (e) => {
 
             if(e.target.matches(".revision-note")){
-                e.preventDefault()
+                document.querySelector("#revision-note-overlay").setAttribute("data-id", e.target.getAttribute("data-id"))
+            }
+            
+            if(e.target.matches("#revision-note-overlay .save, #revision-note-overlay .cancel") || 
+               e.target.matches("#rejection-note-overlay .save, #rejection-note-overlay .cancel")){
+
+                await waitForClassAsync(true, e.target.closest(".settings-wrapper").parentNode, "velocity-animating")
+
+                const id = document.querySelector("#revision-note-overlay").getAttribute("data-id")
+                document.querySelector(`.revision-note[data-id="${id}"]`)?.scrollIntoView({ behavior: "smooth", block: "center" })
             }
 
             if(e.target.matches(".btn-clear-state")){
@@ -2163,7 +2172,7 @@ const Advisor = {
                 const review_id = e.target.getAttribute("data-id")
                 this.addReviewItemNotesToPage(review_id)
             }
-       
+
             if(e.target.matches(".btn--action-approve, .btn--action-reject"))
                 setTimeout(() => this.addPendingCount(), 1)
 

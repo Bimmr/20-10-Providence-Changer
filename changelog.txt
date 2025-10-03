@@ -1,5 +1,6 @@
 2.0.3
 - Improved styling of difference finding popup
+- Stops Add note and Reject from scrolling all the way back up the page 
 2.0.2
 - Bug fixes for review item states
 - Fixed bug with searching for all items in the searchbar
