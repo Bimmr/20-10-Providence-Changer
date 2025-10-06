@@ -2307,9 +2307,6 @@ const Advisor = {
     },
     async addReviewItemNotesToPage(review_id){
         const review_item = document.querySelector(`.review-item[data-id="${review_id}"]`)
-        
-        // Remove if already existing
-        review_item.querySelector(`.review-item-preview`)?.remove()
 
         let { status, officer, date, note, rejection } = await this.getReviewInfoFromRevisionsPage(review_id)
         if (!status || status == "")
@@ -2323,7 +2320,12 @@ const Advisor = {
                 ${note ? `<div class="review-note"><h3>Internal Review Note</h3><div class="review-html">${note}</div></div>` : ""}
                 `
             })
-            review_item.appendChild(review_item_preview)
+            
+        // Remove if already existing
+        review_item.querySelector(`.review-item-preview`)?.remove()
+
+        // Add the preview to the page
+        review_item.appendChild(review_item_preview)
     },
     async getReviewInfoFromRevisionsPage(review_id){
         let response = await fetch(`${baseUrl}/manage/revisions/${this.advisorId}/${review_id}`)
