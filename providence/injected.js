@@ -2608,12 +2608,21 @@ const Review = {
         const add_note_btn = createElement("button", {
             class: "btn btn--action-default revision-note",
             html: "Add Note",
-            onclick: () => {
-                fetch(`${baseUrl}/api/revisions/${this.reviewId}`, {
+            onclick: async () => {
+
+                const note = prompt("Add your note")
+                if (!note) return
+
+                add_note_btn.textContent = "Adding Note..."
+                add_note_btn.classList.add("thinking")
+                
+                await fetch(`${baseUrl}/api/revisions/${this.reviewId}`, {
                     method: "PUT",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ internal_notes: note })
                 })
+                add_note_btn.textContent = "Add Note"
+                add_note_btn.classList.remove("thinking")
             }
         })
         document.querySelector(".review-tools").appendChild(add_note_btn)
