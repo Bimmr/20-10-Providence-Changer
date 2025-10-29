@@ -76,7 +76,10 @@ function isSiteForwardUser(){
 
 // Get the current officer info through the loggedInUser
 function getCurrentOfficerInfo(){
-    return officer_list.find(officer => officer._id === window.loggedInUser)
+    let current_officer = officer_list.find(officer => officer._id === window.loggedInUser)
+    if (!current_officer)
+        current_officer = { name: "Unknown Officer", _id: window.loggedInUser }
+    return current_officer
 }
 
 // Function to initialize the page
