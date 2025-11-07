@@ -18,8 +18,6 @@ const ACCOUNTS = {
     '62fbcef1ad43191d020cc850', // Lorena
     '66b2337b018d3ef81ab93714', // Christina Bettencourt
     '666af5e9d0e2294ebf33556e', // Michael Esposito
-    '65ea1ce732bf8ae915a5c326', // Katherine Garvida
-    '65ea1c7d32bf8ae915a5c2ea', // Serena Xiao
     '66326c5dcd47b3d689ce8834', // Marvin Sanchez
     '66326c1fcd47b3d689ce87f2', // Sam Lenuel Jamen
     '66c342a60c1b4b313fb7bc25', // Mark Sebastian
