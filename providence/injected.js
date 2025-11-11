@@ -1036,7 +1036,7 @@ const Manage = {
         checkForUnPublished() {
             let rows = document.querySelectorAll("#advisorsList tbody tr")
             rows.forEach((row) => {
-                const advisor = getAdvisorInfo(row._id)
+                const advisor = getAdvisorInfo(row.getAttribute("data-advisor_id"))
                 let is_unpublished = false
                 if (hasStatus("approved", advisor)) {
                     let date_a = Date.parse(advisor.site.published_at),
@@ -1044,11 +1044,14 @@ const Manage = {
                     is_unpublished = date_a < date_b
                 }
                 if (is_unpublished) {
+                    console.log("Unpublished advisor found:", row._id)
                     let state = row.querySelector(".has-state")
-                    state.querySelector(".not-published")?.remove()
-                    state.append(
-                        `<p class="not-published" style="font-size: .75em;color: #1fe9ae;text-align: center;margin: 5px 0 0 0; font-family: 'Anonymous Pro', Courier, monospace;">Not Published</p>`
-                    )
+                    state.querySelector(".notPublished")?.remove()
+                    let notPublished = createElement("p", {
+                        class: "notPublished",
+                        html: "⚠️ Not Published"
+                    })
+                    state.append(notPublished)
                 }
             })
         },

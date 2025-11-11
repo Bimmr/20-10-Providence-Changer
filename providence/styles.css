@@ -70,6 +70,7 @@ body.providence .search-bar table.table td{vertical-align:middle;}
 .providence .table span.advisor-tags {font-size: 0.75em}
 .providence .table .chip--approved{ background: #bdffe9 !important}
 .providence .table .highlight{animation: highlight-animation 1s ease-in-out infinite;}
+.providence .table .notPublished{font-size: .75em; margin: 5px auto; font-family: 'Anonymous Pro', Courier, monospace; position: absolute; text-align: center; left: 0; right: 0;}
 
 /* Providence list quick links */
 .providence #advisor-details .advisor-quick-links > a{margin: 5px 15px;}
