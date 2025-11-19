@@ -2108,20 +2108,22 @@ const Advisor = {
         }
         this.InternalDB.init(this.advisorId)
     },
+    removeRejectionAndReviewNoteOverlays(){
+        document.querySelectorAll("#revision-note-overlay, #rejection-note-overlay").forEach(overlay => overlay.innerHTML = "")
+        console.log("Cleared revision and rejection note overlays")
+    },
     setupEventListeners(){
         document.addEventListener("click", async (e) => {
-
-            if(e.target.matches(".revision-note")){
-                document.querySelector("#revision-note-overlay").setAttribute("data-id", e.target.getAttribute("data-id"))
-            }
             
             if(e.target.matches("#revision-note-overlay .save, #revision-note-overlay .cancel") || 
                e.target.matches("#rejection-note-overlay .save, #rejection-note-overlay .cancel")){
 
                 await waitForClassAsync(true, e.target.closest(".settings-wrapper").parentNode, "velocity-animating")
 
-                const id = document.querySelector("#revision-note-overlay").getAttribute("data-id")
+                const id = document.querySelector(".save").getAttribute("data-id")
                 document.querySelector(`.revision-note[data-id="${id}"]`)?.scrollIntoView({ behavior: "smooth", block: "center" })
+                
+                setTimeout(() => this.removeRejectionAndReviewNoteOverlays(), 100)
             }
 
             if(e.target.matches(".btn-clear-state")){
@@ -2143,6 +2145,7 @@ const Advisor = {
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(payload)
                 })
+                console.log(`Cleared state${clear_notes ? " and notes" : ""} for review ID: ${review_id}`)
                 review_item.classList.remove("approved-status", "rejected-status")
                 review_item.querySelector(".active")?.classList.remove("active")
                 review_item.querySelector(".review-item__status").innerHTML = `<span class="review-item-status pending-status">Pending Review</span>`
@@ -2160,15 +2163,20 @@ const Advisor = {
                 if(overlay.querySelector(".show-placeholder")){ // Fixes bug of not being able to remove note after adding it
                    reset_internal_notes = true
                 }
+                console.log("Waiting for overlay animation to finish...")
                 await waitForClassAsync(true, overlay, "velocity-animating")
                 await waitForClassAsync(false, overlay, "velocity-animating")
-                if(reset_internal_notes)
+                console.log("Overlay animation finished.")
+                if(reset_internal_notes){
                      await fetch(`${baseUrl}/api/revisions/${review_id}`, {
                         method: "PUT",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({ internal_notes: "" })
                     })
+                    console.log("Fixing issue of empty revision note not being accepted")
+                }
                 this.addReviewItemNotesToPage(review_id)
+                console.log(`Added notes to review ID: ${review_id}`)
             }
 
             if(e.target.matches("#rejection-note-overlay .save")){
@@ -2283,6 +2291,7 @@ const Advisor = {
                     add_note_to_all_btn.textContent = "Add Note to All"
                     add_note_to_all_btn.classList.remove("thinking")
                     this.setupReviewItemNotes()
+                    console.log("Finished adding notes to all revisions")
                 }).catch(error => {
                     console.error("Failed to update some revisions:", error)
                 })
@@ -2335,7 +2344,7 @@ const Advisor = {
     },
     async getReviewInfoFromRevisionsPage(review_id){
         let response = await fetch(`${baseUrl}/manage/revisions/${this.advisorId}/${review_id}`)
-        if (!response.ok) return {}
+        if (!response.ok){console.log("Item hasn't been approved/rejected"); return {}}
         const text = await response.text()
         const doc = new DOMParser().parseFromString(text, "text/html")
         const info = doc.querySelectorAll(".print-timestamp-title + span")
