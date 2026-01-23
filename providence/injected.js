@@ -279,8 +279,10 @@ const AdvisorDetails = {
         setupArchiveOpenListener() {
             document.querySelector(".open-archives").addEventListener("click", async () => {
                 try {
-                    await this.waitForArchivesOverlay()
-                    await this.processArchiveItems()
+                    const should_continue = await this.waitForArchivesOverlay()
+                    if (should_continue) {
+                        await this.processArchiveItems()
+                    }
                 } catch (err) {
                     console.error("Error initializing archives:", err)
                 }
@@ -289,15 +291,27 @@ const AdvisorDetails = {
 
         /**
          * Wait for the archives overlay to load.
+         * @returns {Promise<boolean>} - Returns true if should continue processing, false if handled by re-triggering
          */
         async waitForArchivesOverlay() {
+            const checkOverlayReady = () => {
+                const archivesOverlay = document.querySelector("#archives-overlay")
+                return archivesOverlay && !archivesOverlay.classList.contains("loading")
+            }
+
             try {
-                await waitForCondition(() => {
-                    const archivesOverlay = document.querySelector("#archives-overlay")
-                    return archivesOverlay && !archivesOverlay.classList.contains("loading")
-                })
+                await waitForCondition(checkOverlayReady)
+                return true
             } catch (error) {
-                alert("Unable to load Archives.\nThis is a known bug, to fix it please log in as the account then refresh this page or view the archives in the website engine.\n\nCause: Dashboard currently sees that you're logged in as another advisor.")
+                // Handle bug where dashboard is unable to get archive through the officer param, and instead requires being logged in as advisor
+                const id = document.querySelector(".btn-container [data-advisor_id]").getAttribute("data-advisor_id")
+                const login_response = await fetch(`${baseUrl}/manage/login/${id}`)
+                await login_response.text()
+                await new Promise(resolve => setTimeout(resolve, 100))
+                document.querySelector(".open-archives").click()
+                await waitForCondition(checkOverlayReady)
+                alert("====== IMPORTANT ======\n\nDue to a bug in the 20/10 dashboard you must be logged in as this advisor to view their archives.\n\nYou are now LOGGED IN as this advisor.\nPlease CLOSE any other EDITING tabs as you are no longer logged in as them.\n=======================")
+                return false 
             }
         },
 

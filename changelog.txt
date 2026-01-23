@@ -1,3 +1,5 @@
+2.0.6
+- Fixed bug with looking at advisor archive when not logged in as advisor
 2.0.5
 - Fixed bug with rejection overlay staying and causing revision notes to be assigned to the wrong id
 2.0.4
