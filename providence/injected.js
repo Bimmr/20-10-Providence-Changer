@@ -1495,6 +1495,9 @@ const Manage = {
             "Redesign",
             "Not On Program",
             "Tier",
+            "Council: ",
+            "SF: ",
+            "French"
         ],
         reviewCount: {},
         activeFilters: {
