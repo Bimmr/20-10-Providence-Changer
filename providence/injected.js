@@ -821,7 +821,7 @@ const Chat = {
                 !chat_wrapper.classList.contains("loading") &&
                 document.querySelector("body").classList.contains("chat-open")
             )
-        })
+        }, 5000)
     },
 
     /**
@@ -875,7 +875,7 @@ const Chat = {
             const fr_wrapper = chat_message.querySelector(".fr-wrapper")
             const fr_element = chat_message.querySelector(".fr-element")
             
-            if (fr_wrapper && fr_element) {
+            if (fr_wrapper && fr_element && saved_msg != "null") {
                 fr_wrapper.classList.remove("show-placeholder")
                 fr_element.innerHTML = saved_msg
             }
