@@ -1222,7 +1222,7 @@ const Manage = {
                     const optgroups = select_element.querySelectorAll("optgroup")
 
                     // Hide MLS options if no dealer tags
-                    if (!tags.includes("IIROC") && !tags.includes("MFDA")) {
+                    if (!tags.includes("CIRO")) {
                         // Hide MLS option in Teams group
                         const teams_group = optgroups[0]
                         if (teams_group?.querySelectorAll("option")[1]) {
@@ -1235,7 +1235,7 @@ const Manage = {
                     }
 
                     // Hide MSI options if no insurance
-                    if (tags.includes("Insurance: None")) {
+                    if (!tags.includes("Insurance")) {
                         // Hide MSI option in Teams group
                         const teams_group = optgroups[0]
                         if (teams_group?.querySelectorAll("option")[2]) {
