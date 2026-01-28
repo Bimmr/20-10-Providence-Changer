@@ -1747,10 +1747,84 @@ const Manage = {
             }
         },
         updateFilterCounts(){
-            const tag_rows = document.querySelectorAll(".review-table .tags tr")
-            const visible_cards = [...document.querySelectorAll(".advisor-card")].filter(card => !card.classList.contains("card-hidden"))
+            const all_cards = [...document.querySelectorAll(".advisor-card")]
+            const visible_cards = all_cards.filter(card => !card.classList.contains("card-hidden"))
 
-            // Update the site and pending counts in tag_rows based off visible_cards tags
+            // Update the "All in Review" counts
+            const all_row = document.querySelector(".review-table .all tr")
+            if (all_row) {
+                all_row.children[1].textContent = all_cards.length
+                all_row.children[2].textContent = all_cards.reduce((acc, card) => {
+                    const pending = card.querySelector('.cardPending')
+                    return acc + (pending ? parseInt(pending.textContent) : 0)
+                }, 0)
+            }
+
+            this.updateOfficerFilterCounts(all_cards)
+            this.updateTagFilterCounts(visible_cards)
+        },
+
+        /**
+         * Update officer filter counts and dynamically add new officers
+         * @param {Array} all_cards - All advisor cards
+         */
+        updateOfficerFilterCounts(all_cards) {
+            // Collect all unique officers from cards
+            const officers_from_cards = {}
+            all_cards.forEach(card => {
+                const card_officer = card.querySelector('.cardOfficer')
+                const officer_name = card_officer?.textContent
+                if (officer_name) {
+                    if (!officers_from_cards[officer_name]) {
+                        officers_from_cards[officer_name] = []
+                    }
+                    officers_from_cards[officer_name].push(card)
+                }
+            })
+
+            // Update existing officer rows and track which officers we've seen
+            const officer_rows = document.querySelectorAll(".review-table .officers tr")
+            const existing_officers = new Set()
+            
+            officer_rows.forEach(row => {
+                const officer_name = row.children[0]?.textContent
+                existing_officers.add(officer_name)
+                
+                const matching_cards = officers_from_cards[officer_name] || []
+                const count = matching_cards.length
+                
+                row.children[1].textContent = count
+                row.children[2].textContent = matching_cards.reduce((acc, card) => {
+                    const pending = card.querySelector('.cardPending')
+                    return acc + (pending ? parseInt(pending.textContent) : 0)
+                }, 0)
+
+                // Hide the row if count is 0
+                row.style.display = count === 0 ? 'none' : ''
+            })
+
+            // Add rows for new officers that don't exist yet
+            const officers_tbody = document.querySelector(".review-table .officers")
+            Object.entries(officers_from_cards).forEach(([officer_name, cards]) => {
+                if (!existing_officers.has(officer_name)) {
+                    const row = createElement("tr")
+                    const count = cards.length
+                    const pending_count = cards.reduce((acc, card) => {
+                        const pending = card.querySelector('.cardPending')
+                        return acc + (pending ? parseInt(pending.textContent) : 0)
+                    }, 0)
+                    row.innerHTML = `<td>${officer_name}</td><td>${count}</td><td>${pending_count}</td>`
+                    officers_tbody.appendChild(row)
+                }
+            })
+        },
+
+        /**
+         * Update tag filter counts
+         * @param {Array} visible_cards - Visible advisor cards after filtering
+         */
+        updateTagFilterCounts(visible_cards) {
+            const tag_rows = document.querySelectorAll(".review-table .tags tr")
             tag_rows.forEach(row => {
                 const tag_name = row.children[0]?.textContent
                 const matching_cards = visible_cards.filter(card => {
