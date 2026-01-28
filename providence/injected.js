@@ -1053,7 +1053,7 @@ const Manage = {
                     this.updateDropdowns()
                     this.updateOfficerList()
                     this.checkForUnPublished()
-                }, 300)
+                }, 1000)
             )
         },
 
