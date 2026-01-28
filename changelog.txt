@@ -1,5 +1,8 @@
 2.0.6
 - Fixed bug with looking at advisor archive when not logged in as advisor
+- Fixed broker account not being treated as SiteForward
+- Updated to work with new tags
+- Creating a new account will refresh the page
 2.0.5
 - Fixed bug with rejection overlay staying and causing revision notes to be assigned to the wrong id
 2.0.4
