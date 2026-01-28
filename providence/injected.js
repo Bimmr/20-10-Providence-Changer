@@ -1039,6 +1039,7 @@ const Manage = {
         init() {
             this.setupEventListeners()
             this.setupSearchBar()
+            this.setupTagOverlay()
         },
 
         setupEventListeners() {
@@ -1055,8 +1056,86 @@ const Manage = {
                     this.checkForUnPublished()
                 }, 1000)
             )
-        },
+            // When an officer is changed from the dropdown, update the advisor_list and review card
+            document.addEventListener("change", (e) => {
+                if (e.target.matches(".form-item--control.assigned_officer")) {
+                    const select = e.target
+                    const row = select.closest("tr")
+                    const advisor_id = row?.getAttribute("data-advisor_id")
+                    if (!advisor_id) return
+                    
+                    // Extract officer ID from the select value (format: "name|id")
+                    const value = select.value
+                    const officer_id = value.substring(value.indexOf("|") + 1)
 
+                    // Update the global advisor_list
+                    const advisor = advisor_list.find(adv => adv._id === advisor_id)
+                    if (advisor) {
+                        advisor.officer_id = officer_id
+                        advisorLookups.buildIndexes()
+                    }
+                   
+                    // Update the review card if it exists
+                    const review_card = document.querySelector(`.advisor-card[data-advisor_id="${advisor_id}"]`)
+                    if (review_card) {
+                        const officer_name = getOfficerName(officer_id)
+                        const card_officer = review_card.querySelector(".cardOfficer")
+                        if (card_officer) {
+                            card_officer.textContent = officer_name
+                            card_officer.setAttribute("data-officer_id", officer_id)
+                        }
+                    }
+                    
+                    // Update ReviewList filter counts
+                    if (Manage.ReviewList.debouncedUpdateFilters)
+                        Manage.ReviewList.debouncedUpdateFilters()
+                    
+                }
+            })
+
+           
+        },
+        // Add the advisor_id to the tag overlay, and update the html and global advisor_list on save
+        setupTagOverlay(){
+            document.addEventListener("click", (e) => {
+                if (e.target.matches(".open-account-settings")) {
+                    const tag_overlay = document.querySelector("#manage-tags-overlay")
+                    tag_overlay.setAttribute("data-advisor_id", e.target.closest("tr").getAttribute("data-advisor_id"))
+                }
+                else if (e.target.matches("#manage-tags-overlay .btn.save")) {
+                    let tags = Array.from(document.querySelectorAll("#manage-tags-overlay #selectTags option")).map((tag) => ({slug: tag.value, name: tag.textContent}))
+                    const advisor_id = document.querySelector("#manage-tags-overlay").getAttribute("data-advisor_id")
+
+                    // Update advisor tags in global advisor_list
+                    const advisor = advisor_list.find(adv => adv._id === advisor_id)
+                    if (!advisor) return
+
+                    // Update tags
+                    advisor.settings.broker_tags = tags
+                    
+                    // Update table row
+                    const row = document.querySelector(`#advisorsList tbody tr[data-advisor_id="${advisor_id}"]`)
+                    if (row) {
+                        const tags_cell = row.querySelector(".advisor-tags")
+                        tags_cell.innerHTML = tags.map(tag => tag.name).join(", ")
+                        // Update Officer dropdowns
+                        this.updateOfficerList()
+                    }
+
+                    // Update tags in review card if it exists
+                    const review_card = document.querySelector(`.advisor-card[data-advisor_id="${advisor_id}"]`)
+                    if (review_card) {
+
+                        const card_tags = review_card.querySelector(".card-tags")
+                        card_tags.innerHTML = tags.map(tag => `<span class="tag">${tag.name}</span>`).join(", ")
+
+                        // Update ReviewList filter counts
+                        if (Manage.ReviewList.debouncedUpdateFilters)
+                            Manage.ReviewList.debouncedUpdateFilters()
+                    }
+                }
+            })
+        },
         /**
          * Check for unpublished advisors, if any are found add a note under their state
          */
@@ -1798,7 +1877,7 @@ const Manage = {
                     const pending = card.querySelector('.cardPending')
                     return acc + (pending ? parseInt(pending.textContent) : 0)
                 }, 0)
-
+                
                 // Hide the row if count is 0
                 row.style.display = count === 0 ? 'none' : ''
             })
