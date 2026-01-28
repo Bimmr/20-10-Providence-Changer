@@ -924,18 +924,12 @@ const Chat = {
 const Manage = {
     // DOM Cache for Manage module
     cache: {
-        filterBtn: null,
         advisorsList: null,
         providenceOverviewList: null,
         
         init() {
             this.advisorsList = document.querySelector("#advisorsList")
             this.providenceOverviewList = document.querySelector(".providence-overview--list")
-            this.refreshDynamicElements()
-        },
-        
-        refreshDynamicElements() {
-            this.filterBtn = document.querySelector("#filterAdvisors .btn")
         }
     },
 
@@ -997,12 +991,12 @@ const Manage = {
             .querySelectorAll(".providence-overview--nav a")
             .forEach((e) => e.addEventListener("click", () => this.adjustItemsPerPage()))
 
-        // Filter button click listener
-        waitForCondition(() => document.querySelector("#filterAdvisors .btn"))
-            .then(() => {
-                this.cache.refreshDynamicElements()
-                this.cache.filterBtn?.addEventListener("click", () => this.checkFilterWarning())
-            })
+        // Filter button click listener using event delegation
+        document.addEventListener("click", (e) => {
+            if (e.target.matches("#filterAdvisors .btn")) {
+                this.checkFilterWarning()
+            }
+        })
 
         // Custom chat opening buttons
         document.addEventListener("click", (e) => {
@@ -1309,12 +1303,12 @@ const Manage = {
             })
         })
 
-        // Filter button click listener
-        waitForCondition(() => document.querySelector("#filterAdvisors .btn"))
-            .then(() => {
-                Manage.cache.refreshDynamicElements()
-                Manage.cache.filterBtn?.addEventListener("click", () => SearchBar.resetSearchTable())
-            })
+        // Filter button click listener using event delegation
+        document.addEventListener("click", (e) => {
+            if (e.target.matches("#filterAdvisors .btn")) {
+                SearchBar.resetSearchTable()
+            }
+        })
     },
 
 
