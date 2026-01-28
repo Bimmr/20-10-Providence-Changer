@@ -948,10 +948,29 @@ const Manage = {
         this.setupEventListeners()
         this.adjustItemsPerPage()
         this.checkFilterWarning()
+        this.checkBokerAccount()
         this.AdvisorList.init()
         this.ReviewList.init()
     },
 
+    /**
+     * Check if the account is a broker account, if so we need to adjust some functionality.
+     */
+    checkBokerAccount(){
+        document.addEventListener("click", async (e) => {
+            if (e.target.matches("#account-settings-overlay .settings-footer .btn.save")) {
+                const user_form = document.querySelector('#account-settings-overlay form')
+                const is_creating_account = user_form.action.includes('/admin/users')
+
+                if (is_creating_account) {
+                    const overlay = document.querySelector('#account-settings-overlay')
+                    await waitForClassAsync(true, overlay, "velocity-animating")
+                    await waitForClassAsync(false, overlay, "velocity-animating")
+                    location.reload()
+                }
+            }
+        })
+    },
     /**
      * Setup the filter warning display.
      */
