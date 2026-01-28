@@ -2069,7 +2069,7 @@ const Manage = {
                 if (!card.querySelector(".card-extras")) {
                     const officer_name = getOfficerName(advisor_info.officer_id)
                     const my_officer_info = getCurrentOfficerInfo()
-                    const can_assign_to_me = isOnTeam(advisor_info.officer_id, my_officer_info._id)
+                    const can_assign_to_me = my_officer_info._id != ACCOUNTS.broker_id && isOnTeam(advisor_info.officer_id, my_officer_info._id)
 
                     const card_content = card.querySelector(".card-content")
                     const card_extras = createElement("div", {
