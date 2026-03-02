@@ -3252,6 +3252,7 @@ const Revisions = {
     init(){
         this.checkEmailInURL()
         this.adjustItemsPerPage()
+        this.addExportButton()
     },
     checkEmailInURL(){
         const url_params = new URLSearchParams(window.location.search)
@@ -3270,7 +3271,8 @@ const Revisions = {
                 $("#revisions-list").DataTable().search(email).draw()
             }, 2000)
         }
-    },/**
+    },
+    /**
      * Function to adjust the number of items displayed per page.
      */
     adjustItemsPerPage() {
@@ -3281,6 +3283,328 @@ const Revisions = {
             })
         }, 1000)
     },
+    
+    /**
+     * Add export button to revisions page
+     */
+    addExportButton() {
+        setTimeout(() => {
+            const exportBtn = createElement("button", {
+                class: "btn",
+                style: "margin-left: 10px; font-size: 1.1rem;",
+                html: '<i class="fas fa-download"></i> Export Stats',
+                onclick: () => this.StatsExporter.start()
+            })
+            
+            const lengthControl = document.querySelector("#revisions-list_length")
+            if (lengthControl) {
+                lengthControl.appendChild(exportBtn)
+            }
+        }, 1000)
+    },
+
+    /**
+     * Stats Exporter - Extracts DataTable to HTML clipboard
+     */
+    StatsExporter: {
+        rows: "",
+        dialogElement: null,
+
+        dialogConfig: {
+            warning: { icon: 'fas fa-exclamation-triangle', color: '#f59e0b' },
+            error: { icon: 'fas fa-times-circle', color: '#ef4444' },
+            confirm: { icon: 'fas fa-question-circle', color: '#3b82f6' },
+            success: { icon: 'fas fa-check-circle', color: '#10b981' },
+            processing: { icon: 'fas fa-spinner fa-spin', color: '#6366f1' }
+        },
+
+        /**
+         * Create or get the dialog element
+         */
+        getDialog() {
+            if (!this.dialogElement) {
+                const dialogEl = document.createElement('dialog')
+                dialogEl.id = 'revisions-export-dialog'
+                dialogEl.style.cssText = 'border:none;padding:0;background:#ffffff;max-width:480px;min-width:380px;margin:auto;border-radius:8px;box-shadow:0 0 0 1px rgba(255,255,255,0.1), 0 10px 25px rgba(0,0,0,0.3), 0 20px 50px rgba(0,0,0,0.4), 0 40px 80px rgba(0,0,0,0.35)'
+                
+                dialogEl.innerHTML = `
+                    <div style="background:#ffffff;border-radius:8px;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
+                        <div class="dialog-header" style="background:#03182e;padding:20px;border-bottom:1px solid rgba(0,0,0,0.1);display:flex;align-items:center;gap:12px">
+                            <div class="dialog-icon-wrapper" style="width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                                <i class="dialog-icon" style="color:white;font-size:20px"></i>
+                            </div>
+                            <h3 class="dialog-title" style="margin:0;color:#ffffff;font-size:18px;font-weight:600"></h3>
+                        </div>
+                        <div class="dialog-body" style="padding:20px 24px">
+                            <p class="dialog-message" style="margin:0;color:#4b5563;font-size:14px;line-height:1.6;white-space:pre-line"></p>
+                        </div>
+                        <div class="dialog-footer" style="padding:16px 24px;background:#f9fafb;border-top:1px solid #e5e7eb;display:flex;gap:10px;justify-content:flex-end">
+                        </div>
+                    </div>
+                    <style>
+                        @keyframes slideIn {
+                            from { transform: translateY(-20px); opacity: 0; }
+                            to { transform: translateY(0); opacity: 1; }
+                        }
+                        #revisions-export-dialog::backdrop {
+                            background: rgba(3, 24, 46, 0.85);
+                        }
+                        #revisions-export-dialog[open] {
+                            animation: slideIn 0.2s ease-out;
+                        }
+                    </style>
+                `
+
+                dialogEl.addEventListener('close', () => {
+                    dialogEl.remove()
+                    this.dialogElement = null
+                })
+
+                document.body.appendChild(dialogEl)
+                this.dialogElement = dialogEl
+            }
+            return this.dialogElement
+        },
+
+        /**
+         * Create buttons for dialog footer
+         */
+        createButtons(type, onOk, onNo) {
+            if (type === 'processing') return ''
+            
+            if (type === 'confirm') {
+                return `
+                    <button class="btn secondary dialog-cancel-btn">Cancel</button>
+                    <button class="btn dialog-ok-btn">OK</button>
+                `
+            }
+            
+            return '<button class="btn dialog-ok-btn">OK</button>'
+        },
+
+        /**
+         * Attach button handlers
+         */
+        attachButtonHandlers(footer, type, onOk, onNo) {
+            const okBtn = footer.querySelector('.dialog-ok-btn')
+            const cancelBtn = footer.querySelector('.dialog-cancel-btn')
+            
+            if (okBtn) {
+                okBtn.onclick = () => {
+                    if (type !== 'confirm' && type !== 'processing') {
+                        this.dialogElement?.close()
+                    }
+                    if (onOk) onOk()
+                }
+            }
+            
+            if (cancelBtn) {
+                cancelBtn.onclick = () => {
+                    this.dialogElement?.close()
+                    if (onNo) onNo()
+                }
+            }
+        },
+
+        /**
+         * Update dialog content
+         */
+        updateDialog(title, msg, type = 'warning', onOk = null, onNo = null) {
+            const dialog = this.getDialog()
+            const config = this.dialogConfig[type] || this.dialogConfig.warning
+
+            // Update icon and header
+            dialog.querySelector('.dialog-icon-wrapper').style.background = config.color
+            dialog.querySelector('.dialog-icon').className = `dialog-icon ${config.icon}`
+            dialog.querySelector('.dialog-header').style.borderBottom = `1px solid ${config.color}30`
+            
+            // Update content
+            dialog.querySelector('.dialog-title').textContent = title
+            dialog.querySelector('.dialog-message').textContent = msg
+
+            // Update buttons
+            const footer = dialog.querySelector('.dialog-footer')
+            footer.innerHTML = this.createButtons(type, onOk, onNo)
+            this.attachButtonHandlers(footer, type, onOk, onNo)
+
+            if (!dialog.open) dialog.showModal()
+        },
+
+        /**
+         * Start export process
+         */
+        start() {
+            this.rows = ""
+            this.updateDialog(
+                "Export Revision Statistics",
+                "Ready to create your revision statistics table!\n\nClick OK to start.",
+                "confirm",
+                () => this.gatherData()
+            )
+        },
+
+        /**
+         * Strip HTML tags from text
+         */
+        stripHtml(html) {
+            return html?.replace(/<\/*[^>]*>?/gm, " ") || ""
+        },
+
+        /**
+         * Create HTML row from revision data
+         */
+        makeRow(revision) {
+            try {
+                const advisor = revision.advisor?.display_name || "N/A"
+                const email = revision.advisor?.email || "N/A"
+                const domain = revision.site?.settings?.domains?.join(", ") || "N/A"
+                const tags = revision.advisor?.settings?.broker_tags?.map(x => x.name)?.join(", ") || "N/A"
+                const revisionType = revision.location || "N/A"
+                const revisionName = (revision?.meta?.name ? `${revision.meta.name} - ` : "") + (revision.title || "N/A")
+                const status = revision.state || "N/A"
+                const reviewedBy = revision.reviewed_by?.display_name || "N/A"
+                const submittedDate = revision.site?.submitted_at ? new Date(revision.site.submitted_at).toLocaleString().replace(",", "") : "N/A"
+                const reviewedDate = revision.created_at ? new Date(revision.created_at).toLocaleString().replace(",", "") : "N/A"
+                const internalNotes = this.stripHtml(revision.internal_notes)
+                const rejectionNotes = this.stripHtml(revision.notes)
+
+                return `<tr><td>${advisor}<br style="mso-data-placement:same-cell"/>${email}</td><td>${domain}</td><td>${tags}</td><td>${revisionType}</td><td>${revisionName}</td><td>${status}</td><td>${reviewedBy}</td><td>${submittedDate}</td><td>${reviewedDate}</td><td>${internalNotes}</td><td>${rejectionNotes}</td></tr>`
+            } catch (error) {
+                console.error("Error creating row:", error)
+                return ""
+            }
+        },
+
+        /**
+         * Create HTML table
+         */
+        makeTable() {
+            return `<table border="1" style="border-collapse:collapse;width:100%">
+                <thead>
+                    <tr style="background-color:#f2f2f2">
+                        <th>Advisor</th><th>Domain</th><th>Tags</th><th>Revision Type</th><th>Revision Title</th>
+                        <th>Status</th><th>Reviewed By</th><th>Submitted Date</th><th>Reviewed Date</th><th>Notes</th><th>Rejection Notes</th>
+                    </tr>
+                </thead>
+                <tbody>${this.rows}</tbody>
+            </table>`
+        },
+
+        /**
+         * Copy HTML to clipboard
+         */
+        async copyToClipboard(html) {
+            try {
+                await navigator.clipboard.writeText(html)
+                this.updateDialog(
+                    "Export Complete!",
+                    "Table copied to clipboard!\n\nPaste into Excel, Word, etc.",
+                    "success"
+                )
+            } catch (error) {
+                this.showFallbackCopy(html)
+            }
+        },
+
+        /**
+         * Show fallback textarea for manual copy
+         */
+        showFallbackCopy(html) {
+            const dialog = this.getDialog()
+            const config = this.dialogConfig.warning
+
+            // Update dialog header
+            dialog.querySelector('.dialog-icon-wrapper').style.background = config.color
+            dialog.querySelector('.dialog-icon').className = `dialog-icon ${config.icon}`
+            dialog.querySelector('.dialog-header').style.borderBottom = `1px solid ${config.color}30`
+            dialog.querySelector('.dialog-title').textContent = "Manual Copy Required"
+
+            // Replace message with textarea
+            const body = dialog.querySelector('.dialog-body')
+            body.innerHTML = `
+                <p style="margin:0 0 12px 0;color:#4b5563;font-size:14px;line-height:1.6">Auto-copy failed. Select all (Ctrl+A) and copy (Ctrl+C) the HTML below:</p>
+                <textarea class="fallback-textarea" style="width:100%;height:300px;padding:8px;border:1px solid #d1d5db;border-radius:4px;font-family:monospace;font-size:12px;resize:vertical;box-sizing:border-box">${html}</textarea>
+            `
+
+            // Update footer with OK button
+            const footer = dialog.querySelector('.dialog-footer')
+            footer.innerHTML = '<button class="btn dialog-ok-btn">OK</button>'
+            
+            const okBtn = footer.querySelector('.dialog-ok-btn')
+            okBtn.onclick = () => dialog.close()
+
+            // Auto-select the textarea content
+            const textarea = body.querySelector('.fallback-textarea')
+            textarea.select()
+            textarea.focus()
+        },
+
+        /**
+         * Wait for DataTable to finish loading
+         */
+        async waitForTable() {
+            const processingIndicator = document.getElementById('revisions-list_processing')
+            if (!processingIndicator) return
+            
+            while (getComputedStyle(processingIndicator).display !== 'none') {
+                await new Promise(resolve => setTimeout(resolve, 100))
+            }
+        },
+
+        /**
+         * Gather data from DataTable
+         */
+        async gatherData() {
+            try {
+                this.updateDialog(
+                    "Exporting Data",
+                    "Processing revisions data...\nPlease wait.",
+                    "processing"
+                )
+
+                await this.waitForTable()
+
+                const dataTable = $("#revisions-list").DataTable()
+                const data = dataTable.data()
+
+                if (!data?.length) {
+                    this.finishExport()
+                    return
+                }
+
+                data.each(revision => {
+                    const rowHtml = this.makeRow(revision)
+                    if (rowHtml) this.rows += rowHtml
+                })
+
+                const nextButton = $(".next")
+                if (nextButton.length && !nextButton.hasClass('disabled')) {
+                    nextButton.click()
+                    await this.gatherData()
+                } else {
+                    this.finishExport()
+                }
+            } catch (error) {
+                this.updateDialog("Processing Error", `Error: ${error.message}`, "error")
+            }
+        },
+
+        /**
+         * Finish export process
+         */
+        finishExport() {
+            if (!this.rows.trim()) {
+                this.updateDialog(
+                    "No Data",
+                    "No data found.\n\nCheck DataTable has data.",
+                    "warning"
+                )
+                return
+            }
+
+            this.copyToClipboard(this.makeTable())
+        }
+    }
 }
 
 // ============================================================================
