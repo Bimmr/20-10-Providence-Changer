@@ -1,5 +1,6 @@
 2.0.7
 - Add export button and stats exporter functionality to revisions page
+- Fix logo image sizing in advisor list
 2.0.6
 - Fixed bug with looking at advisor archive when not logged in as advisor
 - Fixed broker account not being treated as SiteForward

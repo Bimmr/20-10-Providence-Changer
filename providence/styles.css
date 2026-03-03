@@ -116,6 +116,9 @@ body.providence .search-bar table.table td{vertical-align:middle;}
 .providence-pending--list .card-status{display: flex; align-items: center;justify-content: space-evenly;}
 .providence-pending--list .card-action .btn{padding:0.5em 0.25em;}
 
+/*============== Advisor List headshot fix ==============*/
+body.providence .table .advisor-profile img, body.providence .advisor-card .advisor-profile img { object-fit: cover; object-position: top center; }
+
 /*============= Advisor Profile ============*/
 
 /* Review Preview notes & rejections */
