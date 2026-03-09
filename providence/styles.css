@@ -16,6 +16,8 @@
 #header .providence--section-nav-sub li:not(:is(.active, :hover)) a{ color: rgba(255,255,255,0.55) !important; }
 
 /* Chat */
+#chat-users-list .all-chats ul{right: -10px; position: relative;}
+#chat-users-list .all-chats .scroller{overflow-x: hidden;}
 #live-chat .chat-search{ position: absolute; top: 6px; right: 3px; }
 #live-chat .chat-search-icon{ color: #626262; font-size: 0.75em; position: relative; }
 #live-chat .chat-search-input-wrapper{transition: all 0.3s; position: absolute; top: -75px; right: 0px; width: 250px; background: white; padding: 10px; border-radius: 10px; border: 1px solid #cccccc; box-shadow: 1px 1px 1px #3a3a3a; z-index: 99; }
