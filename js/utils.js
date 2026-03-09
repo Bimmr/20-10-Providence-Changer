@@ -2,6 +2,7 @@
 // Account Management Constants
 // =============================================================================
 const ACCOUNTS = {
+  broker_id: '5b3e5875fa12e64c84526641',
   teams: [
     '5b6b0b38c7b3f042604e254c', // SiteForward
     '5b6b0812c7b3f042604e253c', // MLS Sales Communication
@@ -56,7 +57,7 @@ const ACCOUNTS = {
 // Account Type Checking Functions
 // =============================================================================
 const allAccountList = () => [...ACCOUNTS.siteForward, ...ACCOUNTS.teams, ...ACCOUNTS.mlsSales, ...ACCOUNTS.msiCompliance]
-const isSiteForward = (id) => ACCOUNTS.siteForward.includes(id)
+const isSiteForward = (id) => ACCOUNTS.siteForward.includes(id) || id === ACCOUNTS.broker_id
 const isTeam = (id) => ACCOUNTS.teams.includes(id)
 const isCompliance = (id) => ACCOUNTS.mlsSales.includes(id) || ACCOUNTS.msiCompliance.includes(id)
 const isMLSSalesCompliance = (id) => ACCOUNTS.mlsSales.includes(id)
