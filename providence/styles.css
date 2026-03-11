@@ -120,6 +120,7 @@ body.providence .search-bar table.table td{vertical-align:middle;}
 
 /* ============ Advisor Icons ============ */
 body.providence .table .advisor-profile img, body.providence .advisor-card .advisor-profile img, #chat-users-list .user .user-profile img{object-fit: cover; object-position: top center; ; height: 100%;}
+body.providence .advisor-card h4{word-break:break-word;}
 #chat-users-list .user .user-profile {height: 100%;}
 
 /*============= Advisor Profile ============*/

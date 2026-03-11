@@ -9,6 +9,10 @@
 /* Fix font weight of page title badges */
 ol.pages li .title span.page-type, .dd-list li .title span.page-type{font-weight: 400;background: #999;}
 
+
+/* ============ Advisor Icons ============ */
+.account-nav__my-account .display-avatar img {object-fit: cover; object-position: top center; ; height: 100%;}
+
 /* "#app-wrapper > #header{z-index: 10 !important;}"+
 "#app-wrapper > #page-settings-overlay{top: 60px !important;}"+ */
 body.app.nightMode h1, body.app.nightMode h2, body.app.nightMode  h3, body.app.nightMode  h4, body.app.nightMode .account-nav__my-account .display-name, body.app.nightMode .account-nav__chat .chat-name {color: #fff;}
