@@ -1,6 +1,7 @@
 2.0.8
 - Fixed advisor profile image in edit dashboard
 - Fixed name not breaking in advisor card
+- Moved Debbie to inactive
 2.0.7
 - Add export button and stats exporter functionality to revisions page
 - Fix logo image sizing in advisor list

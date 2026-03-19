@@ -14,7 +14,6 @@ const ACCOUNTS = {
     '6685700e7ab7518b2fdec363',  // Laurel Benzaquen
   ],
   mlsSales: [
-    '5b7a252c87b3513edc0b86bb', // Debbie
     '6053855b7d9f5556ecc9e33b', // Julien
     '62fbcef1ad43191d020cc850', // Lorena
     '66b2337b018d3ef81ab93714', // Christina Bettencourt
@@ -38,6 +37,7 @@ const ACCOUNTS = {
     '656f37c186f67a09a847f8e1', // GWAM Web Publishing Team
   ],
   inactive: [
+    '5b7a252c87b3513edc0b86bb', // Debbie
     '5e82312ab7479c3245b2f88e', // Summer
     '5cab89722de8d2305492b333', // Kat
     '5b9490ea0420c067d6b37637', // Josee
