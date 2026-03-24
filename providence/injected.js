@@ -34,8 +34,7 @@ const advisorLookups = {
         return this.byName.get(name)
     }
 }
-
-$(async function () {
+async function init() {
     try {
         await waitForCondition(() => typeof isSiteForward === "function" && typeof DatabaseClient != "undefined", 5000)
         database = new DatabaseClient()
@@ -44,7 +43,8 @@ $(async function () {
         console.error(error)
         alert("Unable to load Extension, please reload the page to try enabling the extension again.")
     }
-})
+}
+init()
 
 /**
  * Wait for a specific condition to be met.

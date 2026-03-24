@@ -1,6 +1,6 @@
 let database = null
 
-$(async function () {
+async function init(){
     try {
         await waitForCondition(() => typeof isSiteForward === "function" && typeof DatabaseClient != "undefined", 5000)
         database = new DatabaseClient()
@@ -9,7 +9,8 @@ $(async function () {
     } catch (error) {
         alert("Unable to load Extension, please reload the page to try enabling the extension again.")
     }
-})
+}
+init()
 
 /**
  * Wait for a specific condition to be met.
