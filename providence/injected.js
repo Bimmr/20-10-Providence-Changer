@@ -134,6 +134,7 @@ async function ready() {
 
     // [https:]//[][app.twentyoverten.com]/[manage]/[review]/[###advisor_id###]/[###item_id###] -> Item Review
     else if (url_parts.length == 7 && url_parts[4].includes("review"))  Review.init()
+
 }
 
 // ============================================================================
@@ -281,6 +282,7 @@ const AdvisorDetails = {
                 try {
                     const should_continue = await this.waitForArchivesOverlay()
                     if (should_continue) {
+                        this.updateArchiveTime()
                         await this.processArchiveItems()
                     }
                 } catch (err) {
@@ -325,6 +327,18 @@ const AdvisorDetails = {
                 const url = item.querySelector(".btn-group a").href
                 await this.addArchiveNotes(item, url)
             }
+        },
+
+        /**
+         * Update the time on the archive to match the current timezone
+         */
+        updateArchiveTime(){
+            document.querySelectorAll(".archive-item").forEach(item => {
+                const time_and_date = new Date(item.getAttribute("data-archive"))
+                const user_time_zone = Intl.DateTimeFormat().resolvedOptions().timeZone
+                const local_date = time_and_date.toLocaleTimeString("en-CA", { timeZone: user_time_zone, hour: "numeric", minute: "2-digit" })
+                item.querySelector(".archive-time").innerHTML = local_date.toLocaleString()
+            })
         },
 
         /**
@@ -3793,6 +3807,7 @@ const Content = {
             .map((row) => row.cloneNode(true))
     }
 }
+
 
 
 /**

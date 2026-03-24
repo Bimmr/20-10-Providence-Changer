@@ -538,8 +538,9 @@ const Archives = {
     setupArchiveOpenListener() {
         document.querySelector(".open-archives").addEventListener("click", async () => {
             try {
-                await this.waitForArchivesOverlay()
+                await this.waitForArchivesOverlay() // Unlike providence version, this won't break since you are logged in as user
                 await this.processArchiveItems()
+                this.updateArchiveTime()
             } catch (err) {
                 console.error("Error initializing archives:", err)
             }
@@ -566,6 +567,17 @@ const Archives = {
             const url = item.querySelector(".btn-group a").href
             await this.addArchiveNotes(item, url)
         }
+    },
+    /**
+     * Update the time on the archive to match the current timezone
+     */
+    updateArchiveTime(){
+        document.querySelectorAll(".archive-item").forEach(item => {
+            const time_and_date = new Date(item.getAttribute("data-archive"))
+            const user_time_zone = Intl.DateTimeFormat().resolvedOptions().timeZone
+            const local_date = time_and_date.toLocaleTimeString("en-CA", { timeZone: user_time_zone, hour: "numeric", minute: "2-digit" })
+            item.querySelector(".archive-time").innerHTML = local_date.toLocaleString()
+        })
     },
 
     /**
