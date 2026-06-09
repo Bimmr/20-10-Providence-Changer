@@ -3481,8 +3481,24 @@ const Revisions = {
                 const reviewedDate = revision.created_at ? new Date(revision.created_at).toLocaleString().replace(",", "") : "N/A"
                 const internalNotes = this.stripHtml(revision.internal_notes)
                 const rejectionNotes = this.stripHtml(revision.notes)
+                let contentLength = this.stripHtml(revision.content || "").length || 0
+                if (revisionType == "member")
+                    contentLength += this.stripHtml(revisionName || "").length || 0
 
-                return `<tr><td>${advisor}<br style="mso-data-placement:same-cell"/>${email}</td><td>${domain}</td><td>${tags}</td><td>${revisionType}</td><td>${revisionName}</td><td>${status}</td><td>${reviewedBy}</td><td>${submittedDate}</td><td>${reviewedDate}</td><td>${internalNotes}</td><td>${rejectionNotes}</td></tr>`
+                return `<tr>
+                <td>${advisor}<br style="mso-data-placement:same-cell"/>${email}</td>
+                <td>${domain}</td>
+                <td>${tags}</td>
+                <td>${revisionType}</td>
+                <td>${revisionName}</td>
+                <td>${status}</td>
+                <td>${reviewedBy}</td>
+                <td>${submittedDate}</td>
+                <td>${reviewedDate}</td>
+                <td>${internalNotes}</td>
+                <td>${rejectionNotes}</td>
+                <td>${contentLength}</td>
+                </tr>`
             } catch (error) {
                 console.error("Error creating row:", error)
                 return ""
@@ -3496,8 +3512,18 @@ const Revisions = {
             return `<table border="1" style="border-collapse:collapse;width:100%">
                 <thead>
                     <tr style="background-color:#f2f2f2">
-                        <th>Advisor</th><th>Domain</th><th>Tags</th><th>Revision Type</th><th>Revision Title</th>
-                        <th>Status</th><th>Reviewed By</th><th>Submitted Date</th><th>Reviewed Date</th><th>Notes</th><th>Rejection Notes</th>
+                        <th>Advisor</th>
+                        <th>Domain</th>
+                        <th>Tags</th>
+                        <th>Revision Type</th>
+                        <th>Revision Title</th>
+                        <th>Status</th>
+                        <th>Reviewed By</th>
+                        <th>Submitted Date</th>
+                        <th>Reviewed Date</th>
+                        <th>Notes</th>
+                        <th>Rejection Notes</th>
+                        <th>Content Length</th>
                     </tr>
                 </thead>
                 <tbody>${this.rows}</tbody>
