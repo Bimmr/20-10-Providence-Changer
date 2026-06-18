@@ -316,17 +316,26 @@ const AdvisorDetails = {
                 return false 
             }
         },
-
+        
         /**
-         * Process archive items.
+         * Process archive items with visibility-based lazy loading.
+         * Styles all items immediately, then loads notes only as items scroll into view.
          */
-        async processArchiveItems() {
+        processArchiveItems() {
             const items = document.querySelectorAll(".archive-item")
-            for (const item of items) {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach((entry) => {
+                    if (!entry.isIntersecting) return
+                    observer.unobserve(entry.target)
+                    const url = entry.target.querySelector(".btn-group a").href
+                    this.addArchiveNotes(entry.target, url)
+                })
+            }, { root: document.querySelector("#archives-overlay"), rootMargin: "100px" })
+
+            items.forEach((item) => {
                 this.styleArchiveItem(item)
-                const url = item.querySelector(".btn-group a").href
-                await this.addArchiveNotes(item, url)
-            }
+                observer.observe(item)
+            })
         },
 
         /**
