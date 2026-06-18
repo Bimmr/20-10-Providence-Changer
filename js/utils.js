@@ -12,6 +12,7 @@ const ACCOUNTS = {
     '5b71d892138837295d1d88d5',  // Randy
     '63515d1ca14d730aa357ebeb',  // Kayla
     '6685700e7ab7518b2fdec363',  // Laurel Benzaquen
+    '6a0dfe18e2f55f7eb6374b4d'   // Chris
   ],
   mlsSales: [
     '6053855b7d9f5556ecc9e33b', // Julien

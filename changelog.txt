@@ -1,6 +1,7 @@
 2.0.10
 - Added content length to revision data
 - Enhance archive item processing with visibility-based lazy loading
+- Add Chris to the SiteForward account list
 2.0.9
 - Fixed timestamps on archives
 2.0.8
