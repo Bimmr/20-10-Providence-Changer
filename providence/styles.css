@@ -35,6 +35,14 @@
 #advisor-details .btn-container .btn:last-of-type{margin: 5px auto;}
 #advisor-details .advisor-tags{font-size: 0.8em;}
 
+/* Advisor Domains */
+#advisor-details .advisor-domains { margin: 12px 0 0 0; padding: 10px 0 6px 0; background: none; border: none; border-top: 1px solid rgba(98,98,98,0.2); }
+#advisor-details .advisor-domains h2 { font-size: 0.7em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #9a9a9a; margin: 0 0 8px 0; }
+#advisor-details .advisor-domains .domain-list { display: flex; flex-flow: row wrap; gap: 2px; }
+#advisor-details .advisor-domains .domain-list br { display: none; }
+#advisor-details .advisor-domains .domain-list a { display: inline-block; font-size: 0.78em; padding: 3px 9px; border-radius: 4px; background: transparent; border: 1px solid rgba(8,174,234,0.35); color: #08aeea; text-decoration: none; word-break: break-all; transition: background 0.15s, border-color 0.15s; }
+#advisor-details .advisor-domains .domain-list a:hover { background: rgba(8,174,234,0.08); border-color: #08aeea; }
+
 /* Float the table page navigation */
 body.providence .dataTables_paginate,
 body.providence .dataTables_wrapper .table-length{position: sticky;bottom: 0; padding: 10px;left: 0;right: 0;}
@@ -309,6 +317,12 @@ body.providence.nightMode .review-item__status {border-color: #4c4c4c;}
 body.providence.nightMode .review-item-note-rejection span, 
 body.providence.nightMode .review-item-note span {color: #888888}
 body.providence.nightMode .toggle-group p {color: #888;}
+
+/* Advisor Domains — Night Mode */
+body.providence.nightMode #advisor-details .advisor-domains { border-top-color: rgba(255,255,255,0.1); }
+body.providence.nightMode #advisor-details .advisor-domains h2 { color: #6a6a6a; }
+body.providence.nightMode #advisor-details .advisor-domains .domain-list a { border-color: rgba(8,174,234,0.3); color: #08aeea; }
+body.providence.nightMode #advisor-details .advisor-domains .domain-list a:hover { background: rgba(8,174,234,0.12); border-color: #08aeea; }
 
 /* Sidebar Modules */
 body.providence.nightMode .sidebar-module {background: #414141; box-shadow: 1px 1px 1px #656565; color: #fff}

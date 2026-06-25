@@ -222,6 +222,7 @@ const AdvisorDetails = {
     init(advisorInfo){
         this.advisorInfo = advisorInfo
         this.addTags()
+        this.addDomains()
         this.addPreviewLinkIcon()
         this.addViewRevisionsButton()
         this.Archives.init()
@@ -235,6 +236,17 @@ const AdvisorDetails = {
         })
         //Add tag_container after "".details-wrapper header" using es6
         document.querySelector(".details-wrapper header").insertAdjacentElement("afterend", tag_container)
+    },
+    async addDomains(){
+        let site_info = await getSiteInfo(this.advisorInfo.site._id)
+        console.log(site_info)
+        const domains = site_info.site.settings.domains || []
+        
+        const domain_container = createElement("div", {
+            class: "advisor-domains secondary center",
+            html: `<h2>Domains</h2><div class="domain-list">${domains.map(domain => `<a href="https://${domain}" target="_blank" rel="noopener noreferrer">${domain}</a>`).join("")}</div>`
+        })
+        document.querySelector(".details-wrapper").appendChild(domain_container)
     },
     addPreviewLinkIcon(){
         const preview_link_icon = createElement("li", {

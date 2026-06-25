@@ -1,3 +1,5 @@
+2.0.11
+- Added domain list to advisor profile
 2.0.10
 - Added content length to revision data
 - Enhance archive item processing with visibility-based lazy loading
