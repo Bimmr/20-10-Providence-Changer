@@ -3285,9 +3285,52 @@ const Review = {
 // ============================================================================
 const Revisions = {
     init(){
-        this.checkEmailInURL()
+        this.setupEventListeners()
         this.adjustItemsPerPage()
         this.addExportButton()
+
+        //Not put in the setupEventListeners because it needs to run on page load, not just when the table is drawn.
+        this.checkEmailInURL()
+    },
+    setupEventListeners() {
+        $("#revisions-list").on(
+            "draw.dt",
+            debounce(() => {
+                const rows = document.querySelectorAll("#revisions-list tbody tr")
+                rows.forEach((row) => {
+                    const review_link = row.querySelector(".actions a").href.split("/")
+                    const review_id = review_link[review_link.length - 1]
+                    const advisor_id = review_link[review_link.length - 2]
+                    row.querySelector(".actions").insertAdjacentHTML("beforeend", `<button style="margin-top: 5px" class="btn load-notes-btn" data-review_id="${review_id}" data-advisor_id="${advisor_id}">Load Notes</button>`)
+                })
+            }, 1000)
+        )
+        //Add global listener for the load notes button
+        document.addEventListener("click", async (e) => {
+            if (e.target.matches(".load-notes-btn") && e.target.dataset.state == undefined) {
+                e.target.dataset.state = "loading"
+                e.target.textContent = "Loading..."
+                const review_id = e.target.dataset.review_id
+                const advisor_id = e.target.dataset.advisor_id
+                Advisor.advisorId = advisor_id
+                let { status, officer, date, note, rejection } = await Advisor.getReviewInfoFromRevisionsPage(review_id)
+                if (!status || status == "")
+                    ({ status, officer, date, note, rejection } = await Advisor.getReviewInfoFromAPI(review_id))
+                let row = e.target.closest("tr")
+                // Add the review note and rejection to the row as seperate columns
+                row.insertAdjacentHTML("beforeend", `<td style="font-size: 0.75em;">${note || ""}</td><td style="font-size: 0.75em;">${rejection || ""}</td>`)
+                e.target.remove()
+                // Add column headers for the new columns if they don't exist
+                const headerRow = document.querySelector("#revisions-list thead tr")
+                if (!headerRow.querySelector(".note-header")) {
+                    headerRow.insertAdjacentHTML("beforeend", `<th class="note-header">Review Note</th><th class="rejection-header">Rejection Reason</th>`)
+                }
+                //Adjust wrapper's max width
+                const wrapper = document.querySelector(".wrapper")
+                wrapper.style="max-width: none; width: 95%;"
+
+            }
+        })
     },
     checkEmailInURL(){
         const url_params = new URLSearchParams(window.location.search)
