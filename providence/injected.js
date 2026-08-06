@@ -2290,6 +2290,43 @@ const Manage = {
                         card_action?.appendChild(chat_btn)
                     }
                 }
+
+                // Add Business day count to card
+                if(!card.querySelector(".card-business-days")){
+                    let submitted_at = advisor_info.submitted_at
+                    let business_days = countBusinessDaysSince(submitted_at, new Date())
+                    let business_days_element = createElement("span", {
+                        class: "card-business-days",
+                        style: `${business_days > 7 ? "color: orangered;font-weight: bold;" : ""}`,
+                        html: ` (${business_days}) `,
+                        title: `Business days since submission: ${business_days}`,
+                    })
+                    
+                    card.querySelector(".submitted")?.appendChild(business_days_element)
+                    
+                    function countBusinessDaysSince(isoDateString, now = new Date()) {
+                        const start = new Date(isoDateString);
+
+                        if (start > now) return 0;
+
+                        let count = 0;
+                        const cursor = new Date(start);
+
+                        // Advance cursor to start of next day to avoid counting a partial start day
+                        cursor.setUTCHours(0, 0, 0, 0);
+                        cursor.setUTCDate(cursor.getUTCDate() + 1);
+
+                        while (cursor <= now) {
+                            const day = cursor.getUTCDay(); // 0 = Sunday, 6 = Saturday
+                            if (day !== 0 && day !== 6) {
+                            count++;
+                            }
+                            cursor.setUTCDate(cursor.getUTCDate() + 1);
+                        }
+
+                        return count;
+                    }
+                }
             })
         },
     },

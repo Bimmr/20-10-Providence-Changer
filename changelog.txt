@@ -1,5 +1,6 @@
 2.0.12
 - Added "Load Notes" button to revision page's items
+- Added business day counter to cards
 2.0.11
 - Added domain list to advisor profile
 2.0.10
