@@ -26,6 +26,7 @@ const ACCOUNTS = {
   ],
   msiCompliance: [
     '652804a80912586687b76f45', // Susie Rafael
+    '5b7a258c87b3513edc0b86be', // Janet
     '66e853abcbfcb64e1c719b11', // Navneet Kaur Sekhon
   ],
   miscellaneous: [
@@ -46,7 +47,6 @@ const ACCOUNTS = {
     '5b7a254b87b3513edc0b86bc', // John - (Deleted)
     '5b44a4121ee2f32880ef9485', // Mandy
     '5ed534b953c1441f7930abfa', // Zain
-    '5b7a258c87b3513edc0b86be', // Janet
     '5b7a25ac9f5388026d43d977', // Sandy
     '5e82314cb7479c3245b2f891', // Suzanne
     '5d1391aa7c86f50a97009f18', // Rachel
