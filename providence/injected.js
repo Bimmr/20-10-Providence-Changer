@@ -2575,27 +2575,38 @@ const Advisor = {
     async addReviewItemNotesToPage(review_id){
         const review_item = document.querySelector(`.review-item[data-id="${review_id}"]`)
 
-        let { status, officer, date, note, rejection } = await this.getReviewInfoFromRevisionsPage(review_id)
-        if (!status || status == "")
-            ({ status, officer, date, note, rejection } = await this.getReviewInfoFromAPI(review_id))
+        let { status, officer, date, note, rejection, revision_id } = await this.getReviewInfoFromAPI(review_id)
+        const currently_reviewed = review_item.classList.contains("approved-status") || review_item.classList.contains("rejected-status")
 
-        const review_item_preview = createElement("div", {
-                class: "review-item-preview",
-                html: `
-                ${officer ? `<p class="review-details"><span class="officer">Reviewed by: ${officer}</span> - <span class="date">${date}</span></p>` : ""}
-                ${rejection ? `<div class="review-rejection"><h3>${review_item.classList.contains("rejected-status") ? "" : "Previous "}Rejection Note</h3><div class="review-html">${rejection}</div></div>` : ""}
-                ${note ? `<div class="review-note"><h3>Internal Review Note</h3><div class="review-html">${note}</div></div>` : ""}
-                `
-            })
-            
         // Remove if already existing
         review_item.querySelector(`.review-item-preview`)?.remove()
 
-        // Add the preview to the page
-        review_item.appendChild(review_item_preview)
+        // Only add if item has been reviewed or if a note or rejection was found
+        if(currently_reviewed || note || rejection){
+            const review_item_preview = createElement("div", {
+                    class: "review-item-preview",
+                    html: `
+                    <p class="review-details"><span class="officer">${ currently_reviewed ? "" : "Previously "}Reviewed by: ${officer}</span> - <span class="date">${date}</span></p>
+                    
+                    ${rejection ? `<div class="review-rejection"> 
+                        <h3>${currently_reviewed ? "" : "Previous "}Rejection Note</h3><div class="review-html">${rejection}</div>
+                    </div>` : ""}
+                
+                    ${note ? `<div class="review-note">
+                        <h3>${currently_reviewed ? "" : "Previous "}Internal Review Note</h3><div class="review-html">${note}</div>
+                    </div>` : ""}
+                
+                    `
+                })
+                
+
+            // Add the preview to the page
+            review_item.appendChild(review_item_preview)
+        }
     },
-    async getReviewInfoFromRevisionsPage(review_id){
-        let response = await fetch(`${baseUrl}/manage/revisions/${this.advisorId}/${review_id}`)
+    // Uses Revision ID
+    async getReviewInfoFromRevisionsPage(revision_id){
+        let response = await fetch(`${baseUrl}/manage/revisions/${this.advisorId}/${revision_id}`)
         if (!response.ok){console.log("Item hasn't been approved/rejected"); return {}}
         const text = await response.text()
         const doc = new DOMParser().parseFromString(text, "text/html")
@@ -2607,17 +2618,48 @@ const Advisor = {
         const rejection = doc.querySelector(".is-rejection-notes")?.innerHTML
         return { status, officer, date, note, rejection }
     },
-    async getReviewInfoFromAPI(review_id){
-        let response = await fetch(`${baseUrl}/api/revisions/${review_id}`)
+    /***
+     * Uses Review ID
+     * Possible Types: "current", "previous", "history"
+     **/
+    async getReviewInfoFromAPI(review_id, type = "current"){
+        
+        let response = await fetch(`${baseUrl}/api/revisions/${review_id}?notes=${type}`)
+        // Make sure the response is OK
         if (!response.ok) return {}
+        const text = await response.text()
+        // Make sure the response contains text (Prevents empty JSON parsing)
+        if (!text.trim()) return {}
+        const data = JSON.parse(text)
+
+        const status = data.state
+        let officer = data.reviewed_by.display_name
+        let date = data.created_at
+        date = new Date(date).toLocaleString()
+        let revision_id = data.revision_id
+        const note = data.internal_notes
+        const rejection = data.notes
+        return { status, officer, date, note, rejection, revision_id }
+    },
+    /**
+     * Get the full review history for a review item.
+     * Uses Review ID, returns a normalized array (API may return a single object or an array)
+     */
+    async getReviewHistory(review_id){
+        let response = await fetch(`${baseUrl}/api/revisions/${review_id}?notes=history`)
+        if (!response.ok) return []
         const data = await response.json()
-        return {
-            status: data.state,
-            officer: "",
-            date: "",
-            note: data.internal_notes,
-            rejection: data.notes
-        }
+        const entries = Array.isArray(data) ? data : [data]
+        return entries.map((entry) => ({
+            date: new Date(entry.created_at),
+            officer: entry.reviewed_by?.display_name || "Unknown",
+            status: entry.state,
+            note: entry.internal_notes,
+            rejection: entry.notes,
+            id: entry._id, // this entry's own id, used for the /manage/revisions/{advisor_id}/{id} link
+            revision_id: entry.revision_id,
+            advisor_id: entry.advisor_id,
+        }))
     },
     setupLastReviewed(){
         setTimeout(() => {
@@ -2894,15 +2936,109 @@ const Review = {
         })
         document.querySelector(".review-tools").appendChild(add_note_btn)
 
-        if (document.querySelector(".review-tools a.active")) {
-            const view_revisions_btn = createElement("a", {
-                class: "btn pill secondary btn-sm primary btn--action-review",
-                target: "_blank",
-                html: "View Revisions",
-                href: window.location.href.replace("review", "revisions")
-            })
-            document.querySelector(".review-tools").appendChild(view_revisions_btn)
+        const view_history_btn = createElement("button", {
+            class: "btn pill secondary btn-sm btn--action-review",
+            html: "View Revision History",
+            onclick: (e) => this.showHistoryDialog(e.target)
+        })
+        document.querySelector(".review-tools").appendChild(view_history_btn)
+    },
+    /**
+     * Fetch and display the full review history in a popup dialog.
+     * @param {HTMLElement} trigger_btn - The button that triggered this, shown as loading while fetching.
+     */
+    async showHistoryDialog(trigger_btn){
+        if (trigger_btn) {
+            trigger_btn.textContent = "Loading Revision History..."
+            trigger_btn.classList.add("thinking")
         }
+
+        const history = await Advisor.getReviewHistory(this.reviewId)
+
+        if (trigger_btn) {
+            trigger_btn.textContent = "View Revision History"
+            trigger_btn.classList.remove("thinking")
+        }
+
+        const dialog = createElement("dialog", {
+            id: "history-dialog",
+            html: `
+                <div class="diff-dialog-header">
+                    <h3>Revision History</h3>
+                    <button class="diff-dialog-close" title="Close">&times;</button>
+                </div>
+                <div class="diff-dialog-content">${this.buildHistoryTable(history)}</div>
+            `
+        })
+
+        document.body.appendChild(dialog)
+        dialog.show()
+
+        const closeBtn = dialog.querySelector(".diff-dialog-close")
+        const handleClose = () => {
+            dialog.close()
+            dialog.remove()
+            document.removeEventListener("click", handleClickOutside)
+            document.removeEventListener("keydown", handleEscape)
+        }
+        closeBtn.addEventListener("click", handleClose)
+
+        const handleClickOutside = (e) => {
+            if (!dialog.contains(e.target)) handleClose()
+        }
+        const handleEscape = (e) => {
+            if (e.key === "Escape") handleClose()
+        }
+        document.addEventListener("keydown", handleEscape)
+        setTimeout(() => document.addEventListener("click", handleClickOutside), 0)
+    },
+    /**
+     * Build the history list HTML, linking each entry to its revision page.
+     */
+    buildHistoryTable(history){
+        if (!history.length)
+            return `<div style="text-align: center; padding: 2rem; color: #666;">No history found</div>`
+
+        const rows = history.map((entry) => {
+            const revision_url = `${baseUrl}/manage/revisions/${entry.advisor_id || this.advisorId}/${entry.id}`
+            const status = entry.status || "unknown"
+            const status_class = status.toLowerCase().replace(/[^a-z0-9]+/g, "-") || "unknown"
+            const date = entry.date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+            const time = entry.date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })
+            const note = entry.note || `<span class="history-empty">No internal note</span>`
+            const rejection = entry.rejection || `<span class="history-empty">No rejection note</span>`
+            const status_label = entry.status ? `<span class="history-status">${status}</span>` : ""
+
+            return `<article class="history-entry status-${status_class}">
+                <div class="history-entry-main">
+                    <div class="history-time">
+                        <strong>${date}</strong>
+                        <span>${time}</span>
+                    </div>
+                    <div class="history-reviewer">
+                        <span class="history-label">Reviewed By</span>
+                        <strong>${entry.officer}</strong>
+                    </div>
+                    ${status_label}
+                    <a class="history-link" href="${revision_url}" target="_blank">Open Revision</a>
+                </div>
+                <div class="history-notes">
+                    <div class="history-note-panel rejection">
+                        <span class="history-label">Rejection Note</span>
+                        <div>${rejection}</div>
+                    </div>
+                    <div class="history-note-panel internal">
+                        <span class="history-label">Internal Note</span>
+                        <div>${note}</div>
+                    </div>
+                </div>
+            </article>`
+        }).join("")
+
+        return `<div class="history-summary">
+            <span class="history-summary-total">${history.length} history ${history.length === 1 ? "entry" : "entries"}</span>
+        </div>
+        <div class="history-list">${rows}</div>`
     },
     FloatingTools: {
         reviewId: null,
@@ -3347,9 +3483,10 @@ const Revisions = {
                 const review_id = e.target.dataset.review_id
                 const advisor_id = e.target.dataset.advisor_id
                 Advisor.advisorId = advisor_id
-                let { status, officer, date, note, rejection } = await Advisor.getReviewInfoFromRevisionsPage(review_id)
-                if (!status || status == "")
-                    ({ status, officer, date, note, rejection } = await Advisor.getReviewInfoFromAPI(review_id))
+                
+                // Get Current
+                let { status, officer, date, note, rejection, revision_id } = await Advisor.getReviewInfoFromRevisionsPage(review_id)
+
                 let row = e.target.closest("tr")
                 // Add the review note and rejection to the row as seperate columns
                 row.insertAdjacentHTML("beforeend", `<td style="font-size: 0.75em;">${note || ""}</td><td style="font-size: 0.75em;">${rejection || ""}</td>`)

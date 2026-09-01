@@ -323,7 +323,7 @@ body.providence.nightMode .review-item-note-rejection span,
 body.providence.nightMode .review-item-note span {color: #888888}
 body.providence.nightMode .toggle-group p {color: #888;}
 
-/* Advisor Domains — Night Mode */
+/* Advisor Domains â€” Night Mode */
 body.providence.nightMode #advisor-details .advisor-domains { border-top-color: rgba(255,255,255,0.1); }
 body.providence.nightMode #advisor-details .advisor-domains h2 { color: #6a6a6a; }
 body.providence.nightMode #advisor-details .advisor-domains .domain-list a { border-color: rgba(8,174,234,0.3); color: #08aeea; }
@@ -342,14 +342,16 @@ body.providence.nightMode #review-item .floating-review-item-wrapper {background
 body.providence.nightMode #review-item .floating-review-item-wrapper {border-color: #4c4c4c}
 body.providence.nightMode #review-item .floating-review-item:not(:last-of-type) {border-color: #4c4c4c}
 
+/* ============ Review Dialogs ============ */
+#differences-dialog, #history-dialog { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90vw; max-width: 1200px; max-height: 80vh; background: white; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); padding: 0; z-index: 1000; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+#differences-dialog::backdrop, #history-dialog::backdrop { background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(2px); }
+#differences-dialog .diff-dialog-header, #history-dialog .diff-dialog-header { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.5rem; border-bottom: 1px solid #eee; background: #f8f9fa; border-radius: 8px 8px 0 0; }
+#differences-dialog .diff-dialog-header h3, #history-dialog .diff-dialog-header h3 { margin: 0; font-size: 1.1em; font-weight: 600; color: #333; }
+#differences-dialog .diff-dialog-close, #history-dialog .diff-dialog-close { background: none; border: none; cursor: pointer; color: #666; padding: 0; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: background-color 0.2s; }
+#differences-dialog .diff-dialog-close:hover, #history-dialog .diff-dialog-close:hover { background-color: #e9ecef; color: #333; }
+#differences-dialog .diff-dialog-content, #history-dialog .diff-dialog-content { padding: 1.5rem; overflow-y: auto; max-height: calc(80vh - 80px); }
+
 /* ============ Differences Dialog ============ */
-#differences-dialog { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90vw; max-width: 1200px; max-height: 80vh; background: white; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); padding: 0; z-index: 1000; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-#differences-dialog::backdrop { background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(2px); }
-#differences-dialog .diff-dialog-header { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.5rem; border-bottom: 1px solid #eee; background: #f8f9fa; border-radius: 8px 8px 0 0; }
-#differences-dialog .diff-dialog-header h3 { margin: 0; font-size: 1.1em; font-weight: 600; color: #333; }
-#differences-dialog .diff-dialog-close { background: none; border: none; cursor: pointer; color: #666; padding: 0; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: background-color 0.2s; }
-#differences-dialog .diff-dialog-close:hover { background-color: #e9ecef; color: #333; }
-#differences-dialog .diff-dialog-content { padding: 1.5rem; overflow-y: auto; max-height: calc(80vh - 80px); }
 #differences-dialog h2 { font-size: 1em; font-weight: 600; margin: 0 0 1rem 0; padding: 0.5rem 0; border-bottom: 2px solid #007bff; color: #333; }
 #differences-dialog .diff-block { display: flex; gap: 1rem; margin-bottom: 1.5rem; border: 1px solid #e9ecef; border-radius: 6px; overflow: hidden; }
 #differences-dialog .diff-column { flex: 1; padding: 1rem; }
@@ -360,3 +362,33 @@ body.providence.nightMode #review-item .floating-review-item:not(:last-of-type) 
 #differences-dialog .diff-column.advisor .diff-label { color: #0066cc; }
 #differences-dialog .diff-text { font-size: 0.9em; line-height: 1.5; margin: 0; word-wrap: break-word; }
 #differences-dialog .diff-highlight { background-color: #ffeb3b; padding: 2px 4px; border-radius: 3px; font-weight: 600; }
+
+/* ============ History Dialog ============ */
+#history-dialog .history-summary { margin-bottom: 0.75rem; padding-bottom: 0.75rem; border-bottom: 1px solid #d7e8ff; }
+#history-dialog .history-summary-total { font-size: 0.9em; font-weight: 600; color: #555; }
+#history-dialog .history-status { justify-self: start; color: #666; font-size: 0.8em; font-weight: 700; line-height: 1; text-transform: uppercase; letter-spacing: 0.5px; }
+#history-dialog .history-list { display: flex; flex-direction: column; gap: 0.75rem; }
+#history-dialog .history-entry { border: 1px solid #e9ecef; border-radius: 4px; overflow: hidden; background: #ffffff; }
+#history-dialog .history-entry-main { display: grid; grid-template-columns: minmax(110px, 0.8fr) minmax(140px, 1fr) auto auto; align-items: center; gap: 0.75rem; padding: 0.75rem 0.9rem; background: #fbfcfd; border-bottom: 1px solid #eef1f4; }
+#history-dialog .history-time, #history-dialog .history-reviewer { display: flex; flex-direction: column; gap: 0.25rem; color: #333; }
+#history-dialog .history-time span { color: #666; font-size: 0.9em; }
+#history-dialog .history-label { display: block; margin-bottom: 0.35rem; color: #777; font-size: 0.72em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+#history-dialog .history-link { justify-self: end; padding: 0.45rem 0.75rem; border: 1px solid #007bff; border-radius: 4px; color: #0066cc; font-size: 0.85em; font-weight: 600; text-decoration: none; }
+#history-dialog .history-link:hover { background: #007bff; color: #ffffff; }
+#history-dialog .history-notes { display: grid; grid-template-columns: 1fr 1fr; }
+#history-dialog .history-note-panel { min-height: 3.25rem; padding: 0.85rem 0.9rem; font-size: 0.9em; line-height: 1.45; word-break: break-word; }
+#history-dialog .history-note-panel.internal { border-left: 3px solid #9ecbff; }
+#history-dialog .history-note-panel.rejection { border-right: 1px solid #eef1f4; border-left: 3px solid #ffb3b3; }
+#history-dialog .history-note-panel.internal .history-label { color: #356fa8; }
+#history-dialog .history-note-panel.rejection .history-label { color: #a84c4c; }
+#history-dialog .history-empty { color: #777; font-style: italic; }
+#history-dialog .history-status.status-rejected, #history-dialog .history-entry.status-rejected .history-status { color: #b54848; }
+#history-dialog .history-status.status-approved, #history-dialog .history-entry.status-approved .history-status { color: #2f7d45; }
+#history-dialog .history-status.status-pending, #history-dialog .history-status.status-pending-review, #history-dialog .history-status.status-unknown, #history-dialog .history-entry.status-pending .history-status, #history-dialog .history-entry.status-pending-review .history-status, #history-dialog .history-entry.status-unknown .history-status { color: #666; }
+
+@media (max-width: 800px) {
+	#history-dialog .history-entry-main { grid-template-columns: 1fr; align-items: start; }
+	#history-dialog .history-link { justify-self: start; }
+	#history-dialog .history-notes { grid-template-columns: 1fr; }
+	#history-dialog .history-note-panel.rejection { border-right: 0; border-bottom: 1px solid #e9ecef; }
+}

@@ -1,3 +1,5 @@
+2.0.13
+- Updated review item notes display and add revision history
 2.0.12
 - Added "Load Notes" button to revision page's items
 - Added business day counter to cards
