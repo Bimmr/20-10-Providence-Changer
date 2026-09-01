@@ -239,7 +239,6 @@ const AdvisorDetails = {
     },
     async addDomains(){
         let site_info = await getSiteInfo(this.advisorInfo.site._id)
-        console.log(site_info)
         const domains = site_info.site.settings.domains || []
         
         const domain_container = createElement("div", {
@@ -2418,10 +2417,8 @@ const Advisor = {
                 if(overlay.querySelector(".show-placeholder")){ // Fixes bug of not being able to remove note after adding it
                    reset_internal_notes = true
                 }
-                console.log("Waiting for overlay animation to finish...")
                 await waitForClassAsync(true, overlay, "velocity-animating")
                 await waitForClassAsync(false, overlay, "velocity-animating")
-                console.log("Overlay animation finished.")
                 if(reset_internal_notes){
                      await fetch(`${baseUrl}/api/revisions/${review_id}`, {
                         method: "PUT",
