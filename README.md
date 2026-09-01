@@ -55,6 +55,7 @@ Advisor Profile & Review:
 - Shows both French and English content in review items
 - Shows if post is custom/vendor provided/siteforward provided
     - Shows differences if edited and from vendor/siteforward
+- Adds Revision history view
 
 Revisions:
 - Adds option to turn revisions table to a full compliance report that includes notes and rejections
