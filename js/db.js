@@ -154,7 +154,6 @@ class DatabaseClient {
         }
 
         try {
-            console.log(params)
             await this.docClient.delete(params).promise()
         } catch (error) {
             console.error(`Failed to delete status for advisor ${advisorId}:`, error)
