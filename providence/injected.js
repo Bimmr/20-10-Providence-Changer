@@ -6,6 +6,7 @@ let advisor_list = []
 let url_parts = ""
 let database = null
 let officer_list = []
+let dataReady = null // Resolves once advisor_list/officer_list are fetched and indexed
 
 /**
  * Advisor lookup maps for O(1) data access
@@ -85,18 +86,22 @@ function getCurrentOfficerInfo(){
 // Function to initialize the page
 async function ready() {
 
-    // Load advisor list
-    let advisor_list_req = await fetch(`${baseUrl}/manage/advisor/list?tags=`)
-    advisor_list_req = await advisor_list_req.json()
-    advisor_list = advisor_list_req.data
+    // Get the URL Parts early so page modules can start before the advisor/officer data loads
+    url_parts = window.location.href.split("/")
 
-    // Load officer list
-    let officer_list_req = await fetch(`${baseUrl}/api/officers`)
-    officer_list_req = await officer_list_req.json()
-    officer_list = officer_list_req
+    // Kick off the advisor/officer fetches without blocking page-module setup; Advisor/Review defer only their data-dependent pieces on this
+    // Fired in parallel with high priority so they don't get stuck behind the per-page review-item note fetches in the browser's connection queue
+    dataReady = (async () => {
+        const [advisor_list_res, officer_list_res] = await Promise.all([
+            fetch(`${baseUrl}/manage/advisor/list?tags=`, { priority: "high" }),
+            fetch(`${baseUrl}/api/officers`, { priority: "high" }),
+        ])
 
-    // Initialize optimizations
-    advisorLookups.buildIndexes()
+        advisor_list = (await advisor_list_res.json()).data
+        officer_list = await officer_list_res.json()
+
+        advisorLookups.buildIndexes()
+    })()
 
     // Add content sub-menu items to content nav menu item
     const content_sub_nav = createElement("ul", {
@@ -112,27 +117,24 @@ async function ready() {
     NightMode.init()
     Chat.init()
 
-    // Get the URL Parts
-    url_parts = window.location.href.split("/")
-
     // Load the page modules
 
     // [https:]//[][app.twentyoverten.com]/[manage] -> Dashboard Home
-    if (url_parts.length == 4 && url_parts[3].includes("manage")) Manage.init()
+    if (url_parts.length == 4 && url_parts[3].includes("manage")) { await dataReady; Manage.init() }
 
     // [https:]//[][app.twentyoverten.com]/[manage]/[revisions] -> Revisions
-    else if (url_parts.length == 5 && url_parts[4].includes("revisions"))  Revisions.init()
+    else if (url_parts.length == 5 && url_parts[4].includes("revisions")) { await dataReady; Revisions.init() }
 
     // [https:]//[][app.twentyoverten.com]/[manage]/[content] -> Content
-    else if (url_parts.length == 5 && url_parts[4].includes("content"))  Content.init()
+    else if (url_parts.length == 5 && url_parts[4].includes("content")) { await dataReady; Content.init() }
 
     // [https:]//[][app.twentyoverten.com]/[manage]/[content]/[custom] -> Content
-    else if (url_parts.length == 6 && url_parts[4].includes("content") && url_parts[5].includes("custom"))  Content.init()
+    else if (url_parts.length == 6 && url_parts[4].includes("content") && url_parts[5].includes("custom")) { await dataReady; Content.init() }
 
-    // [https:]//[][app.twentyoverten.com]/[manage]/[advisor]/[###advisor_id###] -> Advisor Profile
+    // [https:]//[][app.twentyoverten.com]/[manage]/[advisor]/[###advisor_id###] -> Advisor Profile - runs immediately, defers only its data-dependent tail on dataReady
     else if (url_parts.length == 6 && url_parts[4].includes("advisor"))  Advisor.init()
 
-    // [https:]//[][app.twentyoverten.com]/[manage]/[review]/[###advisor_id###]/[###item_id###] -> Item Review
+    // [https:]//[][app.twentyoverten.com]/[manage]/[review]/[###advisor_id###]/[###item_id###] -> Item Review - runs immediately, defers only its data-dependent tail on dataReady
     else if (url_parts.length == 7 && url_parts[4].includes("review"))  Review.init()
 
 }
@@ -146,7 +148,7 @@ async function ready() {
  * @param {string} advisor_id - The advisor's ID
  * @returns {Promise<Object>} - The advisor info object
  */
-async function getAdvisorInfo(advisor_id) {
+async function fetchAdvisorInfo(advisor_id) {
     const response = await fetch(`${baseUrl}/manage/advisor/one/${advisor_id}`)
     return response.json()
 }
@@ -1189,7 +1191,7 @@ const Manage = {
                     state.querySelector(".notPublished")?.remove()
                     let notPublished = createElement("p", {
                         class: "notPublished",
-                        html: "⚠️ Not Published"
+                        html: "âš ï¸ Not Published"
                     })
                     state.append(notPublished)
                 }
@@ -2122,7 +2124,7 @@ const Manage = {
             // Create Tags section header
             const tagsHead = createElement("thead")
             const tagsHeaderRow = createElement("tr")
-            tagsHeaderRow.innerHTML = `<th>Filter by Tags <span class="expand-toggle" title="Show/Hide Other Tags">▼</span></th>`
+            tagsHeaderRow.innerHTML = `<th>Filter by Tags <span class="expand-toggle" title="Show/Hide Other Tags">â–¼</span></th>`
             tagsHead.appendChild(tagsHeaderRow)
             table.appendChild(tagsHead)
             
@@ -2168,7 +2170,7 @@ const Manage = {
             expand_toggle.addEventListener("click", () => {
                 const is_expanded = expand_toggle.classList.toggle("expanded")
                 other_tags.style.display = is_expanded ? "table-row-group" : "none"
-                expand_toggle.innerHTML = is_expanded ? "▲" : "▼"
+                expand_toggle.innerHTML = is_expanded ? "â–²" : "â–¼"
                 expand_toggle.title = is_expanded ? "Hide Other Tags" : "Show Other Tags"
             })
         },
@@ -2341,9 +2343,8 @@ const Advisor = {
         this.advisorId = url_parts[5]
         if (this.advisorId[this.advisorId.length - 1] === "#")
             this.advisorId = this.advisorId.slice(0, -1)
-
-        this.advisorInfo = getAdvisorInfo(this.advisorId)
-        AdvisorDetails.init(this.advisorInfo)
+        
+        dataReady.then(() => this.initData())
 
         this.setupEventListeners()
 
@@ -2359,14 +2360,41 @@ const Advisor = {
             this.checkEmptyReview()
             this.setupLastReviewed()
             this.updateTagsInAdvisorTitle()
+            this.updateNewTabLinks()
         }
         this.InternalDB.init(this.advisorId)
+
+    },
+    /**
+     * Fill in the pieces that need advisor data (tags, domains, preview link, etc.) once it's loaded.
+     */
+    initData(){
+        this.advisorInfo = getAdvisorInfo(this.advisorId)
+        AdvisorDetails.init(this.advisorInfo)
+    },
+    updateNewTabLinks(){
+        document.querySelectorAll("a.btn.btn--action-review").forEach(link => {
+            link.setAttribute("target", "_blank")
+        })
     },
     removeRejectionAndReviewNoteOverlays(){
         document.querySelectorAll("#revision-note-overlay, #rejection-note-overlay").forEach(overlay => overlay.innerHTML = "")
         console.log("Cleared revision and rejection note overlays")
     },
     setupEventListeners(){
+
+        // Add CTRL+Enter shortcut for saving revisons or rejection notes
+        document.addEventListener("keydown", (e)=>{
+            // If revision or rejection note overlay is open
+            if(document.querySelector("#revision-note-overlay .save") || document.querySelector("#rejection-note-overlay .save")){
+                if((e.ctrlKey || e.metaKey) && e.key === "Enter"){
+                    document.querySelector("#revision-note-overlay .save")?.click()
+                    document.querySelector("#rejection-note-overlay .save")?.click()
+                    e.stopPropagation()
+                }
+            }
+        }, true)
+
         document.addEventListener("click", async (e) => {
             
             if(e.target.matches("#revision-note-overlay .save, #revision-note-overlay .cancel") || 
@@ -2564,13 +2592,29 @@ const Advisor = {
             action.appendChild(clear_state.cloneNode(true))
         })
     },
-    setupReviewItemNotes(){
-        const review_items = document.querySelectorAll(".review-item")
+    async setupReviewItemNotes(){
+        const review_items = [...document.querySelectorAll(".review-item")]
+
+        // Mark every item as queued upfront so the user sees them all pending, even though only a few fetch at once
         review_items.forEach((item) => {
             const review_id = item.querySelector("[data-id]").getAttribute("data-id")
             item.setAttribute("data-id", review_id)
-            this.addReviewItemNotesToPage(review_id)
+            item.querySelector(".review-item-status").appendChild(createElement("i", {style:"margin-left: 5px",class: "loading-notes fa fa-spinner"}))
         })
+
+        // Throttle concurrent note fetches so they don't exhaust the browser's per-origin connection pool and starve the advisor/officer data fetches
+        const CONCURRENCY = 3
+        let next_index = 0
+        const worker = async () => {
+            while (next_index < review_items.length) {
+                const item = review_items[next_index++]
+                const review_id = item.getAttribute("data-id")
+                await this.addReviewItemNotesToPage(review_id)
+                item.querySelector(".loading-notes").remove()
+            }
+        }
+
+        Promise.all(Array.from({ length: CONCURRENCY }, worker))
     },
     async addReviewItemNotesToPage(review_id){
         const review_item = document.querySelector(`.review-item[data-id="${review_id}"]`)
@@ -2593,7 +2637,7 @@ const Advisor = {
                     </div>` : ""}
                 
                     ${note ? `<div class="review-note">
-                        <h3>${currently_reviewed ? "" : "Previous "}Internal Review Note</h3><div class="review-html">${note}</div>
+                        <h3>Internal Review Note</h3><div class="review-html">${note}</div>
                     </div>` : ""}
                 
                     `
@@ -2635,7 +2679,7 @@ const Advisor = {
         const status = data.state
         let officer = data.reviewed_by.display_name
         let date = data.created_at
-        date = new Date(date).toLocaleString()
+        date = new Date(date).toLocaleString([], {year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: true})
         let revision_id = data.revision_id
         const note = data.internal_notes
         const rejection = data.notes
@@ -2822,6 +2866,7 @@ const Advisor = {
                     document.querySelector(".advisor-statuses .statusPlaceholder")?.remove();
                     messageInput.value = "";
                     
+                    if (officer_list.length === 0) await dataReady // Guard in case officer_list hasn't loaded yet
                     const date = new Date().getTime();
                     const officer = officer_list.find(officer => officer._id == window.loggedInUser).display_name;
 
@@ -2889,7 +2934,7 @@ const Review = {
     advisorId: null,
     advisorInfo: null,
     reviewId: null,
-    async init(){
+    init(){
         this.advisorId = url_parts[5]
         if (this.advisorId[this.advisorId.length - 1] === "#")
             this.advisorId = this.advisorId.slice(0, -1)
@@ -2897,14 +2942,21 @@ const Review = {
         if (this.reviewId[this.reviewId.length - 1] === "#")
             this.reviewId = this.reviewId.slice(0, -1)
 
-        this.advisorInfo = getAdvisorInfo(this.advisorId)
-        AdvisorDetails.init(this.advisorInfo)
         localStorage.setItem("last_reviewed_id", this.reviewId)
 
         this.setupEventListeners()
-        this.addAddExtraButton()
         this.updateTagsInAdvisorTitle()
         this.FloatingTools.init(this.reviewId)
+        this.addAddExtraButton()
+
+        dataReady.then(() => this.initData())
+    },
+    /**
+     * Fill in the pieces that need advisor data once it's loaded.
+     */
+    initData(){
+        this.advisorInfo = getAdvisorInfo(this.advisorId)
+        AdvisorDetails.init(this.advisorInfo)
     },
     setupEventListeners(){
         // Setup event listeners for the review page
@@ -3142,13 +3194,13 @@ const Review = {
             let html = ""
 
             if (edits.title && edits.title.length > 0) {
-                html += '<h2>📝 Title Differences</h2>'
+                html += '<h2>ðŸ“ Title Differences</h2>'
                 html += edits.title.map(edit => this.createDifferenceBlock(edit)).join("")
             }
 
             if (edits.content && edits.content.length > 0) {
                 if (html) html += '<div style="margin: 2rem 0 1rem 0;"></div>'
-                html += '<h2>📄 Content Differences</h2>'
+                html += '<h2>ðŸ“„ Content Differences</h2>'
                 html += edits.content.map(edit => this.createDifferenceBlock(edit)).join("")
             }
 

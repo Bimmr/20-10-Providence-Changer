@@ -159,7 +159,6 @@ body.providence .review-submission .approved-count.pending-count span.active {co
 
 /* Content source finder */
 #review-item .floating-review-item:not(:last-of-type) { border-right: 1px solid #e7e7e7;}
-#review-item .floating-review-item .fa-spinner{animation: spinning 2s infinite linear;}
 
 /* Highlight Difference Helper */
 body.providence #compare-diff{top: 160px !important; left: 280px !important}
@@ -176,7 +175,7 @@ body.providence #compare-diff{top: 160px !important; left: 280px !important}
 #review-changes .review-item .review-rejection > h3{color:#c0392b !important;}
 #review-changes :is(.review-note, .review-rejection) .review-html{font-size: 0.8em;}
 #review-changes .review-item.approved-status .review-rejection{display: none;}
-#review-changes .review-item:not(.approved-status) .review-note:is(:nth-child(2), :nth-child(3)){padding-left: 2em; border-left: 1px solid #4c4c4c;}
+#review-changes .review-item .review-note:nth-child(3):nth-last-child(1){padding-left: 2em; border-left: 1px solid #4c4c4c;}
 #review-changes .review-item:not(.approved-status) .review-rejection:has(~.review-note){margin-right: 2em;}
 
 /* Language toggle in review */
@@ -220,6 +219,8 @@ body.providence #compare-diff{top: 160px !important; left: 280px !important}
 /* Revision list */
 body.providence #revisions-list td:is(:nth-child(7), :nth-child(8)){  white-space: unset;}
 
+/* Spinner animation */
+.fa-spinner{animation: spinning 2s infinite linear;}
 
 /* ========== Night Mode ========== */
 
@@ -323,7 +324,7 @@ body.providence.nightMode .review-item-note-rejection span,
 body.providence.nightMode .review-item-note span {color: #888888}
 body.providence.nightMode .toggle-group p {color: #888;}
 
-/* Advisor Domains â€” Night Mode */
+/* Advisor Domains Ã¢â‚¬â€ Night Mode */
 body.providence.nightMode #advisor-details .advisor-domains { border-top-color: rgba(255,255,255,0.1); }
 body.providence.nightMode #advisor-details .advisor-domains h2 { color: #6a6a6a; }
 body.providence.nightMode #advisor-details .advisor-domains .domain-list a { border-color: rgba(8,174,234,0.3); color: #08aeea; }
