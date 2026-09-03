@@ -1191,7 +1191,7 @@ const Manage = {
                     state.querySelector(".notPublished")?.remove()
                     let notPublished = createElement("p", {
                         class: "notPublished",
-                        html: "âš ï¸ Not Published"
+                        html: "⚠️ FE0F Not Published"
                     })
                     state.append(notPublished)
                 }
@@ -2124,7 +2124,7 @@ const Manage = {
             // Create Tags section header
             const tagsHead = createElement("thead")
             const tagsHeaderRow = createElement("tr")
-            tagsHeaderRow.innerHTML = `<th>Filter by Tags <span class="expand-toggle" title="Show/Hide Other Tags">â–¼</span></th>`
+            tagsHeaderRow.innerHTML = `<th>Filter by Tags <span class="expand-toggle" title="Show/Hide Other Tags">▼</span></th>`
             tagsHead.appendChild(tagsHeaderRow)
             table.appendChild(tagsHead)
             
@@ -2170,7 +2170,7 @@ const Manage = {
             expand_toggle.addEventListener("click", () => {
                 const is_expanded = expand_toggle.classList.toggle("expanded")
                 other_tags.style.display = is_expanded ? "table-row-group" : "none"
-                expand_toggle.innerHTML = is_expanded ? "â–²" : "â–¼"
+                expand_toggle.innerHTML = is_expanded ? "▲" : "▼"
                 expand_toggle.title = is_expanded ? "Hide Other Tags" : "Show Other Tags"
             })
         },
@@ -2603,7 +2603,7 @@ const Advisor = {
         })
 
         // Throttle concurrent note fetches so they don't exhaust the browser's per-origin connection pool and starve the advisor/officer data fetches
-        const CONCURRENCY = 3
+        const INITIAL_CONCURRENCY = 3
         let next_index = 0
         const worker = async () => {
             while (next_index < review_items.length) {
@@ -2614,7 +2614,12 @@ const Advisor = {
             }
         }
 
-        Promise.all(Array.from({ length: CONCURRENCY }, worker))
+        for (let i = 0; i < INITIAL_CONCURRENCY; i++) worker()
+
+        // Advisor/officer data is loaded, so nothing left to starve - open up a worker per remaining item
+        dataReady.then(() => {
+            for (let i = INITIAL_CONCURRENCY; i < review_items.length; i++) worker()
+        })
     },
     async addReviewItemNotesToPage(review_id){
         const review_item = document.querySelector(`.review-item[data-id="${review_id}"]`)
@@ -3194,13 +3199,13 @@ const Review = {
             let html = ""
 
             if (edits.title && edits.title.length > 0) {
-                html += '<h2>ðŸ“ Title Differences</h2>'
+                html += '<h2>📝 Title Differences</h2>'
                 html += edits.title.map(edit => this.createDifferenceBlock(edit)).join("")
             }
 
             if (edits.content && edits.content.length > 0) {
                 if (html) html += '<div style="margin: 2rem 0 1rem 0;"></div>'
-                html += '<h2>ðŸ“„ Content Differences</h2>'
+                html += '<h2>📋 Content Differences</h2>'
                 html += edits.content.map(edit => this.createDifferenceBlock(edit)).join("")
             }
 
