@@ -3525,6 +3525,8 @@ const Revisions = {
             debounce(() => {
                 const rows = document.querySelectorAll("#revisions-list tbody tr")
                 rows.forEach((row) => {
+                    if (row.querySelector(".dataTables_empty")) return
+                    
                     const review_link = row.querySelector(".actions a").href.split("/")
                     const review_id = review_link[review_link.length - 1]
                     const advisor_id = review_link[review_link.length - 2]
