@@ -2605,21 +2605,27 @@ const Advisor = {
 
         // Throttle concurrent note fetches so they don't exhaust the browser's per-origin connection pool and starve the advisor/officer data fetches
         const INITIAL_CONCURRENCY = 3
+        const MAX_CONCURRENCY = 6
         let next_index = 0
         const worker = async () => {
             while (next_index < review_items.length) {
                 const item = review_items[next_index++]
                 const review_id = item.getAttribute("data-id")
-                await this.addReviewItemNotesToPage(review_id)
+                try{
+                    await this.addReviewItemNotesToPage(review_id)
+                } catch (error) {
+                    console.error(`Failed to fetch notes for review ${review_id}:`, error)
+                }
                 item.querySelector(".loading-notes").remove()
             }
         }
 
         for (let i = 0; i < INITIAL_CONCURRENCY; i++) worker()
 
-        // Advisor/officer data is loaded, so nothing left to starve - open up a worker per remaining item
+        // Advisor/officer data is loaded, so we can start more workers to fetch notes
         dataReady.then(() => {
-            for (let i = INITIAL_CONCURRENCY; i < review_items.length; i++) worker()
+            const target = Math.min(MAX_CONCURRENCY, review_items.length)
+            for (let i = INITIAL_CONCURRENCY; i < target; i++) worker()
         })
     },
     async addReviewItemNotesToPage(review_id){
