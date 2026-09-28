@@ -1191,7 +1191,7 @@ const Manage = {
                     state.querySelector(".notPublished")?.remove()
                     let notPublished = createElement("p", {
                         class: "notPublished",
-                        html: "⚠️ FE0F Not Published"
+                        html: "⚠️ Not Published"
                     })
                     state.append(notPublished)
                 }
@@ -2386,8 +2386,9 @@ const Advisor = {
         // Add CTRL+Enter shortcut for saving revisons or rejection notes
         document.addEventListener("keydown", (e)=>{
             // If revision or rejection note overlay is open
-            if(document.querySelector("#revision-note-overlay .save") || document.querySelector("#rejection-note-overlay .save")){
+            if(document.querySelector("#publish-notes-overlay .save") || document.querySelector("#revision-note-overlay .save") || document.querySelector("#rejection-note-overlay .save")){
                 if((e.ctrlKey || e.metaKey) && e.key === "Enter"){
+                    document.querySelector("#publish-note-overlay .save")?.click()
                     document.querySelector("#revision-note-overlay .save")?.click()
                     document.querySelector("#rejection-note-overlay .save")?.click()
                     e.stopPropagation()
