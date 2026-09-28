@@ -1,5 +1,8 @@
 2.1.0
 - Refactor data fetching in the ready function to improve page load performance and add data readiness handling for advisor and officer lists
+- Fixed error when drawing notes buttons to revision table
+- Added Revison ID to revisions export table
+- Added CTRL + Enter to save rejection, internal, and publish notes
 2.0.13
 - Updated review item notes display and add revision history
 2.0.12
