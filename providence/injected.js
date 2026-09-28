@@ -3763,6 +3763,7 @@ const Revisions = {
          */
         makeRow(revision) {
             try {
+                const revisionId = revision.revision_id || "N/A"
                 const advisor = revision.advisor?.display_name || "N/A"
                 const email = revision.advisor?.email || "N/A"
                 const domain = revision.site?.settings?.domains?.join(", ") || "N/A"
@@ -3781,6 +3782,7 @@ const Revisions = {
 
                 return `<tr>
                 <td>${advisor}<br style="mso-data-placement:same-cell"/>${email}</td>
+                <td>${revisionId}</td>
                 <td>${domain}</td>
                 <td>${tags}</td>
                 <td>${revisionType}</td>
@@ -3806,6 +3808,7 @@ const Revisions = {
             return `<table border="1" style="border-collapse:collapse;width:100%">
                 <thead>
                     <tr style="background-color:#f2f2f2">
+                        <th>Revision ID</th>
                         <th>Advisor</th>
                         <th>Domain</th>
                         <th>Tags</th>
