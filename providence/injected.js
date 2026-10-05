@@ -3788,8 +3788,8 @@ const Revisions = {
                     contentLength += this.stripHtml(revisionName || "").length || 0
 
                 return `<tr>
-                <td>${advisor}<br style="mso-data-placement:same-cell"/>${email}</td>
                 <td>${revisionId}</td>
+                <td>${advisor}<br style="mso-data-placement:same-cell"/>${email}</td>
                 <td>${domain}</td>
                 <td>${tags}</td>
                 <td>${revisionType}</td>
