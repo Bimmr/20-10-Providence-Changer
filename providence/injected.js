@@ -2373,7 +2373,7 @@ const Advisor = {
         AdvisorDetails.init(this.advisorInfo)
     },
     updateNewTabLinks(){
-        document.querySelectorAll("a.btn.btn--action-review").forEach(link => {
+        document.querySelectorAll("a.btn.btn--action-review:not(.btn-add-note-all").forEach(link => {
             link.setAttribute("target", "_blank")
         })
     },
