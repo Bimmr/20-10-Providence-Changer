@@ -6,6 +6,7 @@
 - Added "Send to Compliance" toggle to the edit page's review panel to assign the website directly to MLS Sales Communication
 - Review item notes on the advisor page now load in a single request instead of one slow request per item
 - Revisions page "Load Notes" now uses the already loaded table data instead of fetching each revision page
+- Added a view item history popup 
 2.0.13
 - Updated review item notes display and add revision history
 2.0.12

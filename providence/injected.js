@@ -2631,14 +2631,45 @@ const Advisor = {
     /**
      * Get the advisor's email from the page's email link, falling back to a lookup.
      * Any "+tag" part is dropped (as on the revisions page) because the table search doesn't match addresses containing "+".
+     * @param {string} [advisor_id] - Defaults to the advisor on the current page.
      * @returns {Promise<string|undefined>}
      */
-    async getAdvisorEmail(){
+    async getAdvisorEmail(advisor_id = this.advisorId){
         const mailto = document.querySelector('.advisor-actions a[href^="mailto:"]')?.getAttribute("href")
         let email = mailto
             ? decodeURIComponent(mailto.slice("mailto:".length).split("?")[0])
-            : await fetchAdvisorInfo(this.advisorId).then((advisor) => advisor?.email ?? advisor?.data?.email)
+            : await fetchAdvisorInfo(advisor_id).then((advisor) => advisor?.email ?? advisor?.data?.email)
         return email?.replace(/^[^@+]*\+/, "")
+    },
+    /**
+     * Fetch one date range of the revisions table. The table can only be searched by email,
+     * so the rows can include other advisors who share the same address.
+     * @param {string} email - The advisor's email (without any "+tag" part).
+     * @param {string} date_from - YYYY-MM-DD
+     * @param {string} date_to - YYYY-MM-DD
+     * @returns {Promise<Object[]>}
+     */
+    async fetchRevisionTableRows(email, date_from, date_to){
+        const params = new URLSearchParams({
+            draw: 1,
+            start: 0,
+            length: 999999,
+            "order[0][column]": 4,
+            "order[0][dir]": "desc",
+            "columns[0][data]": "",
+            "columns[1][data]": "email",
+            "columns[2][data]": "",
+            "columns[3][data]": "state",
+            "columns[4][data]": "created_at",
+            "columns[5][data]": "",
+            "search[value]": email,
+            dateFrom: date_from,
+            dateTo: date_to,
+        })
+        const response = await fetch(`${baseUrl}/manage/revisions/table?${params}`)
+        if (!response.ok) throw new Error(`Status ${response.status}`)
+        const { data } = await response.json()
+        return data
     },
     /**
      * Fetch the latest decision for each of this advisor's review items in a single request.
@@ -2652,25 +2683,7 @@ const Advisor = {
             if (!email) throw new Error("Advisor email not found")
 
             const day = (days_ago) => new Date(Date.now() - days_ago * 86400000).toISOString().slice(0, 10)
-            const params = new URLSearchParams({
-                draw: 1,
-                start: 0,
-                length: 999999,
-                "order[0][column]": 4,
-                "order[0][dir]": "desc",
-                "columns[0][data]": "",
-                "columns[1][data]": "email",
-                "columns[2][data]": "",
-                "columns[3][data]": "state",
-                "columns[4][data]": "created_at",
-                "columns[5][data]": "",
-                "search[value]": email,
-                dateFrom: day(days),
-                dateTo: day(-1),
-            })
-            const response = await fetch(`${baseUrl}/manage/revisions/table?${params}`)
-            if (!response.ok) throw new Error(`Status ${response.status}`)
-            const { data } = await response.json()
+            const data = await this.fetchRevisionTableRows(email, day(days), day(-1))
 
             const latest = new Map()
             for (const row of data) {
@@ -2802,16 +2815,88 @@ const Advisor = {
         if (!response.ok) return []
         const data = await response.json()
         const entries = Array.isArray(data) ? data : [data]
-        return entries.map((entry) => ({
-            date: new Date(entry.created_at),
-            officer: entry.reviewed_by?.display_name || "Unknown",
-            status: entry.state,
-            note: entry.internal_notes,
-            rejection: entry.notes,
-            id: entry._id, // this entry's own id, used for the /manage/revisions/{advisor_id}/{id} link
-            revision_id: entry.revision_id,
-            advisor_id: entry.advisor_id,
+        return entries.map((entry) => this.formatHistoryEntry(entry))
+    },
+    /**
+     * Convert a review decision (from the revisions API or table) into a history entry.
+     * The name/title is kept because members and posts can be renamed over time.
+     */
+    formatHistoryEntry(data){
+        return {
+            date: new Date(data.created_at),
+            officer: data.reviewed_by?.display_name || "Unknown",
+            status: data.state,
+            note: data.internal_notes,
+            rejection: data.notes,
+            content: data.content,
+            id: data._id, // this entry's own id, used for the /manage/revisions/{advisor_id}/{id} link
+            revision_id: data.revision_id,
+            advisor_id: data.advisor_id,
+            location: data.location,
+            label: [data.meta?.name, data.title].filter(Boolean).join(" - ").replace(/\[br\]/g, " "),
+        }
+    },
+    // Review item types, and the field that identifies one item of that type (null: a site only has one)
+    itemIdFields: { page: "page_id", member: "member_id", post: "post_id", footer: null },
+    itemHistoryStartYear: 2019,
+    /**
+     * Work out which item a review is for, so its reviews can be found across revisions.
+     * Uses Review ID, returns { location, field, value, advisor_id } or null
+     */
+    async getReviewItemKey(review_id){
+        // A review that hasn't been decided yet may not return anything for "current", so fall back to the plain review
+        for (const query of ["?notes=current", ""]) {
+            const response = await fetch(`${baseUrl}/api/revisions/${review_id}${query}`)
+            if (!response.ok) continue
+            const text = await response.text()
+            if (!text.trim()) continue
+
+            const data = JSON.parse(text)
+            const item = Array.isArray(data) ? data[0] : data
+            if (!item || !(item.location in this.itemIdFields)) continue
+
+            const field = this.itemIdFields[item.location]
+            if (field && !item[field]) continue
+
+            const value = field ? item[field] : null
+            return { location: item.location, field, value, advisor_id: item.advisor_id }
+        }
+        return null
+    },
+    /**
+     * Whether a revisions table row is a review of the given item.
+     */
+    isSameItem(row, key){
+        if (row.advisor_id !== key.advisor_id || row.location !== key.location) return false
+        return !key.field || row[key.field] === key.value
+    },
+    /**
+     * Load every review of one item back to itemHistoryStartYear, calling on_entries with each year's entries as they load.
+     * The table is requested one year at a time (all at once) because that is much faster than a single large request.
+     * Returns the years that failed to load.
+     */
+    async loadItemHistory(key, on_entries){
+        const email = await this.getAdvisorEmail(key.advisor_id)
+        if (!email) throw new Error("Advisor email not found")
+
+        const this_year = new Date().getFullYear()
+        const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10)
+        const years = []
+        for (let year = this_year; year >= this.itemHistoryStartYear; year--) years.push(year)
+
+        const failed_years = []
+        await Promise.all(years.map(async (year) => {
+            const date_to = year === this_year ? tomorrow : `${year + 1}-01-01`
+            try {
+                const rows = await this.fetchRevisionTableRows(email, `${year}-01-01`, date_to)
+                const entries = rows.filter((row) => this.isSameItem(row, key)).map((row) => this.formatHistoryEntry(row))
+                on_entries(entries)
+            } catch (error) {
+                console.warn(`Unable to load ${year} item history:`, error)
+                failed_years.push(year)
+            }
         }))
+        return failed_years.sort((a, b) => b - a)
     },
     setupLastReviewed(){
         setTimeout(() => {
@@ -3096,109 +3181,215 @@ const Review = {
         })
         document.querySelector(".review-tools").appendChild(add_note_btn)
 
-        const view_history_btn = createElement("button", {
+        document.querySelector(".review-tools").appendChild(this.buildHistoryMenu())
+    },
+    /**
+     * Build the "View History" dropdown with the Revision and Item history options.
+     */
+    buildHistoryMenu(){
+        const menu = createElement("div", { class: "history-menu" })
+        const toggle = createElement("button", {
             class: "btn pill secondary btn-sm btn--action-review",
-            html: "View Revision History",
-            onclick: (e) => this.showHistoryDialog(e.target)
+            html: `View History <span class="history-menu-caret">▾</span>`,
+            onclick: () => menu.classList.toggle("open")
         })
-        document.querySelector(".review-tools").appendChild(view_history_btn)
+        const list = createElement("ul", { class: "history-menu-list" })
+
+        const options = {
+            "Revision History": () => this.showHistoryDialog(),
+            "Item History": () => this.showItemHistoryDialog(),
+        }
+        for (const [label, show_dialog] of Object.entries(options)) {
+            const item = createElement("li")
+            item.appendChild(createElement("button", {
+                class: "history-menu-item",
+                html: label,
+                onclick: () => {
+                    menu.classList.remove("open")
+                    show_dialog()
+                }
+            }))
+            list.appendChild(item)
+        }
+
+        // Close the menu when clicking anywhere else
+        document.addEventListener("click", (e) => {
+            if (!menu.contains(e.target)) menu.classList.remove("open")
+        })
+
+        menu.append(toggle, list)
+        return menu
     },
     /**
      * Fetch and display the full review history in a popup dialog.
-     * @param {HTMLElement} trigger_btn - The button that triggered this, shown as loading while fetching.
+     * The dialog opens straight away and shows that it's loading.
      */
-    async showHistoryDialog(trigger_btn){
-        if (trigger_btn) {
-            trigger_btn.textContent = "Loading Revision History..."
-            trigger_btn.classList.add("thinking")
+    async showHistoryDialog(){
+        const dialog = showDialog("history-dialog", "Revision History", this.buildHistoryTable([], { loading: "Loading revision history..." }))
+
+        let html
+        try {
+            const history = await Advisor.getReviewHistory(this.reviewId)
+            html = this.buildHistoryTable(history)
+        } catch (error) {
+            console.error("Unable to load revision history:", error)
+            html = this.buildHistoryTable([], { notice: "Unable to load revision history.", empty_text: "" })
         }
 
-        const history = await Advisor.getReviewHistory(this.reviewId)
-
-        if (trigger_btn) {
-            trigger_btn.textContent = "View Revision History"
-            trigger_btn.classList.remove("thinking")
-        }
-
-        const dialog = createElement("dialog", {
-            id: "history-dialog",
-            html: `
-                <div class="diff-dialog-header">
-                    <h3>Revision History</h3>
-                    <button class="diff-dialog-close" title="Close">&times;</button>
-                </div>
-                <div class="diff-dialog-content">${this.buildHistoryTable(history)}</div>
-            `
-        })
-
-        document.body.appendChild(dialog)
-        dialog.show()
-
-        const closeBtn = dialog.querySelector(".diff-dialog-close")
-        const handleClose = () => {
-            dialog.close()
-            dialog.remove()
-            document.removeEventListener("click", handleClickOutside)
-            document.removeEventListener("keydown", handleEscape)
-        }
-        closeBtn.addEventListener("click", handleClose)
-
-        const handleClickOutside = (e) => {
-            if (!dialog.contains(e.target)) handleClose()
-        }
-        const handleEscape = (e) => {
-            if (e.key === "Escape") handleClose()
-        }
-        document.addEventListener("keydown", handleEscape)
-        setTimeout(() => document.addEventListener("click", handleClickOutside), 0)
+        // The dialog may have been closed while loading
+        if (dialog.isConnected) dialog.querySelector(".diff-dialog-content").innerHTML = html
     },
     /**
-     * Build the history list HTML, linking each entry to its revision page.
+     * Fetch and display every review of this item (across revisions) in a popup dialog.
+     * Entries are added newest-first as each year's data loads.
      */
-    buildHistoryTable(history){
-        if (!history.length)
-            return `<div style="text-align: center; padding: 2rem; color: #666;">No history found</div>`
+    async showItemHistoryDialog(){
+        const dialog = showDialog("history-dialog", "Item History", this.buildHistoryTable([], { loading: "Finding this item..." }))
+        const content = dialog.querySelector(".diff-dialog-content")
+        const entries = new Map()
+        const getSortedEntries = () => [...entries.values()].sort((a, b) => b.date - a.date)
 
-        const rows = history.map((entry) => {
-            const revision_url = `${baseUrl}/manage/revisions/${entry.advisor_id || this.advisorId}/${entry.id}`
-            const status = entry.status || "unknown"
-            const status_class = status.toLowerCase().replace(/[^a-z0-9]+/g, "-") || "unknown"
-            const date = entry.date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
-            const time = entry.date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })
-            const note = entry.note || `<span class="history-empty">No internal note</span>`
-            const rejection = entry.rejection || `<span class="history-empty">No rejection note</span>`
-            const status_label = entry.status ? `<span class="history-status">${status}</span>` : ""
+        const render = (options = {}) => {
+            // The dialog may have been closed while loading
+            if (!dialog.isConnected) return
+            content.innerHTML = this.buildHistoryTable(getSortedEntries(), { group: true, empty_text: "No previous reviews found for this item", ...options })
+        }
 
-            return `<article class="history-entry status-${status_class}">
-                <div class="history-entry-main">
-                    <div class="history-time">
-                        <strong>${date}</strong>
-                        <span>${time}</span>
-                    </div>
-                    <div class="history-reviewer">
-                        <span class="history-label">Reviewed By</span>
-                        <strong>${entry.officer}</strong>
-                    </div>
-                    ${status_label}
-                    <a class="history-link" href="${revision_url}" target="_blank">Open Revision</a>
-                </div>
-                <div class="history-notes">
-                    <div class="history-note-panel rejection">
-                        <span class="history-label">Rejection Note</span>
-                        <div>${rejection}</div>
-                    </div>
-                    <div class="history-note-panel internal">
-                        <span class="history-label">Internal Note</span>
-                        <div>${note}</div>
-                    </div>
-                </div>
-            </article>`
-        }).join("")
+        try {
+            const key = await Advisor.getReviewItemKey(this.reviewId)
+            if (!key) return render({ empty_text: "Unable to identify this item" })
+
+            render({ loading: "Loading history..." })
+            const failed_years = await Advisor.loadItemHistory(key, (year_entries) => {
+                year_entries.forEach((entry) => entries.set(entry.id, entry))
+                render({ loading: "Loading older history..." })
+            })
+
+            let notice = ""
+            if (failed_years.length) notice = `Unable to load ${failed_years.join(", ")}. History for those years is missing.`
+            render({ notice })
+
+            // Log the full entries (including the page content) in case we need to look through the content changes
+            console.log("Item history (newest first):", getSortedEntries())
+        } catch (error) {
+            console.error("Unable to load item history:", error)
+            render({ notice: "Unable to load item history.", empty_text: "" })
+        }
+    },
+    /**
+     * Build the history table HTML, linking each entry to its revision page.
+     * Options: loading/notice messages, empty_text when there's nothing to show, and group to group entries by review.
+     */
+    buildHistoryTable(history, { loading = "", notice = "", empty_text = "No history found", group = false } = {}){
+        let status_html = ""
+        if (loading) status_html += `<span class="history-loading"><i class="fa fa-spinner"></i> ${loading}</span>`
+        if (notice) status_html += `<span class="history-notice">${notice}</span>`
+
+        if (!history.length) {
+            // Nothing to show yet, so make the loading message the whole dialog
+            if (loading) return `<div class="history-loading-state">${status_html}</div>`
+
+            let html = ""
+            if (status_html) html += `<div class="history-summary">${status_html}</div>`
+            if (empty_text) html += `<div style="text-align: center; padding: 2rem; color: #666;">${empty_text}</div>`
+            return html
+        }
+
+        let rows_html, total_text
+        if (group) {
+            const groups = this.groupHistoryByReview(history)
+
+            // Only label a group when the name changes, so a run of reviews on the same page isn't broken up by repeated headers
+            let previous_label = null
+            rows_html = groups.map((entries) => {
+                const html = this.buildHistoryGroup(entries, previous_label)
+                previous_label = this.getHistoryLabel(entries[0])
+                return html
+            }).join("")
+            total_text = `${groups.length} ${groups.length === 1 ? "review" : "reviews"}`
+        } else {
+            rows_html = `<tbody>${history.map((entry) => this.buildHistoryEntry(entry)).join("")}</tbody>`
+            total_text = `${history.length} history ${history.length === 1 ? "entry" : "entries"}`
+        }
 
         return `<div class="history-summary">
-            <span class="history-summary-total">${history.length} history ${history.length === 1 ? "entry" : "entries"}</span>
+            <span class="history-summary-total">${total_text}</span>
+            ${status_html}
         </div>
-        <div class="history-list">${rows}</div>`
+        <table class="history-table">
+            <thead><tr><th>Date</th><th>Reviewed By</th><th>Status</th><th>Notes</th><th></th></tr></thead>
+            ${rows_html}
+        </table>`
+    },
+    /**
+     * Group entries by revision_id, which is shared by all the decisions on one review.
+     * Groups keep the order of the entries given, so pass them newest first.
+     */
+    groupHistoryByReview(history){
+        const groups = new Map()
+        history.forEach((entry) => {
+            const key = entry.revision_id || entry.id
+            if (!groups.has(key)) groups.set(key, [])
+            groups.get(key).push(entry)
+        })
+        return [...groups.values()]
+    },
+    /**
+     * The item's name/title at the time of an entry.
+     */
+    getHistoryLabel(entry){
+        if (entry.label) return entry.label
+        if (entry.location) return entry.location[0].toUpperCase() + entry.location.slice(1)
+        return "Review"
+    },
+    /**
+     * Build one review's group: the name/title (when it differs from the previous group), then each decision on it.
+     */
+    buildHistoryGroup(entries, previous_label){
+        const latest = entries[0]
+        const is_current = latest.revision_id === this.reviewId
+        const label = this.getHistoryLabel(latest)
+
+        let label_html = ""
+        if (label !== previous_label) label_html = `<tr class="history-group-row"><td colspan="5">${label.replace(/</g, "&lt;")}</td></tr>`
+
+        // Only the latest decision on the current review gets the "This revision" tag
+        const rows_html = entries.map((entry, i) => this.buildHistoryEntry(entry, is_current && i === 0)).join("")
+
+        return `<tbody class="history-group${is_current ? " history-current" : ""}">
+            ${label_html}
+            ${rows_html}
+        </tbody>`
+    },
+    /**
+     * Build one decision, linking it to its revision page.
+     */
+    buildHistoryEntry(entry, is_current = false){
+        const revision_url = `${baseUrl}/manage/revisions/${entry.advisor_id || this.advisorId}/${entry.id}`
+        const date = entry.date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+        const time = entry.date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })
+
+        let status_html = ""
+        if (entry.status) {
+            const status_class = entry.status.toLowerCase().replace(/[^a-z0-9]+/g, "-")
+            const status_text = entry.status[0].toUpperCase() + entry.status.slice(1).toLowerCase()
+            status_html = `<span class="history-chip status-${status_class}">${status_text}</span>`
+        }
+
+        let notes_html = ""
+        if (entry.rejection) notes_html += `<div class="history-note rejection"><span class="history-note-label">Rejection note</span>${entry.rejection}</div>`
+        if (entry.note) notes_html += `<div class="history-note"><span class="history-note-label">Internal note</span>${entry.note}</div>`
+        if (!notes_html) notes_html = `<span class="history-none">—</span>`
+
+        const current_html = is_current ? `<span class="history-chip history-chip--current">This revision</span>` : ""
+
+        return `<tr class="history-row">
+            <td class="history-date">${date}<span>${time}</span>${current_html}</td>
+            <td>${entry.officer}</td>
+            <td>${status_html}</td>
+            <td class="history-notes">${notes_html}</td>
+            <td class="history-open"><a href="${revision_url}" target="_blank">Open Revision</a></td>
+        </tr>`
     },
     FloatingTools: {
         reviewId: null,
@@ -3291,7 +3482,7 @@ const Review = {
 
             trigger.addEventListener("click", (event) => {
                 event.preventDefault()
-                this.showDifferencesDialog(differences, trigger)
+                showDialog("differences-dialog", "Content Differences", differences)
             })
         },
 
@@ -3340,55 +3531,6 @@ const Review = {
                         <div class="diff-text">${escapeAndHighlight(edit.advisor)}</div>
                     </div>
                 </div>`
-        },
-
-        /**
-         * Show the differences dialog
-         */
-        showDifferencesDialog(differences, trigger) {
-            const dialog = createElement("dialog", {
-                id: "differences-dialog",
-                html: `
-                    <div class="diff-dialog-header">
-                        <h3>Content Differences</h3>
-                        <button class="diff-dialog-close" title="Close">&times;</button>
-                    </div>
-                    <div class="diff-dialog-content">${differences}</div>
-                `
-            })
-
-            document.body.appendChild(dialog)
-            dialog.show()
-
-            // Setup close handlers
-            const closeBtn = dialog.querySelector(".diff-dialog-close")
-            const handleClose = () => {
-                dialog.close()
-                dialog.remove()
-                document.removeEventListener("click", handleClickOutside)
-                document.removeEventListener("keydown", handleEscape)
-            }
-
-            closeBtn.addEventListener("click", handleClose)
-
-            const handleClickOutside = (e) => {
-                if (!dialog.contains(e.target)) {
-                    handleClose()
-                }
-            }
-
-            // Setup escape key handler
-            const handleEscape = (e) => {
-                if (e.key === "Escape") {
-                    handleClose()
-                }
-            }
-            
-            document.addEventListener("keydown", handleEscape)
-
-            setTimeout(() => {
-                document.addEventListener("click", handleClickOutside)
-            }, 0)
         },
 
         /**
@@ -4240,6 +4382,50 @@ const Content = {
 }
 
 
+
+/**
+ * Show a popup dialog, closed by the X button, the Escape key, or clicking outside of it.
+ * @param {string} id - The dialog's id, used for styling
+ * @param {string} title - The dialog title
+ * @param {string} body_html - The dialog content
+ * @returns {HTMLDialogElement} - The dialog, so its content can be updated
+ */
+function showDialog(id, title, body_html) {
+    const dialog = createElement("dialog", {
+        id,
+        html: `
+            <div class="diff-dialog-header">
+                <h3>${title}</h3>
+                <button class="diff-dialog-close" title="Close">&times;</button>
+            </div>
+            <div class="diff-dialog-content">${body_html}</div>
+        `
+    })
+
+    document.body.appendChild(dialog)
+    dialog.show()
+
+    // Setup close handlers
+    const handleClose = () => {
+        dialog.close()
+        dialog.remove()
+        document.removeEventListener("click", handleClickOutside)
+        document.removeEventListener("keydown", handleEscape)
+    }
+    dialog.querySelector(".diff-dialog-close").addEventListener("click", handleClose)
+
+    const handleClickOutside = (e) => {
+        if (!dialog.contains(e.target)) handleClose()
+    }
+    const handleEscape = (e) => {
+        if (e.key === "Escape") handleClose()
+    }
+    document.addEventListener("keydown", handleEscape)
+
+    // Wait a tick so the click that opened the dialog doesn't close it
+    setTimeout(() => document.addEventListener("click", handleClickOutside), 0)
+    return dialog
+}
 
 /**
  * Check if the tag exists in the advisor's tags (NOT exact match)
