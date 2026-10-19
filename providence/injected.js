@@ -2602,7 +2602,93 @@ const Advisor = {
             item.setAttribute("data-id", review_id)
             item.querySelector(".review-item-status").appendChild(createElement("i", {style:"margin-left: 5px",class: "loading-notes fa fa-spinner"}))
         })
+// One request for all of this advisor's recent decisions is much faster than one slow request per item
+        const rows = await this.getLatestReviewRows()
+        if (!rows) return this.loadReviewItemNotesIndividually(review_items)
 
+        // Items marked reviewed on the page should always have a decision; if the table doesn't have it, look it up directly
+        const needs_lookup = []
+        for (const item of review_items) {
+            const review_id = item.getAttribute("data-id")
+            const row = rows.get(review_id)
+            const is_reviewed = item.classList.contains("approved-status") || item.classList.contains("rejected-status")
+            if (!row && is_reviewed) {
+                needs_lookup.push(item)
+                continue
+            }
+            try {
+                await this.addReviewItemNotesToPage(review_id, row ? this.formatReviewInfo(row) : {})
+            } catch (error) {
+                console.error(`Failed to show notes for review ${review_id}:`, error)
+            }
+            item.querySelector(".loading-notes")?.remove()
+        }
+        if (needs_lookup.length) {
+            console.warn(`${needs_lookup.length} reviewed item(s) not found in the revisions table, loading individually`)
+            this.loadReviewItemNotesIndividually(needs_lookup)
+        }
+    },
+    /**
+     * Get the advisor's email from the page's email link, falling back to a lookup.
+     * Any "+tag" part is dropped (as on the revisions page) because the table search doesn't match addresses containing "+".
+     * @returns {Promise<string|undefined>}
+     */
+    async getAdvisorEmail(){
+        const mailto = document.querySelector('.advisor-actions a[href^="mailto:"]')?.getAttribute("href")
+        let email = mailto
+            ? decodeURIComponent(mailto.slice("mailto:".length).split("?")[0])
+            : await fetchAdvisorInfo(this.advisorId).then((advisor) => advisor?.email ?? advisor?.data?.email)
+        return email?.replace(/^[^@+]*\+/, "")
+    },
+    /**
+     * Fetch the latest decision for each of this advisor's review items in a single request.
+     * The revisions table can only be searched by email, so the advisor's email is looked up first.
+     * @param {number} days - How far back to look.
+     * @returns {Promise<Map<string, Object>|null>} Review item ID mapped to its latest decision, or null if unavailable.
+     */
+    async getLatestReviewRows(days = 365){
+        try {
+            const email = await this.getAdvisorEmail()
+            if (!email) throw new Error("Advisor email not found")
+
+            const day = (days_ago) => new Date(Date.now() - days_ago * 86400000).toISOString().slice(0, 10)
+            const params = new URLSearchParams({
+                draw: 1,
+                start: 0,
+                length: 999999,
+                "order[0][column]": 4,
+                "order[0][dir]": "desc",
+                "columns[0][data]": "",
+                "columns[1][data]": "email",
+                "columns[2][data]": "",
+                "columns[3][data]": "state",
+                "columns[4][data]": "created_at",
+                "columns[5][data]": "",
+                "search[value]": email,
+                dateFrom: day(days),
+                dateTo: day(-1),
+            })
+            const response = await fetch(`${baseUrl}/manage/revisions/table?${params}`)
+            if (!response.ok) throw new Error(`Status ${response.status}`)
+            const { data } = await response.json()
+
+            const latest = new Map()
+            for (const row of data) {
+                if (row.advisor_id !== this.advisorId) continue
+                const existing = latest.get(row.revision_id)
+                if (!existing || new Date(row.created_at) > new Date(existing.created_at)) latest.set(row.revision_id, row)
+            }
+            return latest
+        } catch (error) {
+            console.warn("Unable to bulk load review notes, loading individually:", error)
+            return null
+        }
+    },
+    /**
+     * Fetch notes one item at a time, a few at once.
+     * @param {HTMLElement[]} review_items - The review items to load notes for.
+     */
+    loadReviewItemNotesIndividually(review_items){
         // Throttle concurrent note fetches so they don't exhaust the browser's per-origin connection pool and starve the advisor/officer data fetches
         const INITIAL_CONCURRENCY = 3
         const MAX_CONCURRENCY = 6
@@ -2616,7 +2702,7 @@ const Advisor = {
                 } catch (error) {
                     console.error(`Failed to fetch notes for review ${review_id}:`, error)
                 }
-                item.querySelector(".loading-notes").remove()
+                item.querySelector(".loading-notes")?.remove()
             }
         }
 
@@ -2628,17 +2714,23 @@ const Advisor = {
             for (let i = INITIAL_CONCURRENCY; i < target; i++) worker()
         })
     },
-    async addReviewItemNotesToPage(review_id){
+
+    /**
+     * Show the latest review note and rejection note for a review item on the page.
+     * @param {string} review_id 
+     * @param {object} Already loaded review info - fetched from the API or revisions page. If not provided, it will be fetched from the API. 
+     */
+    async addReviewItemNotesToPage(review_id, info = null){
         const review_item = document.querySelector(`.review-item[data-id="${review_id}"]`)
 
-        let { status, officer, date, note, rejection, revision_id } = await this.getReviewInfoFromAPI(review_id)
+        let { status, officer, date, note, rejection, revision_id } = info ?? await this.getReviewInfoFromAPI(review_id)
         const currently_reviewed = review_item.classList.contains("approved-status") || review_item.classList.contains("rejected-status")
 
         // Remove if already existing
         review_item.querySelector(`.review-item-preview`)?.remove()
 
         // Only add if item has been reviewed or if a note or rejection was found
-        if(currently_reviewed || note || rejection){
+        if(officer && (currently_reviewed || note || rejection)){
             const review_item_preview = createElement("div", {
                     class: "review-item-preview",
                     html: `
@@ -2674,7 +2766,7 @@ const Advisor = {
         const rejection = doc.querySelector(".is-rejection-notes")?.innerHTML
         return { status, officer, date, note, rejection }
     },
-    /***
+     /***
      * Uses Review ID
      * Possible Types: "current", "previous", "history"
      **/
@@ -2686,13 +2778,17 @@ const Advisor = {
         const text = await response.text()
         // Make sure the response contains text (Prevents empty JSON parsing)
         if (!text.trim()) return {}
-        const data = JSON.parse(text)
-
+        return this.formatReviewInfo(JSON.parse(text))
+    },
+    /**
+     * Convert a review decision (from the revisions API or table) into the info shown on the page.
+     * @param {Object} data - The review decision.
+     */
+    formatReviewInfo(data){
         const status = data.state
-        let officer = data.reviewed_by.display_name
-        let date = data.created_at
-        date = new Date(date).toLocaleString([], {year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: true})
-        let revision_id = data.revision_id
+        const officer = data.reviewed_by.display_name
+        const date = new Date(data.created_at).toLocaleString([], {year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: true})
+        const revision_id = data.revision_id
         const note = data.internal_notes
         const rejection = data.notes
         return { status, officer, date, note, rejection, revision_id }
@@ -3550,10 +3646,15 @@ const Revisions = {
                 const advisor_id = e.target.dataset.advisor_id
                 Advisor.advisorId = advisor_id
                 
-                // Get Current
-                let { status, officer, date, note, rejection, revision_id } = await Advisor.getReviewInfoFromRevisionsPage(review_id)
-
                 let row = e.target.closest("tr")
+
+                // The table already has each row's notes - only scrape the revision page if the row data isn't found
+                const row_data = $("#revisions-list").DataTable().row(row).data()
+                const { note, rejection } = row_data
+                    ? { note: row_data.internal_notes, rejection: row_data.notes }
+                    : await Advisor.getReviewInfoFromRevisionsPage(review_id)
+
+
                 // Add the review note and rejection to the row as seperate columns
                 row.insertAdjacentHTML("beforeend", `<td style="font-size: 0.75em;">${note || ""}</td><td style="font-size: 0.75em;">${rejection || ""}</td>`)
                 e.target.remove()
