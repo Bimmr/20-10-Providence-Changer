@@ -2360,7 +2360,6 @@ const Advisor = {
             this.checkEmptyReview()
             this.setupLastReviewed()
             this.updateTagsInAdvisorTitle()
-            this.updateNewTabLinks()
         }
         this.InternalDB.init(this.advisorId)
 
@@ -2371,11 +2370,6 @@ const Advisor = {
     initData(){
         this.advisorInfo = getAdvisorInfo(this.advisorId)
         AdvisorDetails.init(this.advisorInfo)
-    },
-    updateNewTabLinks(){
-        document.querySelectorAll("a.btn.btn--action-review:not(.btn-add-note-all").forEach(link => {
-            link.setAttribute("target", "_blank")
-        })
     },
     removeRejectionAndReviewNoteOverlays(){
         document.querySelectorAll("#revision-note-overlay, #rejection-note-overlay").forEach(overlay => overlay.innerHTML = "")
