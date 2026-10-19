@@ -43,6 +43,67 @@ async function ready() {
     BuildURL.init()
     Chat.init()
     Archives.init()
+    ReviewAssignment.init()
+}
+
+// =============================================================================
+// Review Assignment Module
+// =============================================================================
+const ReviewAssignment = {
+    /**
+     * Initialize the review assignment module.
+     */
+    init() {
+        this.setupComplianceCheckbox()
+    },
+
+    /**
+     * Add the "Send to Compliance" toggle above the send button.
+     */
+    setupComplianceCheckbox() {
+        const send_button = document.querySelector("#reviewBroker .submit-review")
+        if (!send_button || send_button.dataset.mlsDirectSend) return
+        send_button.dataset.mlsDirectSend = "true"
+
+        const label = createElement("div", {
+            class: "mls-direct-send form-item is-toggle",
+            html: `
+                <div>
+                    <h2 style="margin: 0">Send to Compliance</h2>
+                    <p class="form-item--helper" style="margin-top: 5px; margin-bottom: 0; margin-left: 0px; line-height: 1.4">
+                        Assign the website directly to the MLS Sales Communication team.
+                    </p>
+                </div>
+                <div class="toggle-switch">
+                    <input type="checkbox" id="mls_direct_send">
+                    <label for="mls_direct_send" data-checked="YES">NO</label>
+                </div>`,
+        })
+        send_button.parentElement.insertBefore(label, send_button)
+
+        send_button.addEventListener("click", () => {
+            if (label.querySelector("input").checked) this.assignToMLSSalesCommunication()
+        })
+    },
+
+    /**
+     * Assign the site to MLS Sales Communication after the review has been sent.
+     */
+    async assignToMLSSalesCommunication() {
+
+        await new Promise((resolve) => setTimeout(resolve, 1000))
+
+        try {
+            const response = await fetch("/api/officers/assign", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ user_id: window.loggedInUser, officer_id: ACCOUNTS.teams[1] })
+            })
+            if (!response.ok) throw new Error(`Status ${response.status}`)
+        } catch (err) {
+            console.error("Error assigning to MLS Sales Communication:", err)
+        }
+    },
 }
 
 // =============================================================================

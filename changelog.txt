@@ -3,6 +3,7 @@
 - Fixed error when drawing notes buttons to revision table
 - Added Revison ID to revisions export table
 - Added CTRL + Enter to save rejection, internal, and publish notes
+- Added "Send to Compliance" toggle to the edit page's review panel to assign the website directly to MLS Sales Communication
 2.0.13
 - Updated review item notes display and add revision history
 2.0.12
