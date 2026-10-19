@@ -10,9 +10,12 @@ Misc:
 - Added view profile to chat
 - Added Night Mode
 - Added dropdown navigation to custom content nav link
+- Added search to chats
+- CTRL + Enter saves rejection, internal, and publish notes
 
 Main List:
 - Adds search bar that can search by tags, names, email, status, created year
+    - Search for "?" or click the help icon for assistance
 - Sorts review card to show construction sites first
 - Sorts review card list based on date sent for review (FIFO)
 - Added options to advisor drop-down menu
@@ -26,6 +29,8 @@ Main List:
 - Organizes users in officer selection list
 - Informs user if filter is enabled
 - Added Open Chat Button to review cards
+- Added Find in List and Assign to Me buttons to review cards
+- Shows business days since submission on review cards
 - Defaults to more informative review card layout
     - Display who's assigned in review list
     - Display number of review changes
@@ -39,6 +44,7 @@ Content List (Both Content Assist and Custom Content)
 
 Advisor Profile & Review:
 - Shows tags on sidebar
+- Shows domain list on profile
 - Quick Access to revisions on sidebar
 - View Archive shows notes & the person who approved as preview text
 - Added Pending Count
@@ -53,15 +59,25 @@ Advisor Profile & Review:
 - Added Notes & Status
 - Added Preview Site link
 - Shows both French and English content in review items
+    - Added darkness toggle to review preview
+- Added Clear State button to review items (CTRL + Click also clears notes)
 - Shows if post is custom/vendor provided/siteforward provided
     - Shows differences if edited and from vendor/siteforward
 - Adds Revision history view
+- Added View History menu
+    - Revision History popup
+    - Item History popup (Every review of an item back to 2019)
 
 Revisions:
 - Adds option to turn revisions table to a full compliance report that includes notes and rejections
+- Added "Load Notes" button to each revision item
+- Added Export Stats button
+    - Includes Revision ID and content length
 
 Editing Website:
 - Highlights what page you're editing in the sidebar navigation
 - Adds an "Edit All" button (If user is on SiteForward team)
 - Enables devHelper mode by default (Only works on Prisim framework)
 - Added night mode to website engine
+- Can view archive notes in website engine
+- Added "Send to Compliance" toggle to review panel to assign the website directly to MLS Sales Communication
