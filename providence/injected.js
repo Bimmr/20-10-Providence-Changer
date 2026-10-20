@@ -447,6 +447,7 @@ const AdvisorDetails = {
             const reviews = plural(node.review_ids.size, "review")
             const last_reviewed = `Last reviewed ${HistoryView.formatDate(latest.date)}`
             title = `${HistoryView.escape(node.label)} ${HistoryView.buildItemStatusChip(node.status)}`
+            if (latest.path) title += `<span class="history-acc-path">${HistoryView.escape(latest.path)}</span>`
             meta = `${reviews} · ${last_reviewed} ${HistoryView.buildStatusChip(latest.status)}`
             if (node.status?.exists === false) extra_class = " history-acc--gone"
         }
@@ -3011,6 +3012,7 @@ const Advisor = {
      * The name/title is kept because members and posts can be renamed over time.
      */
     formatHistoryEntry(data){
+        const link_url = data.location === "page" ? data.meta?.link?.url : null
         return {
             date: new Date(data.created_at),
             officer: data.reviewed_by?.display_name || "Unknown",
@@ -3023,7 +3025,9 @@ const Advisor = {
             advisor_id: data.advisor_id,
             // Every page has meta.link, but only navigation/external links have a url set
             // (their content is just leftover placeholder, so it can't be used to tell them apart)
-            is_link: data.location === "page" && Boolean(data.meta?.link?.url),
+            is_link: Boolean(link_url),
+            // Where the page is on the website: a link's target, or the page's slug (links keep a meaningless "new-page" slug)
+            path: data.location === "page" ? (link_url || (data.slug ? `/${data.slug}` : "")) : "",
             item_id: data[this.itemIdFields[data.location]] || null,
             page_id: data.page_id, // for members and posts, the page they belong to
             location: data.location,
