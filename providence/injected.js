@@ -3021,9 +3021,9 @@ const Advisor = {
             id: data._id, // this entry's own id, used for the /manage/revisions/{advisor_id}/{id} link
             revision_id: data.revision_id,
             advisor_id: data.advisor_id,
-            // Navigation/external links are pages with link settings and no content at all
-            // (pages that were emptied have "" instead of null)
-            is_link: data.location === "page" && data.content == null && Boolean(data.meta?.link),
+            // Every page has meta.link, but only navigation/external links have a url set
+            // (their content is just leftover placeholder, so it can't be used to tell them apart)
+            is_link: data.location === "page" && Boolean(data.meta?.link?.url),
             item_id: data[this.itemIdFields[data.location]] || null,
             page_id: data.page_id, // for members and posts, the page they belong to
             location: data.location,
