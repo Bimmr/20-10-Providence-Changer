@@ -227,6 +227,7 @@ const AdvisorDetails = {
         this.addDomains()
         this.addPreviewLinkIcon()
         this.addViewRevisionsButton()
+        this.addViewHistoryButton()
         this.Archives.init()
     },
     addTags(){
@@ -278,6 +279,200 @@ const AdvisorDetails = {
         document.querySelector(".details-wrapper .btn-container").appendChild(open_revisions)
     },
     
+    addViewHistoryButton(){
+        const open_history = createElement("button", {
+            type: "button",
+            html: `View History`,
+            class: "btn btn--action-default",
+            onclick: () => this.showWebsiteHistoryDialog()
+        })
+        document.querySelector(".details-wrapper .btn-container").appendChild(open_history)
+    },
+    // Review item types shown in the website history, in display order
+    historyTypes: [
+        { location: "page", name: "Pages" },
+        { location: "link", name: "Links" },
+        { location: "member", name: "Members" },
+        { location: "post", name: "Posts" },
+        { location: "footer", name: "Footer" },
+    ],
+    /**
+     * Fetch and display every review on this website, grouped by type and item, in a popup dialog.
+     * The groups start collapsed and each year's entries are added as they load.
+     */
+    async showWebsiteHistoryDialog(){
+        const state = { open_keys: new Set(), index: new Map() }
+        // Whether each item still exists on the website, filled in once the history has loaded
+        const statuses = new Map()
+
+        const entries = await HistoryView.showLoadingDialog({
+            title: "Website History",
+            loading: "Loading history...",
+            empty_text: "No reviews found for this website",
+            error_text: "Unable to load website history.",
+            load: (add) => Advisor.loadWebsiteHistory(this.advisorInfo._id, add),
+            buildContent: (entries, options) => {
+                const tree = this.groupWebsiteHistory(entries, statuses)
+                state.index = tree.index
+                return this.buildWebsiteHistory(tree, state, options)
+            },
+            onLoaded: async (entries, render) => {
+                const loading = "Checking which items still exist..."
+                render({ loading })
+                try {
+                    const failures = await Advisor.loadItemStatuses(entries, (batch) => {
+                        batch.forEach((status, key) => statuses.set(key, status))
+                        render({ loading })
+                    })
+                    if (failures) {
+                        return render({ notice: "Some items couldn't be checked, so they aren't marked as deleted or inactive." })
+                    }
+                    render()
+                } catch (error) {
+                    console.error("Unable to check which items still exist:", error)
+                    render({ notice: "Unable to check which items still exist." })
+                }
+            },
+            // Group bodies are only built once opened, as a site can have thousands of reviews
+            setup: (content) => content.addEventListener("toggle", (e) => {
+                const details = e.target
+                const key = details.dataset?.key
+                if (!key) return
+                if (!details.open) return state.open_keys.delete(key)
+
+                state.open_keys.add(key)
+                const body = details.querySelector(":scope > .history-acc-body")
+                if (body && !body.innerHTML) body.innerHTML = this.buildWebsiteHistoryBody(key, state)
+            }, true),
+        })
+
+        // Log the full entries (including the page content) in case we need to look through the content changes
+        if (entries) console.log("Website history (newest first):", entries)
+    },
+    /**
+     * Which historyTypes group an entry belongs to.
+     */
+    getHistoryTypeKey(entry){
+        if (entry.is_link) return "link"
+        return entry.location
+    },
+    /**
+     * Group entries into types > items (each item lists its reviews).
+     * Types follow historyTypes (anything else goes in "Other").
+     * Items are ordered by their latest review (as the table gives them).
+     * Each item is named for its latest review because items can be renamed.
+     * statuses (from Advisor.loadItemStatuses) says which items no longer exist or are inactive.
+     * @returns {{types: Object[], index: Map, review_count: number, item_count: number, deleted_count: number}}
+     * index maps each group's key to its data.
+     */
+    groupWebsiteHistory(entries, statuses = new Map()){
+        const createType = (location, name) => ({ key: `t:${location}`, name, items: new Map(), review_ids: new Set() })
+        const types = new Map(this.historyTypes.map((type) => [type.location, createType(type.location, type.name)]))
+        types.set("other", createType("other", "Other"))
+
+        const sorted = [...entries].sort((a, b) => b.date - a.date)
+        for (const entry of sorted) {
+            const type_key = this.getHistoryTypeKey(entry)
+            const type = types.get(type_key) || types.get("other")
+            const item_key = `i:${type_key}:${entry.item_id || ""}`
+            if (!type.items.has(item_key)) {
+                type.items.set(item_key, {
+                    key: item_key, label: HistoryView.getLabel(entry), entries: [], review_ids: new Set(),
+                    status: statuses.get(Advisor.getItemStatusKey(entry)),
+                })
+            }
+
+            const item = type.items.get(item_key)
+            item.entries.push(entry)
+            item.review_ids.add(entry.revision_id || entry.id)
+            type.review_ids.add(entry.revision_id || entry.id)
+        }
+
+        const index = new Map()
+        let review_count = 0
+        let item_count = 0
+        let deleted_count = 0
+        const used_types = [...types.values()].filter((type) => type.items.size)
+        for (const type of used_types) {
+            index.set(type.key, { level: "type", node: type })
+            review_count += type.review_ids.size
+            item_count += type.items.size
+            type.deleted_count = [...type.items.values()].filter((item) => item.status?.exists === false).length
+            deleted_count += type.deleted_count
+            for (const item of type.items.values()) {
+                index.set(item.key, { level: "item", node: item })
+            }
+        }
+        return { types: used_types, index, review_count, item_count, deleted_count }
+    },
+    /**
+     * Build the whole dialog content: the summary line, then one accordion per type.
+     * Options: loading/notice messages and empty_text when there's nothing to show.
+     */
+    buildWebsiteHistory(tree, state, options){
+        if (!tree.types.length) return HistoryView.buildFrame("", "", options)
+
+        const reviews = HistoryView.plural(tree.review_count, "review")
+        const items = HistoryView.plural(tree.item_count, "item")
+        let summary = `${reviews} across ${items}`
+        if (tree.deleted_count) summary += ` · ${tree.deleted_count} deleted`
+
+        const groups = tree.types.map((type) => this.buildWebsiteHistoryGroup(type.key, type, state))
+        return HistoryView.buildFrame(summary, `<div class="history-accordion">${groups.join("")}</div>`, options)
+    },
+    /**
+     * Build one collapsible group (type or item). Its body is only filled when it's open.
+     */
+    buildWebsiteHistoryGroup(key, node, state){
+        const is_open = state.open_keys.has(key)
+        const body = is_open ? this.buildWebsiteHistoryBody(key, state) : ""
+        const { level } = state.index.get(key)
+        const plural = HistoryView.plural
+
+        let title, meta, extra_class = ""
+        if (level === "type") {
+            const latest = [...node.items.values()][0].entries[0]
+            const reviews = plural(node.review_ids.size, "review")
+            const last_reviewed = `Last reviewed ${HistoryView.formatDate(latest.date)}`
+            title = node.name
+
+            if (node.key === "t:footer") {
+                meta = `${reviews} · ${last_reviewed} ${HistoryView.buildStatusChip(latest.status)}`
+            } else {
+                const deleted_text = node.deleted_count ? ` · ${node.deleted_count} deleted` : ""
+                meta = `${plural(node.items.size, "item")}${deleted_text} · ${reviews} · ${last_reviewed}`
+            }
+        } else {
+            const latest = node.entries[0]
+            const reviews = plural(node.review_ids.size, "review")
+            const last_reviewed = `Last reviewed ${HistoryView.formatDate(latest.date)}`
+            title = `${HistoryView.escape(node.label)} ${HistoryView.buildItemStatusChip(node.status)}`
+            meta = `${reviews} · ${last_reviewed} ${HistoryView.buildStatusChip(latest.status)}`
+            if (node.status?.exists === false) extra_class = " history-acc--gone"
+        }
+
+        const open_attr = is_open ? " open" : ""
+        return `<details class="history-acc history-acc--${level}${extra_class}" data-key="${HistoryView.escape(key)}"${open_attr}>
+            <summary><span class="history-acc-title">${title}</span><span class="history-acc-meta">${meta}</span></summary>
+            <div class="history-acc-body">${body}</div>
+        </details>`
+    },
+    /**
+     * Build the inside of a group: a type's items, or an item's reviews.
+     * Each review has a single decision, so they are plain rows.
+     */
+    buildWebsiteHistoryBody(key, state){
+        const { level, node } = state.index.get(key)
+        if (level === "type" && node.key !== "t:footer") {
+            return [...node.items.values()].map((item) => this.buildWebsiteHistoryGroup(item.key, item, state)).join("")
+        }
+
+        // The footer is a single item, so its reviews go straight under the type
+        const item = level === "type" ? [...node.items.values()][0] : node
+        const rows = item.entries.map((entry) => HistoryView.buildEntry(entry)).join("")
+        return HistoryView.buildTable(`<tbody>${rows}</tbody>`, "history-site-table")
+    },
+
 // ========================== Archives Sub-Module =============================
     Archives: {
         /**
@@ -2826,6 +3021,11 @@ const Advisor = {
             id: data._id, // this entry's own id, used for the /manage/revisions/{advisor_id}/{id} link
             revision_id: data.revision_id,
             advisor_id: data.advisor_id,
+            // Navigation/external links are pages with link settings and no content at all
+            // (pages that were emptied have "" instead of null)
+            is_link: data.location === "page" && data.content == null && Boolean(data.meta?.link),
+            item_id: data[this.itemIdFields[data.location]] || null,
+            page_id: data.page_id, // for members and posts, the page they belong to
             location: data.location,
             label: [data.meta?.name, data.title].filter(Boolean).join(" - ").replace(/\[br\]/g, " "),
         }
@@ -2866,31 +3066,246 @@ const Advisor = {
     },
     /**
      * Load every review of one item back to itemHistoryStartYear, calling on_entries with each year's entries as they load.
-     * The table is requested one year at a time (all at once) because that is much faster than a single large request.
      * Returns the years that failed to load.
      */
     async loadItemHistory(key, on_entries){
         const email = await this.getAdvisorEmail(key.advisor_id)
         if (!email) throw new Error("Advisor email not found")
 
+        return this.loadHistoryRows(email, (rows) => {
+            on_entries(rows.filter((row) => this.isSameItem(row, key)).map((row) => this.formatHistoryEntry(row)))
+        })
+    },
+    /**
+     * Load every review of every item on an advisor's website, calling on_entries with each year's entries as they load.
+     * Returns the years that failed to load.
+     */
+    async loadWebsiteHistory(advisor_id, on_entries){
+        const email = await this.getAdvisorEmail(advisor_id)
+        if (!email) throw new Error("Advisor email not found")
+
+        return this.loadHistoryRows(email, (rows) => {
+            on_entries(rows.filter((row) => row.advisor_id === advisor_id).map((row) => this.formatHistoryEntry(row)))
+        })
+    },
+    /**
+     * Key identifying an item across its reviews, used by loadItemStatuses.
+     */
+    getItemStatusKey(entry){
+        return `${entry.location}:${entry.item_id || ""}`
+    },
+    /**
+     * Work out whether each page, member and post in the entries still exists on the website, and if it's active.
+     * Pages are looked up by ID, and members and posts through the list on the page they belong to.
+     * None of these requests depend on who is logged in. A page that no longer exists returns an error,
+     * and a member or post that no longer exists is missing from its page's list.
+     * on_statuses is called with a Map of getItemStatusKey to { exists, state } as results arrive.
+     * Items that couldn't be checked (a failed request) are left out so they aren't mistaken for deleted ones.
+     * Returns the number of lookups that failed.
+     */
+    async loadItemStatuses(entries, on_statuses){
+        const page_ids = new Set()
+        // location > page ID > Map of item ID to status key, for the items that are listed on a page
+        const listed = { member: new Map(), post: new Map() }
+        for (const entry of entries) {
+            if (!entry.item_id) continue
+
+            if (entry.location === "page") {
+                page_ids.add(entry.item_id)
+            } else if (listed[entry.location] && entry.page_id) {
+                page_ids.add(entry.page_id)
+                if (!listed[entry.location].has(entry.page_id)) listed[entry.location].set(entry.page_id, new Map())
+                listed[entry.location].get(entry.page_id).set(entry.item_id, this.getItemStatusKey(entry))
+            }
+        }
+
+        let failures = 0
+        const emit = (key, status) => on_statuses(new Map([[key, status]]))
+        const parents = new Map()
+        await this.mapLimit([...page_ids], 4, async (page_id) => {
+            const status = await this.fetchPageStatus(page_id)
+            if (!status) return failures++
+
+            parents.set(page_id, status)
+            emit(this.getItemStatusKey({ location: "page", item_id: page_id }), status)
+        })
+
+        const list_paths = { member: "/api/members?page_id=", post: "/api/blog/posts/" }
+        const lookups = []
+        for (const [location, pages] of Object.entries(listed)) {
+            for (const [page_id, items] of pages) {
+                const parent = parents.get(page_id)
+                if (!parent) continue
+
+                if (parent.exists) {
+                    lookups.push({ path: `${list_paths[location]}${page_id}`, items })
+                } else {
+                    // Everything on a deleted page is gone too, so there's no need to look at its list
+                    for (const key of items.values()) emit(key, { exists: false })
+                }
+            }
+        }
+
+        await this.mapLimit(lookups, 4, async ({ path, items }) => {
+            const list = await this.fetchList(path)
+            if (!list) return failures++
+
+            const found = new Map(list.map((item) => [item._id, item]))
+            for (const [item_id, key] of items) {
+                const item = found.get(item_id)
+                emit(key, item ? { exists: true, state: item.state } : { exists: false })
+            }
+        })
+        return failures
+    },
+    /**
+     * Look up a page by ID. Resolves to { exists, state } or null if the request failed.
+     */
+    fetchPageStatus(page_id){
+        return this.fetchStatusData(`/api/pages/${page_id}`, (page) => {
+            return page.error ? { exists: false } : { exists: true, state: page.state }
+        })
+    },
+    /**
+     * Fetch a list of members or posts. Resolves to the array, or null if the request failed or isn't a usable list.
+     */
+    fetchList(path){
+        return this.fetchStatusData(path, (list) => {
+            // A list with no IDs in it would make every item look deleted
+            if (!Array.isArray(list) || (list.length && !list.some((item) => item._id))) return null
+            return list
+        })
+    },
+    // Results of fetchStatusData by path, so reopening the history doesn't repeat the lookups
+    statusCache: new Map(),
+    statusCacheMaxAge: 10 * 60 * 1000,
+    /**
+     * Fetch a status lookup and run its JSON through parse, which returns null for an unusable response.
+     * Resolves to the parsed result, or null if the request failed. Only good results are cached.
+     */
+    async fetchStatusData(path, parse){
+        const cached = this.statusCache.get(path)
+        if (cached && Date.now() - cached.saved_at < this.statusCacheMaxAge) return cached.value
+
+        try {
+            const response = await fetch(`${baseUrl}${path}`)
+            if (!response.ok) return null
+
+            const value = parse(await response.json())
+            if (value) this.statusCache.set(path, { value, saved_at: Date.now() })
+            return value
+        } catch (error) {
+            console.warn(`Unable to load ${path}:`, error)
+            return null
+        }
+    },
+    /**
+     * Run an async function over the items, a few at once.
+     */
+    async mapLimit(items, limit, fn){
+        const queue = [...items]
+        const worker = async () => {
+            while (queue.length) await fn(queue.shift())
+        }
+
+        const workers = []
+        for (let i = 0; i < Math.min(limit, queue.length); i++) workers.push(worker())
+        await Promise.all(workers)
+    },
+    /**
+     * Load the revisions table back to itemHistoryStartYear, calling on_rows with each year's rows as they load.
+     * The table is requested one year at a time (all at once) because that is much faster than a single large request.
+     * Returns the years that failed to load.
+     */
+    async loadHistoryRows(email, on_rows){
         const this_year = new Date().getFullYear()
-        const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10)
         const years = []
         for (let year = this_year; year >= this.itemHistoryStartYear; year--) years.push(year)
 
         const failed_years = []
         await Promise.all(years.map(async (year) => {
-            const date_to = year === this_year ? tomorrow : `${year + 1}-01-01`
             try {
-                const rows = await this.fetchRevisionTableRows(email, `${year}-01-01`, date_to)
-                const entries = rows.filter((row) => this.isSameItem(row, key)).map((row) => this.formatHistoryEntry(row))
-                on_entries(entries)
+                on_rows(await this.getHistoryYearRows(email, year))
             } catch (error) {
-                console.warn(`Unable to load ${year} item history:`, error)
+                console.warn(`Unable to load ${year} history:`, error)
                 failed_years.push(year)
             }
         }))
         return failed_years.sort((a, b) => b - a)
+    },
+    // Year of table rows, by "email|year". Shared by the item and website history so each year is only fetched once.
+    historyRowsCache: new Map(),
+    /**
+     * Get every row of the revisions table for one year, using the cache when possible.
+     * A finished year doesn't change, so it is also kept between pages. The current year is only reused briefly.
+     */
+    getHistoryYearRows(email, year){
+        const key = `${email}|${year}`
+        if (!this.historyRowsCache.has(key)) {
+            const promise = this.fetchHistoryYearRows(email, year, key)
+            this.historyRowsCache.set(key, promise)
+            promise.then(() => {
+                // The current year can still change, so it's only kept briefly
+                if (year === new Date().getFullYear()) setTimeout(() => this.historyRowsCache.delete(key), 60000)
+            }, () => this.historyRowsCache.delete(key))
+        }
+        return this.historyRowsCache.get(key)
+    },
+    async fetchHistoryYearRows(email, year, key){
+        const this_year = new Date().getFullYear()
+        const is_finished = year < this_year
+        if (is_finished) {
+            const stored = await this.historyStore.get(key)
+            if (stored) return stored
+        }
+
+        const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10)
+        const date_to = is_finished ? `${year + 1}-01-01` : tomorrow
+        const rows = await this.fetchRevisionTableRows(email, `${year}-01-01`, date_to)
+        if (is_finished) this.historyStore.set(key, rows)
+        return rows
+    },
+    // Keeps finished years in IndexedDB (they are too big for localStorage).
+    // Failures are ignored, as it's only a cache.
+    historyStore: {
+        dbName: "providence-history",
+        storeName: "year_rows",
+        maxAge: 24 * 60 * 60 * 1000,
+        db: null,
+        open(){
+            if (!this.db) {
+                this.db = new Promise((resolve, reject) => {
+                    const request = indexedDB.open(this.dbName, 1)
+                    request.onupgradeneeded = () => request.result.createObjectStore(this.storeName)
+                    request.onsuccess = () => resolve(request.result)
+                    request.onerror = () => reject(request.error)
+                })
+            }
+            return this.db
+        },
+        async get(key){
+            try {
+                const db = await this.open()
+                const record = await new Promise((resolve, reject) => {
+                    const request = db.transaction(this.storeName).objectStore(this.storeName).get(key)
+                    request.onsuccess = () => resolve(request.result)
+                    request.onerror = () => reject(request.error)
+                })
+                if (record && Date.now() - record.saved_at < this.maxAge) return record.rows
+            } catch (error) {
+                console.warn("Unable to read cached history:", error)
+            }
+            return null
+        },
+        async set(key, rows){
+            try {
+                const db = await this.open()
+                const store = db.transaction(this.storeName, "readwrite").objectStore(this.storeName)
+                store.put({ rows, saved_at: Date.now() }, key)
+            } catch (error) {
+                console.warn("Unable to cache history:", error)
+            }
+        },
     },
     setupLastReviewed(){
         setTimeout(() => {
@@ -3115,6 +3530,172 @@ const Advisor = {
 }
 
 // =============================================================================
+// History View Helpers (shared by the Review and AdvisorDetails history dialogs)
+// =============================================================================
+const HistoryView = {
+    escape(text){
+        return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    },
+    plural(count, word){
+        return `${count} ${word}${count === 1 ? "" : "s"}`
+    },
+    /**
+     * The message shown when some years of history couldn't be loaded.
+     */
+    failedYearsNotice(failed_years){
+        if (!failed_years.length) return ""
+        return `Unable to load ${failed_years.join(", ")}. History for those years is missing.`
+    },
+    /**
+     * The history table, with its header, around the given <tbody> HTML.
+     */
+    buildTable(body_html, extra_class = ""){
+        return `<table class="history-table ${extra_class}">
+            <thead><tr><th>Date</th><th>Reviewed By</th><th>Status</th><th>Notes</th><th></th></tr></thead>
+            ${body_html}
+        </table>`
+    },
+    /**
+     * Build a history dialog's content: a summary line and status messages above the body.
+     * With no body, a loading message becomes the whole dialog, otherwise the empty text is shown.
+     * Options: loading/notice messages and empty_text for when there's nothing to show.
+     */
+    buildFrame(summary_html, body_html, { loading = "", notice = "", empty_text = "No history found" } = {}){
+        let status_html = ""
+        if (loading) status_html += `<span class="history-loading"><i class="fa fa-spinner"></i> ${loading}</span>`
+        if (notice) status_html += `<span class="history-notice">${notice}</span>`
+
+        if (!body_html) {
+            // Nothing to show yet, so make the loading message the whole dialog
+            if (loading) return `<div class="history-loading-state">${status_html}</div>`
+
+            let html = ""
+            if (status_html) html += `<div class="history-summary">${status_html}</div>`
+            if (empty_text) html += `<div style="text-align: center; padding: 2rem; color: #666;">${empty_text}</div>`
+            return html
+        }
+
+        return `<div class="history-summary">
+            <span class="history-summary-total">${summary_html}</span>
+            ${status_html}
+        </div>
+        ${body_html}`
+    },
+    /**
+     * Open a history dialog straight away and fill it as each year of entries loads (newest first).
+     * - load(add, render): loads the entries, calling add(year_entries) for each batch.
+     *   Resolves to the years that failed, and may call render(options) itself, or resolve to null if it has shown a final state.
+     * - buildContent(entries, options): returns the dialog's HTML for the entries so far.
+     * - setup(content): called once with the dialog's content element, e.g. to add event listeners.
+     * - onLoaded(entries, render): optional, called once everything has loaded, e.g. to add more details.
+     *   Its render keeps the failed-years notice.
+     * Resolves to the entries (newest first), or null if loading didn't finish.
+     */
+    async showLoadingDialog({ title, loading, empty_text, error_text, load, buildContent, setup, onLoaded }){
+        const dialog = showDialog("history-dialog", title, buildContent([], { loading }))
+        const content = dialog.querySelector(".diff-dialog-content")
+        if (setup) setup(content)
+
+        const entries = new Map()
+        const getSortedEntries = () => [...entries.values()].sort((a, b) => b.date - a.date)
+        const render = (options = {}) => {
+            // The dialog may have been closed while loading
+            if (!dialog.isConnected) return
+            const scroll_top = content.scrollTop
+            content.innerHTML = buildContent(getSortedEntries(), { empty_text, ...options })
+            content.scrollTop = scroll_top
+        }
+
+        try {
+            const failed_years = await load((year_entries) => {
+                year_entries.forEach((entry) => entries.set(entry.id, entry))
+                render({ loading: "Loading older history..." })
+            }, render)
+            if (!failed_years) return null
+
+            const notice = this.failedYearsNotice(failed_years)
+            render({ notice })
+            if (onLoaded) {
+                // Keep the failed-years notice alongside any notice the caller adds
+                const renderLoaded = (options = {}) => render({ ...options, notice: [notice, options.notice].filter(Boolean).join(" ") })
+                await onLoaded(getSortedEntries(), renderLoaded)
+            }
+            return getSortedEntries()
+        } catch (error) {
+            console.error(error_text, error)
+            render({ notice: error_text, empty_text: "" })
+            return null
+        }
+    },
+    /**
+     * Group entries by revision_id, which is shared by all the decisions on one review.
+     * Groups keep the order of the entries given, so pass them newest first.
+     */
+    groupByReview(history){
+        const groups = new Map()
+        history.forEach((entry) => {
+            const key = entry.revision_id || entry.id
+            if (!groups.has(key)) groups.set(key, [])
+            groups.get(key).push(entry)
+        })
+        return [...groups.values()]
+    },
+    /**
+     * The item's name/title at the time of an entry.
+     */
+    getLabel(entry){
+        if (entry.label) return entry.label
+        if (entry.location) return entry.location[0].toUpperCase() + entry.location.slice(1)
+        return "Review"
+    },
+    formatDate(date){
+        return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+    },
+    /**
+     * A status as a chip, e.g. "Approved".
+     */
+    buildStatusChip(status){
+        if (!status) return ""
+        const status_class = status.toLowerCase().replace(/[^a-z0-9]+/g, "-")
+        const status_text = status[0].toUpperCase() + status.slice(1).toLowerCase()
+        return `<span class="history-chip status-${status_class}">${status_text}</span>`
+    },
+    /**
+     * Chip for an item that no longer exists on the website, or isn't active. Active items get no chip.
+     * status is { exists, state } from Advisor.loadItemStatuses (undefined while unknown).
+     */
+    buildItemStatusChip(status){
+        if (!status) return ""
+        if (!status.exists) return `<span class="history-chip status-deleted">Deleted</span>`
+        if (status.state && status.state !== "active") return this.buildStatusChip(status.state)
+        return ""
+    },
+    /**
+     * Build one decision, linking it to its revision page.
+     */
+    buildEntry(entry, is_current = false, fallback_advisor_id = null){
+        const revision_url = `${baseUrl}/manage/revisions/${entry.advisor_id || fallback_advisor_id}/${entry.id}`
+        const date = this.formatDate(entry.date)
+        const time = entry.date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })
+
+        let notes_html = ""
+        if (entry.rejection) notes_html += `<div class="history-note rejection"><span class="history-note-label">Rejection note</span>${entry.rejection}</div>`
+        if (entry.note) notes_html += `<div class="history-note"><span class="history-note-label">Internal note</span>${entry.note}</div>`
+        if (!notes_html) notes_html = `<span class="history-none">—</span>`
+
+        const current_html = is_current ? `<span class="history-chip history-chip--current">This revision</span>` : ""
+
+        return `<tr class="history-row">
+            <td class="history-date">${date}<span>${time}</span>${current_html}</td>
+            <td>${entry.officer}</td>
+            <td>${this.buildStatusChip(entry.status)}</td>
+            <td class="history-notes">${notes_html}</td>
+            <td class="history-open"><a href="${revision_url}" target="_blank">Open Revision</a></td>
+        </tr>`
+    },
+}
+
+// =============================================================================
 // Review Page Module
 // =============================================================================
 const Review = {
@@ -3238,103 +3819,49 @@ const Review = {
      * Entries are added newest-first as each year's data loads.
      */
     async showItemHistoryDialog(){
-        const dialog = showDialog("history-dialog", "Item History", this.buildHistoryTable([], { loading: "Finding this item..." }))
-        const content = dialog.querySelector(".diff-dialog-content")
-        const entries = new Map()
-        const getSortedEntries = () => [...entries.values()].sort((a, b) => b.date - a.date)
+        const entries = await HistoryView.showLoadingDialog({
+            title: "Item History",
+            loading: "Finding this item...",
+            empty_text: "No previous reviews found for this item",
+            error_text: "Unable to load item history.",
+            buildContent: (history, options) => this.buildHistoryTable(history, { group: true, ...options }),
+            load: async (add, render) => {
+                const key = await Advisor.getReviewItemKey(this.reviewId)
+                if (!key) return render({ empty_text: "Unable to identify this item" })
 
-        const render = (options = {}) => {
-            // The dialog may have been closed while loading
-            if (!dialog.isConnected) return
-            content.innerHTML = this.buildHistoryTable(getSortedEntries(), { group: true, empty_text: "No previous reviews found for this item", ...options })
-        }
+                render({ loading: "Loading history..." })
+                return Advisor.loadItemHistory(key, add)
+            },
+        })
 
-        try {
-            const key = await Advisor.getReviewItemKey(this.reviewId)
-            if (!key) return render({ empty_text: "Unable to identify this item" })
-
-            render({ loading: "Loading history..." })
-            const failed_years = await Advisor.loadItemHistory(key, (year_entries) => {
-                year_entries.forEach((entry) => entries.set(entry.id, entry))
-                render({ loading: "Loading older history..." })
-            })
-
-            let notice = ""
-            if (failed_years.length) notice = `Unable to load ${failed_years.join(", ")}. History for those years is missing.`
-            render({ notice })
-
-            // Log the full entries (including the page content) in case we need to look through the content changes
-            console.log("Item history (newest first):", getSortedEntries())
-        } catch (error) {
-            console.error("Unable to load item history:", error)
-            render({ notice: "Unable to load item history.", empty_text: "" })
-        }
+        // Log the full entries (including the page content) in case we need to look through the content changes
+        if (entries) console.log("Item history (newest first):", entries)
     },
     /**
      * Build the history table HTML, linking each entry to its revision page.
      * Options: loading/notice messages, empty_text when there's nothing to show, and group to group entries by review.
      */
-    buildHistoryTable(history, { loading = "", notice = "", empty_text = "No history found", group = false } = {}){
-        let status_html = ""
-        if (loading) status_html += `<span class="history-loading"><i class="fa fa-spinner"></i> ${loading}</span>`
-        if (notice) status_html += `<span class="history-notice">${notice}</span>`
-
-        if (!history.length) {
-            // Nothing to show yet, so make the loading message the whole dialog
-            if (loading) return `<div class="history-loading-state">${status_html}</div>`
-
-            let html = ""
-            if (status_html) html += `<div class="history-summary">${status_html}</div>`
-            if (empty_text) html += `<div style="text-align: center; padding: 2rem; color: #666;">${empty_text}</div>`
-            return html
-        }
+    buildHistoryTable(history, { group = false, ...options } = {}){
+        if (!history.length) return HistoryView.buildFrame("", "", options)
 
         let rows_html, total_text
         if (group) {
-            const groups = this.groupHistoryByReview(history)
+            const groups = HistoryView.groupByReview(history)
 
             // Only label a group when the name changes, so a run of reviews on the same page isn't broken up by repeated headers
             let previous_label = null
             rows_html = groups.map((entries) => {
                 const html = this.buildHistoryGroup(entries, previous_label)
-                previous_label = this.getHistoryLabel(entries[0])
+                previous_label = HistoryView.getLabel(entries[0])
                 return html
             }).join("")
-            total_text = `${groups.length} ${groups.length === 1 ? "review" : "reviews"}`
+            total_text = HistoryView.plural(groups.length, "review")
         } else {
-            rows_html = `<tbody>${history.map((entry) => this.buildHistoryEntry(entry)).join("")}</tbody>`
+            rows_html = `<tbody>${history.map((entry) => HistoryView.buildEntry(entry, false, this.advisorId)).join("")}</tbody>`
             total_text = `${history.length} history ${history.length === 1 ? "entry" : "entries"}`
         }
 
-        return `<div class="history-summary">
-            <span class="history-summary-total">${total_text}</span>
-            ${status_html}
-        </div>
-        <table class="history-table">
-            <thead><tr><th>Date</th><th>Reviewed By</th><th>Status</th><th>Notes</th><th></th></tr></thead>
-            ${rows_html}
-        </table>`
-    },
-    /**
-     * Group entries by revision_id, which is shared by all the decisions on one review.
-     * Groups keep the order of the entries given, so pass them newest first.
-     */
-    groupHistoryByReview(history){
-        const groups = new Map()
-        history.forEach((entry) => {
-            const key = entry.revision_id || entry.id
-            if (!groups.has(key)) groups.set(key, [])
-            groups.get(key).push(entry)
-        })
-        return [...groups.values()]
-    },
-    /**
-     * The item's name/title at the time of an entry.
-     */
-    getHistoryLabel(entry){
-        if (entry.label) return entry.label
-        if (entry.location) return entry.location[0].toUpperCase() + entry.location.slice(1)
-        return "Review"
+        return HistoryView.buildFrame(total_text, HistoryView.buildTable(rows_html), options)
     },
     /**
      * Build one review's group: the name/title (when it differs from the previous group), then each decision on it.
@@ -3342,49 +3869,20 @@ const Review = {
     buildHistoryGroup(entries, previous_label){
         const latest = entries[0]
         const is_current = latest.revision_id === this.reviewId
-        const label = this.getHistoryLabel(latest)
+        const label = HistoryView.getLabel(latest)
 
         let label_html = ""
-        if (label !== previous_label) label_html = `<tr class="history-group-row"><td colspan="5">${label.replace(/</g, "&lt;")}</td></tr>`
+        if (label !== previous_label) label_html = `<tr class="history-group-row"><td colspan="5">${HistoryView.escape(label)}</td></tr>`
 
         // Only the latest decision on the current review gets the "This revision" tag
-        const rows_html = entries.map((entry, i) => this.buildHistoryEntry(entry, is_current && i === 0)).join("")
+        const rows_html = entries.map((entry, i) => HistoryView.buildEntry(entry, is_current && i === 0, this.advisorId)).join("")
 
         return `<tbody class="history-group${is_current ? " history-current" : ""}">
             ${label_html}
             ${rows_html}
         </tbody>`
     },
-    /**
-     * Build one decision, linking it to its revision page.
-     */
-    buildHistoryEntry(entry, is_current = false){
-        const revision_url = `${baseUrl}/manage/revisions/${entry.advisor_id || this.advisorId}/${entry.id}`
-        const date = entry.date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
-        const time = entry.date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })
 
-        let status_html = ""
-        if (entry.status) {
-            const status_class = entry.status.toLowerCase().replace(/[^a-z0-9]+/g, "-")
-            const status_text = entry.status[0].toUpperCase() + entry.status.slice(1).toLowerCase()
-            status_html = `<span class="history-chip status-${status_class}">${status_text}</span>`
-        }
-
-        let notes_html = ""
-        if (entry.rejection) notes_html += `<div class="history-note rejection"><span class="history-note-label">Rejection note</span>${entry.rejection}</div>`
-        if (entry.note) notes_html += `<div class="history-note"><span class="history-note-label">Internal note</span>${entry.note}</div>`
-        if (!notes_html) notes_html = `<span class="history-none">—</span>`
-
-        const current_html = is_current ? `<span class="history-chip history-chip--current">This revision</span>` : ""
-
-        return `<tr class="history-row">
-            <td class="history-date">${date}<span>${time}</span>${current_html}</td>
-            <td>${entry.officer}</td>
-            <td>${status_html}</td>
-            <td class="history-notes">${notes_html}</td>
-            <td class="history-open"><a href="${revision_url}" target="_blank">Open Revision</a></td>
-        </tr>`
-    },
     FloatingTools: {
         reviewId: null,
         floatingTools: null,

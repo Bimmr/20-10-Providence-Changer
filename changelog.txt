@@ -1,3 +1,8 @@
+2.1.1
+- Added a View History button to the advisor profile and review sidebar showing every review on the website, grouped by type and item
+- Item and website history share the already loaded revision data
+- Website history marks pages, links, members, and posts that were deleted or are inactive on the website, and logs a copy of the results to the console
+
 2.1.0
 - Refactor data fetching in the ready function to improve page load performance and add data readiness handling for advisor and officer lists
 - Fixed error when drawing notes buttons to revision table
