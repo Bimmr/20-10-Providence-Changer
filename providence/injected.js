@@ -301,7 +301,7 @@ const AdvisorDetails = {
      * The groups start collapsed and each year's entries are added as they load.
      */
     async showWebsiteHistoryDialog(){
-        const state = { open_keys: new Set(), index: new Map() }
+        const state = { open_keys: new Set(), index: new Map(), pages: new Map() }
         // Whether each item still exists on the website, filled in once the history has loaded
         const statuses = new Map()
 
@@ -314,6 +314,7 @@ const AdvisorDetails = {
             buildContent: (entries, options) => {
                 const tree = this.groupWebsiteHistory(entries, statuses)
                 state.index = tree.index
+                state.pages = tree.pages
                 return this.buildWebsiteHistory(tree, state, options)
             },
             onLoaded: async (entries, render) => {
@@ -362,8 +363,8 @@ const AdvisorDetails = {
      * Items are ordered by their latest review (as the table gives them).
      * Each item is named for its latest review because items can be renamed.
      * statuses (from Advisor.loadItemStatuses) says which items no longer exist or are inactive.
-     * @returns {{types: Object[], index: Map, review_count: number, item_count: number, deleted_count: number}}
-     * index maps each group's key to its data.
+     * @returns {{types: Object[], index: Map, pages: Map, review_count: number, item_count: number, deleted_count: number}}
+     * index maps each group's key to its data, and pages maps page IDs to their path.
      */
     groupWebsiteHistory(entries, statuses = new Map()){
         const createType = (location, name) => ({ key: `t:${location}`, name, items: new Map(), review_ids: new Set() })
@@ -379,6 +380,7 @@ const AdvisorDetails = {
                 type.items.set(item_key, {
                     key: item_key, label: HistoryView.getLabel(entry), entries: [], review_ids: new Set(),
                     status: statuses.get(Advisor.getItemStatusKey(entry)),
+                    page_id: entry.page_id, // for members and posts, the page they're on
                 })
             }
 
@@ -387,6 +389,16 @@ const AdvisorDetails = {
             item.review_ids.add(entry.revision_id || entry.id)
             type.review_ids.add(entry.revision_id || entry.id)
         }
+
+        // Each page's path from its latest review, or from its lookup if it was never reviewed
+        const pages = new Map()
+        for (const entry of sorted) {
+            if (entry.location === "page" && entry.item_id && !pages.has(entry.item_id)) {
+                pages.set(entry.item_id, entry.path)
+            }
+        }
+        for (const item of types.get("member").items.values()) this.addHistoryPage(pages, item.page_id, statuses)
+        for (const item of types.get("post").items.values()) this.addHistoryPage(pages, item.page_id, statuses)
 
         const index = new Map()
         let review_count = 0
@@ -403,7 +415,15 @@ const AdvisorDetails = {
                 index.set(item.key, { level: "item", node: item })
             }
         }
-        return { types: used_types, index, review_count, item_count, deleted_count }
+        return { types: used_types, index, pages, review_count, item_count, deleted_count }
+    },
+    /**
+     * Add the path of a page that has no reviews of its own from its status lookup, if it has a slug.
+     */
+    addHistoryPage(pages, page_id, statuses){
+        if (!page_id || pages.has(page_id)) return
+        const status = statuses.get(Advisor.getItemStatusKey({ location: "page", item_id: page_id }))
+        if (status?.slug) pages.set(page_id, `/${status.slug}`)
     },
     /**
      * Build the whole dialog content: the summary line, then one accordion per type.
@@ -447,6 +467,7 @@ const AdvisorDetails = {
             const reviews = plural(node.review_ids.size, "review")
             const last_reviewed = `Last reviewed ${HistoryView.formatDate(latest.date)}`
             title = `${HistoryView.escape(node.label)} ${HistoryView.buildItemStatusChip(node.status)}`
+            // Members and posts are grouped under their page's path instead
             if (latest.path) title += `<span class="history-acc-path">${HistoryView.escape(latest.path)}</span>`
             meta = `${reviews} · ${last_reviewed} ${HistoryView.buildStatusChip(latest.status)}`
             if (node.status?.exists === false) extra_class = " history-acc--gone"
@@ -464,6 +485,19 @@ const AdvisorDetails = {
      */
     buildWebsiteHistoryBody(key, state){
         const { level, node } = state.index.get(key)
+        if (level === "type" && (node.key === "t:member" || node.key === "t:post")) {
+            // Group by the page they're on, ordered by each page's latest review
+            const by_page = new Map()
+            for (const item of node.items.values()) {
+                if (!by_page.has(item.page_id)) by_page.set(item.page_id, [])
+                by_page.get(item.page_id).push(item)
+            }
+            return [...by_page].map(([page_id, items]) => {
+                const path = state.pages.get(page_id) || "Unknown page"
+                const groups = items.map((item) => this.buildWebsiteHistoryGroup(item.key, item, state)).join("")
+                return `<div class="history-acc-page"><span class="history-acc-path">${HistoryView.escape(path)}</span></div>${groups}`
+            }).join("")
+        }
         if (level === "type" && node.key !== "t:footer") {
             return [...node.items.values()].map((item) => this.buildWebsiteHistoryGroup(item.key, item, state)).join("")
         }
@@ -3163,11 +3197,11 @@ const Advisor = {
         return failures
     },
     /**
-     * Look up a page by ID. Resolves to { exists, state } or null if the request failed.
+     * Look up a page by ID. Resolves to { exists, state, title, slug } or null if the request failed.
      */
     fetchPageStatus(page_id){
         return this.fetchStatusData(`/api/pages/${page_id}`, (page) => {
-            return page.error ? { exists: false } : { exists: true, state: page.state }
+            return page.error ? { exists: false } : { exists: true, state: page.state, title: page.title, slug: page.slug }
         })
     },
     /**
