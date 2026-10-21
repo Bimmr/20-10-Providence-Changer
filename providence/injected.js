@@ -2824,7 +2824,9 @@ const Advisor = {
         review_items.forEach((item) => {
             const review_id = item.querySelector("[data-id]").getAttribute("data-id")
             item.setAttribute("data-id", review_id)
-            item.querySelector(".review-item-status").appendChild(createElement("i", {style:"margin-left: 5px",class: "loading-notes fa fa-spinner"}))
+            item.querySelector(".loading-notes")?.remove()
+            const status = item.querySelector(".review-item-status") || item.querySelector(".review-item__status")
+            status?.appendChild(createElement("i", {style:"margin-left: 5px",class: "loading-notes fa fa-spinner"}))
         })
 // One request for all of this advisor's recent decisions is much faster than one slow request per item
         const rows = await this.getLatestReviewRows()
