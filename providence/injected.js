@@ -2695,7 +2695,7 @@ const Advisor = {
             if(e.target.matches(".btn--action-approve, .btn--action-reject"))
                 setTimeout(() => this.addPendingCount(), 1)
 
-            if(e.target.matches(".btn--action-approve"))
+            if(e.target.matches(".review-item .btn--action-approve"))
                 setTimeout(() => this.addReviewItemNotesToPage(e.target.closest(".review-item").getAttribute("data-id")), 1)
 
         })
