@@ -2832,26 +2832,26 @@ const Advisor = {
         const rows = await this.getLatestReviewRows()
         if (!rows) return this.loadReviewItemNotesIndividually(review_items)
 
-        // Items marked reviewed on the page should always have a decision; if the table doesn't have it, look it up directly
+        // Pending items and items missing from the table are looked up directly, since a newer internal note is only on the review itself
         const needs_lookup = []
         for (const item of review_items) {
             const review_id = item.getAttribute("data-id")
             const row = rows.get(review_id)
             const is_reviewed = item.classList.contains("approved-status") || item.classList.contains("rejected-status")
-            if (!row && is_reviewed) {
+            if (!row || !is_reviewed) {
                 needs_lookup.push(item)
                 continue
             }
             try {
-                await this.addReviewItemNotesToPage(review_id, row ? this.formatReviewInfo(row) : {})
+                await this.addReviewItemNotesToPage(review_id, this.formatReviewInfo(row))
             } catch (error) {
                 console.error(`Failed to show notes for review ${review_id}:`, error)
             }
             item.querySelector(".loading-notes")?.remove()
         }
         if (needs_lookup.length) {
-            console.warn(`${needs_lookup.length} reviewed item(s) not found in the revisions table, loading individually`)
-            this.loadReviewItemNotesIndividually(needs_lookup)
+            console.log(`${needs_lookup.length} pending or missing item(s), loading their latest notes individually`)
+            this.loadReviewItemNotesIndividually(needs_lookup, rows)
         }
     },
     /**
@@ -2927,7 +2927,7 @@ const Advisor = {
      * Fetch notes one item at a time, a few at once.
      * @param {HTMLElement[]} review_items - The review items to load notes for.
      */
-    loadReviewItemNotesIndividually(review_items){
+    loadReviewItemNotesIndividually(review_items, rows = new Map()){
         // Throttle concurrent note fetches so they don't exhaust the browser's per-origin connection pool and starve the advisor/officer data fetches
         const INITIAL_CONCURRENCY = 3
         const MAX_CONCURRENCY = 6
@@ -2936,8 +2936,9 @@ const Advisor = {
             while (next_index < review_items.length) {
                 const item = review_items[next_index++]
                 const review_id = item.getAttribute("data-id")
+                const row = rows.get(review_id)
                 try{
-                    await this.addReviewItemNotesToPage(review_id)
+                    await this.addReviewItemNotesToPage(review_id, row ? this.formatReviewInfo(row) : null)
                 } catch (error) {
                     console.error(`Failed to fetch notes for review ${review_id}:`, error)
                 }
@@ -2965,22 +2966,30 @@ const Advisor = {
         let { status, officer, date, note, rejection, revision_id } = info ?? await this.getReviewInfoFromAPI(review_id)
         const currently_reviewed = review_item.classList.contains("approved-status") || review_item.classList.contains("rejected-status")
 
+        // Pending items use the newest internal note from the review itself, otherwise the note is from the last decision
+        let is_previous_note = false
+        if(info && !currently_reviewed){
+            const { note: latest_note } = await this.getReviewInfoFromAPI(review_id)
+            if (latest_note?.replace(/<[^>]*>|&nbsp;/g, "").trim() && latest_note !== note) note = latest_note
+            else is_previous_note = Boolean(note)
+        }
+
         // Remove if already existing
         review_item.querySelector(`.review-item-preview`)?.remove()
 
-        // Only add if item has been reviewed or if a note or rejection was found
-        if(officer && (currently_reviewed || note || rejection)){
+        // Only add if item has been reviewed or if a note or rejection was found (a note can be added before there's a reviewer)
+        if((officer && currently_reviewed) || note || rejection){
             const review_item_preview = createElement("div", {
                     class: "review-item-preview",
                     html: `
-                    <p class="review-details"><span class="officer">${ currently_reviewed ? "" : "Previously "}Reviewed by: ${officer}</span> - <span class="date">${date}</span></p>
+                    ${officer ? `<p class="review-details"><span class="officer">${ currently_reviewed ? "" : "Previously "}Reviewed by: ${officer}</span> - <span class="date">${date}</span></p>` : ""}
                     
                     ${rejection ? `<div class="review-rejection"> 
                         <h3>${currently_reviewed ? "" : "Previous "}Rejection Note</h3><div class="review-html">${rejection}</div>
                     </div>` : ""}
                 
                     ${note ? `<div class="review-note">
-                        <h3>Internal Review Note</h3><div class="review-html">${note}</div>
+                        <h3>${is_previous_note ? "Previous " : ""}Internal Review Note</h3><div class="review-html">${note}</div>
                     </div>` : ""}
                 
                     `
@@ -3007,11 +3016,11 @@ const Advisor = {
     },
      /***
      * Uses Review ID
-     * Possible Types: "current", "previous", "history"
+     * Decisions come from the revisions table, so this only needs the review itself, which holds its internal note
      **/
-    async getReviewInfoFromAPI(review_id, type = "current"){
+    async getReviewInfoFromAPI(review_id){
         
-        let response = await fetch(`${baseUrl}/api/revisions/${review_id}?notes=${type}`)
+        let response = await fetch(`${baseUrl}/api/revisions/${review_id}`)
         // Make sure the response is OK
         if (!response.ok) return {}
         const text = await response.text()
@@ -3025,7 +3034,7 @@ const Advisor = {
      */
     formatReviewInfo(data){
         const status = data.state
-        const officer = data.reviewed_by.display_name
+        const officer = data.reviewed_by?.display_name
         const date = new Date(data.created_at).toLocaleString([], {year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: true})
         const revision_id = data.revision_id
         const note = data.internal_notes
