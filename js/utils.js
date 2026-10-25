@@ -11,23 +11,23 @@ const ACCOUNTS = {
   siteForward: [
     '5b71d892138837295d1d88d5',  // Randy
     '63515d1ca14d730aa357ebeb',  // Kayla
-    '6685700e7ab7518b2fdec363',  // Laurel Benzaquen
+    '6685700e7ab7518b2fdec363',  // Laurel
     '6a0dfe18e2f55f7eb6374b4d'   // Chris
   ],
   mlsSales: [
     '6053855b7d9f5556ecc9e33b', // Julien
     '62fbcef1ad43191d020cc850', // Lorena
-    '66b2337b018d3ef81ab93714', // Christina Bettencourt
-    '666af5e9d0e2294ebf33556e', // Michael Esposito
-    '66326c5dcd47b3d689ce8834', // Marvin Sanchez
-    '66326c1fcd47b3d689ce87f2', // Sam Lenuel Jamen
-    '66c342a60c1b4b313fb7bc25', // Mark Sebastian
-    '66b2339f018d3ef81ab9373c', // Nasrin Hedayat
+    '66b2337b018d3ef81ab93714', // Christina
+    '666af5e9d0e2294ebf33556e', // Michael
+    '66326c5dcd47b3d689ce8834', // Marvin
+    '66326c1fcd47b3d689ce87f2', // Sam
+    '66c342a60c1b4b313fb7bc25', // Mark 
+    '66b2339f018d3ef81ab9373c', // Nasrin 
   ],
   msiCompliance: [
-    '652804a80912586687b76f45', // Susie Rafael
+    '652804a80912586687b76f45', // Susie
     '5b7a258c87b3513edc0b86be', // Janet
-    '66e853abcbfcb64e1c719b11', // Navneet Kaur Sekhon
+    '66e853abcbfcb64e1c719b11', // Navneet 
   ],
   miscellaneous: [
     '5dd2f8e3d3547e4c268d5c42', // SFP - On Hold
@@ -50,7 +50,7 @@ const ACCOUNTS = {
     '5b7a25ac9f5388026d43d977', // Sandy
     '5e82314cb7479c3245b2f891', // Suzanne
     '5d1391aa7c86f50a97009f18', // Rachel
-    '65ea1c6032bf8ae915a5c1e4', // Vivian N Li
+    '65ea1c6032bf8ae915a5c1e4', // Vivian
   ]
 }
 
