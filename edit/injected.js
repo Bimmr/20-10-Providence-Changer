@@ -44,6 +44,139 @@ async function ready() {
     Chat.init()
     Archives.init()
     ReviewAssignment.init()
+    SiteGuard.init()
+}
+
+// =============================================================================
+// SiteGuard Module
+// =============================================================================
+/**
+ * Warns when another editor tab has since loaded a different website.
+ *
+ * Each editor tab records its preview origin in shared localStorage. When the user
+ * returns to a tab whose preview origin differs from the latest recorded one, the
+ * session has likely switched advisors, so saves here could land on the wrong site.
+ * Origins are compared (not full URLs) because preview paths change during navigation.
+ */
+const SiteGuard = {
+    PREVIEW_ORIGIN_KEY: "siteguard-preview-origin",
+
+    tabPreviewOrigin: null,
+    activePreviewOrigin: null,
+    originalUserId: null,
+    stale: false,
+
+    /**
+     * Initialize the SiteGuard module.
+     */
+    init() {
+        const iframe = document.getElementById("previewIframe")
+        if (!iframe) return console.warn("[SiteGuard] Could not find the preview iframe; guard disabled.")
+
+        this.originalUserId = window.loggedInUser
+
+        iframe.addEventListener("load", () => this.savePreviewOrigin())
+        this.savePreviewOrigin()
+
+        document.addEventListener("visibilitychange", () => document.visibilityState === "visible" && this.recheck())
+        window.addEventListener("focus", () => this.recheck())
+    },
+
+    /**
+     * Read the origin of the preview iframe, ignoring app/blank origins.
+     */
+    readPreviewOrigin() {
+        const iframe = document.getElementById("previewIframe")
+        const origin = new URL(iframe?.src, location.href).origin
+        return origin !== location.origin && origin !== "null" ? origin : null
+    },
+
+    /**
+     * Record this tab's preview origin once, and mark it as the latest active one.
+     */
+    savePreviewOrigin() {
+        if (this.tabPreviewOrigin) return
+        const origin = this.readPreviewOrigin()
+        if (!origin) return
+
+        this.tabPreviewOrigin = origin
+        localStorage.setItem(this.PREVIEW_ORIGIN_KEY, origin)
+    },
+
+    /**
+     * Compare this tab's origin with the latest recorded one.
+     */
+    recheck() {
+        if (!this.tabPreviewOrigin) return
+        const was_stale = this.stale
+        this.activePreviewOrigin = localStorage.getItem(this.PREVIEW_ORIGIN_KEY)
+        this.stale = !!this.activePreviewOrigin && this.activePreviewOrigin !== this.tabPreviewOrigin
+        if (!this.stale) this.hideWarning()
+        else if (!was_stale) this.showWarning()
+    },
+
+    /**
+     * Show the site mismatch warning.
+     */
+    showWarning() {
+        this.hideWarning()
+
+        const overlay = createElement("div", {
+            id: "siteguard",
+            html: `
+                <div class="sg-box" role="alertdialog" aria-modal="true" aria-labelledby="sg-title">
+                    <div class="sg-heading">
+                        <span class="sg-icon" aria-hidden="true">!</span>
+                        <h2 id="sg-title">Website changed in another tab</h2>
+                    </div>
+                    <p class="sg-reason">This tab previews <code>${this.tabPreviewOrigin}</code>, but the latest editor tab previews <code>${this.activePreviewOrigin}</code>.</p>
+                    <p>Changes made here may be saved to the currently selected website.</p>
+                    <p>Reload this tab to open the latest editor site, or log back into this website.</p>
+                    <div class="sg-actions"></div>
+                </div>`,
+        })
+
+        const actions = overlay.querySelector(".sg-actions")
+        actions.appendChild(createElement("button", { type: "button", html: "Reload Tab", onclick: () => location.reload() }))
+
+        if (this.originalUserId) {
+            const relogin_button = createElement("button", {
+                type: "button",
+                html: "Log Back Into This Site",
+                onclick: () => this.relogin(relogin_button),
+            })
+            actions.appendChild(relogin_button)
+        }
+
+        document.body.appendChild(overlay)
+        actions.querySelector("button").focus()
+    },
+
+    /**
+     * Switch the session back to this tab's advisor, then reload.
+     * @param {HTMLButtonElement} button
+     */
+    async relogin(button) {
+        button.disabled = true
+        button.textContent = "Signing In..."
+        try {
+            const response = await fetch(`/manage/login/${encodeURIComponent(this.originalUserId)}`, { cache: "no-store" })
+            if (!response.ok) throw new Error(`HTTP ${response.status}`)
+            location.reload()
+        } catch (error) {
+            console.warn("[SiteGuard] Re-login failed:", error.message)
+            button.disabled = false
+            button.textContent = "Try Re-login Again"
+        }
+    },
+
+    /**
+     * Remove the warning if shown.
+     */
+    hideWarning() {
+        const overlay = document.getElementById("siteguard")
+        if (overlay) overlay.remove()
+    },
 }
 
 // =============================================================================

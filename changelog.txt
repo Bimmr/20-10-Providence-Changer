@@ -3,6 +3,7 @@
 - Item and website history share the already loaded revision data
 - Website history marks pages, links, members, and posts that were deleted or are inactive on the website, and logs a copy of the results to the console
 - Fixed issue with review item notes not displaying correctly
+- Added a warning on editor tabs when another tab has switched to a different website, with options to reload or log back into the original site
 2.1.0
 - Refactor data fetching in the ready function to improve page load performance and add data readiness handling for advisor and officer lists
 - Fixed error when drawing notes buttons to revision table
