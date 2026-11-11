@@ -86,6 +86,9 @@ function getCurrentOfficerInfo(){
 // Function to initialize the page
 async function ready() {
 
+    if(isSiteForwardUser()) localStorage.setItem("IsSiteForward", "true")
+    else localStorage.removeItem("IsSiteForward")
+
     // Get the URL Parts early so page modules can start before the advisor/officer data loads
     url_parts = window.location.href.split("/")
 
